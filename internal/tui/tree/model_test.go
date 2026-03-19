@@ -1,11 +1,12 @@
 package tree_test
 
 import (
+	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/radu/gsd-watch/internal/tui/mock"
 	"github.com/radu/gsd-watch/internal/tui/tree"
-	"github.com/charmbracelet/bubbletea"
 )
 
 // helper to send a key press message to the tree model
@@ -253,5 +254,77 @@ func TestRowKindAndPhaseIdx(t *testing.T) {
 	}
 	if rows[5].PhaseIdx != 1 {
 		t.Errorf("row 5: expected PhaseIdx=1, got %d", rows[5].PhaseIdx)
+	}
+}
+
+// --- View tests ---
+
+// TestViewStatusIcons verifies that rendering an expanded phase shows status icon characters.
+func TestViewStatusIcons(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	m = pressKey(t, m, "l") // expand phase 1
+	out := m.View(80)
+	// phase 1 status is "in_progress" → ▶ icon
+	// plan 0 status is "complete" → ✓ icon
+	// plan 2 status is "pending" → ○ icon
+	for _, icon := range []string{"▶", "✓", "○"} {
+		if !strings.Contains(out, icon) {
+			t.Errorf("View output missing icon %q\nOutput:\n%s", icon, out)
+		}
+	}
+}
+
+// TestViewActiveMarker verifies the "← now" marker appears on the active plan.
+func TestViewActiveMarker(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	m = pressKey(t, m, "l") // expand phase 1
+	out := m.View(80)
+	if !strings.Contains(out, "← now") {
+		t.Errorf("View output missing '← now' marker\nOutput:\n%s", out)
+	}
+}
+
+// TestViewBadges verifies that phase badges render below the phase header.
+func TestViewBadges(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	out := m.View(80)
+	// Phase 1 has badges "discussed" (📝) and "researched" (🔬)
+	if !strings.Contains(out, "📝") {
+		t.Errorf("View output missing badge 📝\nOutput:\n%s", out)
+	}
+	if !strings.Contains(out, "🔬") {
+		t.Errorf("View output missing badge 🔬\nOutput:\n%s", out)
+	}
+}
+
+// TestViewTooNarrow verifies that widths below MinWidth return the narrow placeholder.
+func TestViewTooNarrow(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	out := m.View(20)
+	if !strings.Contains(out, "too narrow") {
+		t.Errorf("expected 'too narrow' for narrow width, got: %s", out)
+	}
+}
+
+// TestViewCollapsedHidesPlans verifies that collapsed phases don't show plan titles.
+func TestViewCollapsedHidesPlans(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	out := m.View(80)
+	// When all phases are collapsed, no plan titles should appear
+	planTitles := []string{
+		"Foundation: types, messages, mock data",
+		"Tree model + viewport",
+		"Header + footer components",
+		"Root model + integration",
+	}
+	for _, title := range planTitles {
+		if strings.Contains(out, title) {
+			t.Errorf("plan title %q should not appear when phase is collapsed\nOutput:\n%s", title, out)
+		}
 	}
 }
