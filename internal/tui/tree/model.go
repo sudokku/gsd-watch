@@ -1,0 +1,157 @@
+package tree
+
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/radu/gsd-watch/internal/parser"
+	tui "github.com/radu/gsd-watch/internal/tui"
+)
+
+// RowKind identifies whether a Row represents a phase or a plan.
+type RowKind int
+
+const (
+	RowPhase RowKind = iota
+	RowPlan
+)
+
+// Row is a single renderable line in the tree.
+type Row struct {
+	Key      string       // phase DirName for RowPhase; plan Filename for RowPlan
+	Kind     RowKind
+	Phase    parser.Phase // populated for RowPhase rows
+	Plan     parser.Plan  // populated for RowPlan rows
+	PhaseIdx int          // index into data.Phases (for both row types)
+}
+
+// TreeModel manages collapsible tree state: data, expanded map, and cursor.
+type TreeModel struct {
+	data     parser.ProjectData
+	expanded map[string]bool // key: phase.DirName
+	cursor   int
+	keys     tui.KeyMap
+}
+
+// New returns a TreeModel initialized with an empty expanded map and cursor 0.
+func New() TreeModel {
+	return TreeModel{
+		expanded: make(map[string]bool),
+		keys:     tui.DefaultKeyMap(),
+	}
+}
+
+// SetData replaces the model's data and preserves existing expanded state.
+// The cursor is clamped to the new row count.
+func (t TreeModel) SetData(d parser.ProjectData) TreeModel {
+	t.data = d
+	// preserve expanded map; just clamp cursor
+	t.cursor = clamp(t.cursor, 0, max(0, len(t.visibleRows())-1))
+	return t
+}
+
+// visibleRows returns the ordered list of rows currently visible in the tree.
+func (t TreeModel) visibleRows() []Row {
+	var rows []Row
+	for i, phase := range t.data.Phases {
+		rows = append(rows, Row{
+			Key:      phase.DirName,
+			Kind:     RowPhase,
+			Phase:    phase,
+			PhaseIdx: i,
+		})
+		if t.expanded[phase.DirName] {
+			for _, plan := range phase.Plans {
+				rows = append(rows, Row{
+					Key:      plan.Filename,
+					Kind:     RowPlan,
+					Plan:     plan,
+					PhaseIdx: i,
+				})
+			}
+		}
+	}
+	return rows
+}
+
+// VisibleRows is the public version of visibleRows.
+func (t TreeModel) VisibleRows() []Row {
+	return t.visibleRows()
+}
+
+// Cursor returns the current cursor position.
+func (t TreeModel) Cursor() int {
+	return t.cursor
+}
+
+// Update handles key messages for navigation, expand, and collapse.
+func (t TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
+	keyMsg, ok := msg.(tea.KeyMsg)
+	if !ok {
+		return t, nil
+	}
+
+	rows := t.visibleRows()
+	if len(rows) == 0 {
+		return t, nil
+	}
+
+	switch {
+	case key.Matches(keyMsg, t.keys.Down):
+		t.cursor = clamp(t.cursor+1, 0, len(rows)-1)
+
+	case key.Matches(keyMsg, t.keys.Up):
+		t.cursor = clamp(t.cursor-1, 0, len(rows)-1)
+
+	case key.Matches(keyMsg, t.keys.Expand):
+		row := rows[t.cursor]
+		if row.Kind == RowPhase {
+			t.expanded[row.Phase.DirName] = true
+		}
+		// no-op for RowPlan
+
+	case key.Matches(keyMsg, t.keys.Collapse):
+		row := rows[t.cursor]
+		switch row.Kind {
+		case RowPhase:
+			t.expanded[row.Phase.DirName] = false
+			// clamp cursor after collapsing
+			newRows := t.visibleRows()
+			t.cursor = clamp(t.cursor, 0, len(newRows)-1)
+
+		case RowPlan:
+			// collapse parent phase and jump cursor to the phase row
+			phaseIdx := row.PhaseIdx
+			phaseDirName := t.data.Phases[phaseIdx].DirName
+			t.expanded[phaseDirName] = false
+			// find the phase row index in the new visible rows
+			newRows := t.visibleRows()
+			phaseRowIdx := 0
+			for i, r := range newRows {
+				if r.Kind == RowPhase && r.PhaseIdx == phaseIdx {
+					phaseRowIdx = i
+					break
+				}
+			}
+			t.cursor = clamp(phaseRowIdx, 0, len(newRows)-1)
+		}
+	}
+
+	return t, nil
+}
+
+func clamp(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
