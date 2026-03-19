@@ -38,12 +38,13 @@ type Phase struct {
 
 // ProjectData is the root data model for the entire project view.
 type ProjectData struct {
-	Name          string
-	ModelProfile  string
-	Mode          string
-	Phases        []Phase
-	CurrentAction string
-	LastUpdated   time.Time
+	Name            string
+	ModelProfile    string
+	Mode            string
+	Phases          []Phase
+	CurrentAction   string
+	LastUpdated     time.Time
+	ProgressPercent float64 // 0.0 to 1.0, from STATE.md progress.percent
 }
 
 // CompletionPercent returns the fraction of plans with status "complete"
