@@ -22,7 +22,7 @@ func New(data parser.ProjectData) HeaderModel {
 		projectName:  data.Name,
 		modelProfile: data.ModelProfile,
 		mode:         data.Mode,
-		completion:   data.CompletionPercent(),
+		completion:   data.ProgressPercent,
 	}
 }
 

@@ -3,10 +3,14 @@
 package app
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/radu/gsd-watch/internal/parser"
 	"github.com/radu/gsd-watch/internal/tui"
 	"github.com/radu/gsd-watch/internal/tui/footer"
 	"github.com/radu/gsd-watch/internal/tui/header"
@@ -45,9 +49,16 @@ func New() Model {
 	}
 }
 
-// Init implements tea.Model. Returns nil — no async work in Phase 1.
+// Init implements tea.Model. Dispatches an async parse command to load live .planning/ data.
 func (m Model) Init() tea.Cmd {
-	return nil
+	return func() tea.Msg {
+		root, err := os.Getwd()
+		if err != nil {
+			return tui.ParseErrorMsg{Err: err}
+		}
+		project := parser.ParseProject(filepath.Join(root, ".planning"))
+		return tui.ParsedMsg{Project: project}
+	}
 }
 
 // Update implements tea.Model. Handles resize, quit, key delegation, and ParsedMsg.

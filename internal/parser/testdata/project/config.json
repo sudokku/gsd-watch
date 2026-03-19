@@ -1,0 +1,8 @@
+{
+  "mode": "yolo",
+  "granularity": "coarse",
+  "parallelization": true,
+  "commit_docs": false,
+  "model_profile": "balanced",
+  "workflow": {}
+}

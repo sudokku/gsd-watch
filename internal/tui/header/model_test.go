@@ -34,27 +34,12 @@ func TestHeaderView_ContainsMode(t *testing.T) {
 }
 
 func TestHeaderView_ProgressBar50Percent(t *testing.T) {
-	// Build data with 5 of 10 plans complete for precisely 50%.
+	// Build data with ProgressPercent=0.5 for precisely 50%.
 	data := parser.ProjectData{
-		Name:         "test-project",
-		ModelProfile: "fast",
-		Mode:         "auto",
-		Phases: []parser.Phase{
-			{
-				Plans: []parser.Plan{
-					{Status: "complete"},
-					{Status: "complete"},
-					{Status: "complete"},
-					{Status: "complete"},
-					{Status: "complete"},
-					{Status: "pending"},
-					{Status: "pending"},
-					{Status: "pending"},
-					{Status: "pending"},
-					{Status: "pending"},
-				},
-			},
-		},
+		Name:            "test-project",
+		ModelProfile:    "fast",
+		Mode:            "auto",
+		ProgressPercent: 0.5,
 	}
 	h := header.New(data)
 	out := h.View(80)
@@ -67,12 +52,9 @@ func TestHeaderView_ProgressBar50Percent(t *testing.T) {
 }
 
 func TestHeaderView_ZeroPercent(t *testing.T) {
+	// ProgressPercent=0 (default zero value) → all empty bar.
 	data := mock.MockProject()
-	for i := range data.Phases {
-		for j := range data.Phases[i].Plans {
-			data.Phases[i].Plans[j].Status = "pending"
-		}
-	}
+	data.ProgressPercent = 0.0
 	h := header.New(data)
 	out := h.View(80)
 	if strings.Contains(out, "▓") {
@@ -84,12 +66,9 @@ func TestHeaderView_ZeroPercent(t *testing.T) {
 }
 
 func TestHeaderView_HundredPercent(t *testing.T) {
+	// ProgressPercent=1.0 → all filled bar.
 	data := mock.MockProject()
-	for i := range data.Phases {
-		for j := range data.Phases[i].Plans {
-			data.Phases[i].Plans[j].Status = "complete"
-		}
-	}
+	data.ProgressPercent = 1.0
 	h := header.New(data)
 	out := h.View(80)
 	if strings.Contains(out, "░") {
