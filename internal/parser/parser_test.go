@@ -36,9 +36,9 @@ func TestParseProject_FullFixture(t *testing.T) {
 		t.Errorf("expected ProgressPercent=0.25, got %f", data.ProgressPercent)
 	}
 
-	// Two phase directories under testdata/project/phases/
-	if len(data.Phases) != 2 {
-		t.Fatalf("expected 2 phases, got %d", len(data.Phases))
+	// Four phases total: 2 from directories + 2 stubs from ROADMAP.md
+	if len(data.Phases) != 4 {
+		t.Fatalf("expected 4 phases, got %d", len(data.Phases))
 	}
 
 	// Phase 1 should have badges (CONTEXT.md + RESEARCH.md)

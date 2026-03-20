@@ -39,6 +39,7 @@ func parsePhases(phasesDir string, phaseNames map[int]string, activePhase, activ
 		return entries[i].Name() < entries[j].Name()
 	})
 
+	seenPhaseNums := map[int]bool{}
 	var phases []Phase
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -49,6 +50,7 @@ func parsePhases(phasesDir string, phaseNames map[int]string, activePhase, activ
 			continue
 		}
 		phaseNum, _ := strconv.Atoi(m[1])
+		seenPhaseNums[phaseNum] = true
 		phaseDir := filepath.Join(phasesDir, entry.Name())
 
 		// Parse plans in this phase directory.
@@ -81,7 +83,36 @@ func parsePhases(phasesDir string, phaseNames map[int]string, activePhase, activ
 			Plans:   plans,
 		})
 	}
+
+	// Add stub entries for roadmap phases that have no directory yet.
+	for phaseNum, phaseName := range phaseNames {
+		if seenPhaseNums[phaseNum] {
+			continue
+		}
+		phases = append(phases, Phase{
+			Name:   fmt.Sprintf("Phase %d: %s", phaseNum, phaseName),
+			Status: StatusPending,
+		})
+	}
+
+	// Sort all phases by phase number.
+	sort.Slice(phases, func(i, j int) bool {
+		return extractPhaseNum(phases[i].Name) < extractPhaseNum(phases[j].Name)
+	})
+
 	return phases
+}
+
+// extractPhaseNum pulls the leading integer from a phase name like "Phase 3: File Watching".
+// Returns 0 if no number is found.
+var phaseNumRe = regexp.MustCompile(`Phase (\d+)`)
+
+func extractPhaseNum(name string) int {
+	if m := phaseNumRe.FindStringSubmatch(name); len(m) > 1 {
+		n, _ := strconv.Atoi(m[1])
+		return n
+	}
+	return 0
 }
 
 // parsePlansInDir reads all NN-NN-PLAN.md files in a phase directory.

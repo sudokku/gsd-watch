@@ -31,7 +31,7 @@ func (h HeaderModel) SetData(data parser.ProjectData) HeaderModel {
 	h.projectName = data.Name
 	h.modelProfile = data.ModelProfile
 	h.mode = data.Mode
-	h.completion = data.CompletionPercent()
+	h.completion = data.ProgressPercent
 	return h
 }
 
