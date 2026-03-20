@@ -31,9 +31,11 @@ func TestParseProject_FullFixture(t *testing.T) {
 		t.Errorf("expected CurrentAction=%q, got %q", "Phase 2 context gathered", data.CurrentAction)
 	}
 
-	// From STATE.md: progress.percent: 25 → 0.25
-	if data.ProgressPercent != 0.25 {
-		t.Errorf("expected ProgressPercent=0.25, got %f", data.ProgressPercent)
+	// ProgressPercent is computed from actual phase completion, not STATE.md percent.
+	// Fixture phases: phase 01 is in_progress (plan 01-02 not complete), others pending.
+	// Expected: 0/4 phases complete → 0.0.
+	if data.ProgressPercent != 0.0 {
+		t.Errorf("expected ProgressPercent=0.0 (computed from phases), got %f", data.ProgressPercent)
 	}
 
 	// Four phases total: 2 from directories + 2 stubs from ROADMAP.md

@@ -32,8 +32,6 @@ func ParseProject(root string) ProjectData {
 		if st.StoppedAt != "" {
 			data.CurrentAction = st.StoppedAt
 		}
-		data.ProgressPercent = float64(st.ProgressPercent) / 100.0
-
 		// Parse ROADMAP.md for phase names.
 		phaseNames := parseRoadmap(filepath.Join(root, "ROADMAP.md"))
 
@@ -48,6 +46,18 @@ func ParseProject(root string) ProjectData {
 		// STATE.md missing — still try roadmap + phases without active plan.
 		phaseNames := parseRoadmap(filepath.Join(root, "ROADMAP.md"))
 		data.Phases = parsePhases(filepath.Join(root, "phases"), phaseNames, 0, 0)
+	}
+
+	// Compute progress from actual phase completion on disk (not STATE.md percent,
+	// which is updated infrequently by gsd-tools and reflects milestone-level accounting).
+	if len(data.Phases) > 0 {
+		var done int
+		for _, ph := range data.Phases {
+			if ph.Status == "complete" {
+				done++
+			}
+		}
+		data.ProgressPercent = float64(done) / float64(len(data.Phases))
 	}
 
 	return data

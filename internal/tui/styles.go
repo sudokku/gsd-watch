@@ -40,7 +40,7 @@ func StatusIcon(status string) string {
 func BadgeString(badge string) string {
 	switch badge {
 	case "discussed":
-		return "📝"
+		return "💬"
 	case "researched":
 		return "🔬"
 	case "verified":

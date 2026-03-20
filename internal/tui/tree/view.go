@@ -27,13 +27,15 @@ func (t TreeModel) View(width int) string {
 				expandIndicator = "▼ "
 			}
 			icon := tui.StatusIcon(row.Phase.Status)
-			line := expandIndicator + icon + " " + row.Phase.Name
+			// Apply highlight to the name text only — the icon contains ANSI reset
+			// codes that would kill bold if the entire line were wrapped.
+			name := row.Phase.Name
 			if i == t.cursor {
-				line = highlightStyle.Render(line)
+				name = highlightStyle.Render(name)
 			}
-			lines = append(lines, line)
+			lines = append(lines, expandIndicator+icon+" "+name)
 
-			// Render badges on a separate line below the phase header
+			// Render badges on a separate line below the phase header.
 			if len(row.Phase.Badges) > 0 {
 				var badgeParts []string
 				for _, badge := range row.Phase.Badges {
@@ -62,13 +64,87 @@ func (t TreeModel) View(width int) string {
 				nowMarker = " " + tui.NowMarkerStyle.Render("← now")
 			}
 
-			line := connector + icon + " " + row.Plan.Title + nowMarker
-			if i == t.cursor {
-				line = highlightStyle.Render(line)
+			// Word-wrap the title to fit within the available width.
+			prefixWidth := lipgloss.Width(connector) + lipgloss.Width(icon) + 1
+			nowWidth := lipgloss.Width(nowMarker)
+			wrapWidth := width - prefixWidth - nowWidth
+			if wrapWidth < 1 {
+				wrapWidth = 1
 			}
-			lines = append(lines, line)
+			continuation := strings.Repeat(" ", prefixWidth)
+			titleParts := tui.WordWrap(row.Plan.Title, wrapWidth)
+
+			// Apply highlight to each text part individually so the icon's ANSI
+			// reset code on line 1 does not interfere with subsequent lines.
+			var itemLines []string
+			for j, part := range titleParts {
+				suffix := ""
+				if j == len(titleParts)-1 {
+					suffix = nowMarker
+				}
+				text := part + suffix
+				if i == t.cursor {
+					text = highlightStyle.Render(text)
+				}
+				var l string
+				if j == 0 {
+					l = connector + icon + " " + text
+				} else {
+					l = continuation + text
+				}
+				itemLines = append(itemLines, l)
+			}
+			lines = append(lines, strings.Join(itemLines, "\n"))
 		}
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+// RenderedCursorLine returns the line index (0-based) of the cursor row's
+// first rendered line within the full tree output. Used by the app model to
+// scroll the viewport so the cursor is always visible.
+func (t TreeModel) RenderedCursorLine(width int) int {
+	rows := t.VisibleRows()
+	line := 0
+	for i, row := range rows {
+		if i == t.cursor {
+			return line
+		}
+		line += renderedRowLines(row, width)
+	}
+	return line
+}
+
+// renderedRowLines returns the number of output lines a single row occupies.
+func renderedRowLines(row Row, width int) int {
+	switch row.Kind {
+	case RowPhase:
+		n := 1 // phase header line
+		if len(row.Phase.Badges) > 0 {
+			for _, b := range row.Phase.Badges {
+				if tui.BadgeString(b) != "" {
+					n++ // badge line
+					break
+				}
+			}
+		}
+		return n
+
+	case RowPlan:
+		icon := tui.StatusIcon(row.Plan.Status)
+		nowWidth := 0
+		if row.Plan.IsActive {
+			nowWidth = lipgloss.Width(" " + tui.NowMarkerStyle.Render("← now"))
+		}
+		const connectorWidth = 8 // "    ├── " or "    └── " = 8 cells
+		prefixWidth := connectorWidth + lipgloss.Width(icon) + 1
+		wrapWidth := width - prefixWidth - nowWidth
+		if wrapWidth < 1 {
+			wrapWidth = 1
+		}
+		parts := tui.WordWrap(row.Plan.Title, wrapWidth)
+		return len(parts)
+	}
+	return 1
 }

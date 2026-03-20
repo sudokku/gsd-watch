@@ -291,9 +291,9 @@ func TestViewBadges(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
 	out := m.View(80)
-	// Phase 1 has badges "discussed" (📝) and "researched" (🔬)
-	if !strings.Contains(out, "📝") {
-		t.Errorf("View output missing badge 📝\nOutput:\n%s", out)
+	// Phase 1 has badges "discussed" (💬) and "researched" (🔬)
+	if !strings.Contains(out, "💬") {
+		t.Errorf("View output missing badge 💬\nOutput:\n%s", out)
 	}
 	if !strings.Contains(out, "🔬") {
 		t.Errorf("View output missing badge 🔬\nOutput:\n%s", out)

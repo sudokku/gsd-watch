@@ -94,13 +94,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Delegate navigation keys to tree.
 		var cmd tea.Cmd
 		m.tree, cmd = m.tree.Update(msg)
-		// Sync viewport content after tree state change.
+		// Sync viewport content and scroll to keep cursor visible.
 		m.viewport.SetContent(m.tree.View(m.width))
+		cursorLine := m.tree.RenderedCursorLine(m.width)
+		if cursorLine < m.viewport.YOffset {
+			m.viewport.SetYOffset(cursorLine)
+		} else if cursorLine >= m.viewport.YOffset+m.viewport.Height {
+			m.viewport.SetYOffset(cursorLine - m.viewport.Height + 1)
+		}
 		return m, cmd
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.footer = m.footer.SetWidth(msg.Width)
 		headerH := m.header.Height()
 		footerH := m.footer.Height()
 		vpHeight := max(msg.Height-headerH-footerH, 0)
@@ -115,6 +122,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tree = m.tree.SetData(msg.Project)
 		m.header = m.header.SetData(msg.Project)
 		m.footer = m.footer.SetData(msg.Project)
+		// Recalculate viewport height: footer height may change if currentAction wraps.
+		if m.ready {
+			vpHeight := max(m.height-m.header.Height()-m.footer.Height(), 0)
+			m.viewport.Height = vpHeight
+		}
 		m.viewport.SetContent(m.tree.View(m.width))
 		return m, nil
 

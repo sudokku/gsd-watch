@@ -152,8 +152,10 @@ Plan: 1 of 2
 	if after.CurrentAction != "Phase 2 plan 2 complete" {
 		t.Errorf("CurrentAction: got %q, want %q", after.CurrentAction, "Phase 2 plan 2 complete")
 	}
-	if after.ProgressPercent != 0.5 {
-		t.Errorf("ProgressPercent: got %v, want 0.5", after.ProgressPercent)
+	// ProgressPercent is now computed from phase completion, not STATE.md percent.
+	// Fixture has 1 phase with 1 in_progress plan → 0/1 complete → 0.0.
+	if after.ProgressPercent != 0.0 {
+		t.Errorf("ProgressPercent: got %v, want 0.0 (computed from phases, not STATE.md percent)", after.ProgressPercent)
 	}
 	// Phases should still be present (not wiped).
 	if len(after.Phases) == 0 {

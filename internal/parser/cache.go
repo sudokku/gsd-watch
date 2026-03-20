@@ -112,7 +112,6 @@ func (c *ProjectCache) updateFromState(path string) {
 	if c.data.CurrentAction == "" {
 		c.data.CurrentAction = "unknown"
 	}
-	c.data.ProgressPercent = float64(st.ProgressPercent) / 100.0
 
 	// Re-parse phases so active plan markers reflect the new STATE.md values.
 	phaseNames := parseRoadmap(filepath.Join(c.root, "ROADMAP.md"))
@@ -122,6 +121,17 @@ func (c *ProjectCache) updateFromState(path string) {
 		st.ActivePhase,
 		st.ActivePlan,
 	)
+
+	// Recompute progress from actual phase completion (mirrors ParseProject logic).
+	if len(c.data.Phases) > 0 {
+		var done int
+		for _, ph := range c.data.Phases {
+			if ph.Status == "complete" {
+				done++
+			}
+		}
+		c.data.ProgressPercent = float64(done) / float64(len(c.data.Phases))
+	}
 }
 
 // updateFromConfig re-parses config.json and updates ModelProfile and Mode.
