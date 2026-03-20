@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-03-20T00:26:22.863Z"
-last_activity: 2026-03-19 — Plan 01-04 complete
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-03-20T01:26:21.615Z"
+last_activity: 2026-03-20 — Plan 03-01 complete
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
-  percent: 25
+  total_plans: 10
+  completed_plans: 9
+  percent: 30
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 1 — Core TUI Scaffold
+**Current focus:** Phase 3 — File Watching
 
 ## Current Position
 
-Phase: 1 of 4 (Core TUI Scaffold)
-Plan: 4 of 4 in current phase (Phase 1 complete)
+Phase: 3 of 4 (File Watching)
+Plan: 1 of 3 in current phase (Plan 03-01 complete)
 Status: In progress
-Last activity: 2026-03-19 — Plan 01-04 complete
+Last activity: 2026-03-20 — Plan 03-01 complete
 
-Progress: [██░░░░░░░░] 25%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [██░░░░░░░░] 25%
 | Phase 02-live-data-layer P02 | 5 | 2 tasks | 10 files |
 | Phase 02-live-data-layer P03 | 5 | 2 tasks | 10 files |
 | Phase 02-live-data-layer P03 | 5 | 3 tasks | 13 files |
+| Phase 03-file-watching P01 | 8 | 1 task (TDD) | 4 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,9 @@ Recent decisions affecting current work:
 - [Phase 02-03]: header ProgressPercent reads STATE.md progress.percent (milestone-level), not computed from plan counts
 - [Phase 02-03]: app.Init() dispatches async ParseProject tea.Cmd from os.Getwd()/.planning
 - [Phase 02-03]: parsePhases includes roadmap stub phases for directories not yet created, sorted by phase number
+- [Phase 03-file-watching]: Update() routes on filepath.Base(path) not full path — avoids fragile full-path regex, stays correct regardless of .planning/ location
+- [Phase 03-file-watching]: STATE.md update triggers parsePhases re-call to refresh IsActive markers — active plan display must reflect new STATE.md active phase/plan values
+- [Phase 03-file-watching]: isBadgeFile checks suffix (ends-with) not exact match — badge filenames include phase prefix (e.g. 01-CONTEXT.md)
 
 ### Pending Todos
 
@@ -108,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T00:21:44.096Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-03-20T01:26:21.613Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None

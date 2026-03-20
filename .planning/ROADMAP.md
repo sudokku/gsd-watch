@@ -63,7 +63,7 @@ Plans:
   2. Creating a new phase directory causes it to appear in the tree on the next file change — the new directory is watched automatically
   3. Rapid consecutive saves (e.g. during execute-phase) produce exactly one re-parse, not a render storm
   4. Only the changed file is re-parsed on a watch event; the rest of the tree is served from cache, keeping re-render latency imperceptible even with 50+ PLAN.md files
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — Watcher package: fsnotify, WalkDir, debounce, dynamic dir add
@@ -91,5 +91,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Core TUI Scaffold | 4/4 | Complete   | 2026-03-19 |
 | 2. Live Data Layer | 3/3 | Complete   | 2026-03-20 |
-| 3. File Watching | 0/3 | Not started | - |
+| 3. File Watching | 2/3 | In Progress|  |
 | 4. Plugin & Delivery | 0/? | Not started | - |
