@@ -35,7 +35,7 @@
 - [x] **WATCH-02**: Newly created directories (e.g. new phase dir) are added to the watcher dynamically on fsnotify.Create events
 - [x] **WATCH-03**: File change events are debounced at 300ms — rapid writes during execute-phase produce a single re-parse, not a storm
 - [x] **WATCH-04**: On fsnotify event, only the changed file is re-parsed (incremental cache keyed by path + mtime); full re-parse only on startup
-- [ ] **WATCH-05**: TUI displays updated state within 300ms of any `.planning/` file change
+- [x] **WATCH-05**: TUI displays updated state within 300ms of any `.planning/` file change
 
 ### Plugin & Delivery
 
@@ -106,7 +106,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WATCH-02 | Phase 3 | Complete |
 | WATCH-03 | Phase 3 | Complete |
 | WATCH-04 | Phase 3 | Complete |
-| WATCH-05 | Phase 3 | Pending |
+| WATCH-05 | Phase 3 | Complete |
 | PLUGIN-01 | Phase 4 | Pending |
 | PLUGIN-02 | Phase 4 | Pending |
 | PLUGIN-03 | Phase 4 | Pending |

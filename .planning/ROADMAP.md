@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Core TUI Scaffold** - Bubble Tea root model, collapsible tree, header/footer, keyboard nav — static mock data (completed 2026-03-19)
 - [x] **Phase 2: Live Data Layer** - All parsers (PLAN.md, ROADMAP.md, STATE.md, config.json), phase lifecycle badges, wired to TUI (completed 2026-03-19)
-- [ ] **Phase 3: File Watching** - fsnotify recursive watcher, debounce, incremental cache, sub-300ms live updates
+- [x] **Phase 3: File Watching** - fsnotify recursive watcher, debounce, incremental cache, sub-300ms live updates (completed 2026-03-20)
 - [ ] **Phase 4: Plugin & Delivery** - Slash command, Stop hooks, Makefile, static binary, installable
 
 ## Phase Details
@@ -63,7 +63,7 @@ Plans:
   2. Creating a new phase directory causes it to appear in the tree on the next file change — the new directory is watched automatically
   3. Rapid consecutive saves (e.g. during execute-phase) produce exactly one re-parse, not a render storm
   4. Only the changed file is re-parsed on a watch event; the rest of the tree is served from cache, keeping re-render latency imperceptible even with 50+ PLAN.md files
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 03-01-PLAN.md — Watcher package: fsnotify, WalkDir, debounce, dynamic dir add
@@ -91,5 +91,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Core TUI Scaffold | 4/4 | Complete   | 2026-03-19 |
 | 2. Live Data Layer | 3/3 | Complete   | 2026-03-20 |
-| 3. File Watching | 2/3 | In Progress|  |
+| 3. File Watching | 3/3 | Complete   | 2026-03-20 |
 | 4. Plugin & Delivery | 0/? | Not started | - |

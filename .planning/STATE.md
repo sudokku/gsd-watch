@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-20T01:26:21.615Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-03-20T01:58:11.665Z"
 last_activity: 2026-03-20 — Plan 03-01 complete
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
   percent: 30
 ---
 
@@ -59,6 +59,8 @@ Progress: [███░░░░░░░] 30%
 | Phase 02-live-data-layer P03 | 5 | 2 tasks | 10 files |
 | Phase 02-live-data-layer P03 | 5 | 3 tasks | 13 files |
 | Phase 03-file-watching P01 | 8 | 1 task (TDD) | 4 files |
+| Phase 03-file-watching P03 | 4 | 1 tasks | 3 files |
+| Phase 03-file-watching P03 | 25 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -99,6 +101,12 @@ Recent decisions affecting current work:
 - [Phase 03-file-watching]: Update() routes on filepath.Base(path) not full path — avoids fragile full-path regex, stays correct regardless of .planning/ location
 - [Phase 03-file-watching]: STATE.md update triggers parsePhases re-call to refresh IsActive markers — active plan display must reflect new STATE.md active phase/plan values
 - [Phase 03-file-watching]: isBadgeFile checks suffix (ends-with) not exact match — badge filenames include phase prefix (e.g. 01-CONTEXT.md)
+- [Phase 03-03]: Watcher goroutine started from Init() not New() — Init() runs after Bubble Tea runtime is ready
+- [Phase 03-03]: waitForEvent re-armed via tea.Batch in FileChangedMsg handler — perpetuates event loop while async parse runs concurrently
+- [Phase 03-03]: Model starts with empty ProjectData; live data arrives via ParsedMsg from ParseFull() in Init() cmd — mock data removed
+- [Phase 03-03]: Watcher goroutine started from Init() not New() — Init() runs after Bubble Tea runtime is ready
+- [Phase 03-03]: waitForEvent re-armed via tea.Batch in FileChangedMsg handler — perpetuates event loop while async parse runs concurrently
+- [Phase 03-03]: Model starts with empty ProjectData; live data arrives via ParsedMsg from ParseFull() in Init() cmd — mock data removed
 
 ### Pending Todos
 
@@ -112,6 +120,16 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T01:26:21.613Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-03-20T01:58:11.662Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None
+# rapid-write 1
+# rapid-write 2
+# rapid-write 3
+# rapid-write 4
+# rapid-write 5
+# rapid-write 6
+# rapid-write 7
+# rapid-write 8
+# rapid-write 9
+# rapid-write 10
