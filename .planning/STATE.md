@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-03-20T09:18:25.582Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-20T13:47:59.902Z"
 last_activity: 2026-03-20 — Plan 03-01 complete
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 12
+  completed_plans: 11
   percent: 30
 ---
 
@@ -61,6 +61,7 @@ Progress: [███░░░░░░░] 30%
 | Phase 03-file-watching P01 | 8 | 1 task (TDD) | 4 files |
 | Phase 03-file-watching P03 | 4 | 1 tasks | 3 files |
 | Phase 03-file-watching P03 | 25 | 2 tasks | 3 files |
+| Phase 04-plugin-delivery P01 | 2 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,9 @@ Recent decisions affecting current work:
 - [Phase 03-03]: Watcher goroutine started from Init() not New() — Init() runs after Bubble Tea runtime is ready
 - [Phase 03-03]: waitForEvent re-armed via tea.Batch in FileChangedMsg handler — perpetuates event loop while async parse runs concurrently
 - [Phase 03-03]: Model starts with empty ProjectData; live data arrives via ParsedMsg from ParseFull() in Init() cmd — mock data removed
+- [Phase 04-01]: build/ directory added to .gitignore — binaries are generated output, not source-controlled
+- [Phase 04-01]: OSC 2 pane title set before tea.NewProgram — title available from process start before any Bubble Tea rendering
+- [Phase 04-01]: uname -m used in Makefile install for arch detection: arm64 maps to arm64 binary, x86_64 maps to amd64 binary
 
 ### Pending Todos
 
@@ -120,6 +124,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T01:58:11.662Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-03-20T13:47:59.898Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None

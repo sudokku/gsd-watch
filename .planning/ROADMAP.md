@@ -80,7 +80,11 @@ Plans:
   3. Running `/gsd-watch` a second time does not spawn a duplicate pane
   4. `make install && make plugin-install` completes without error and the binary is available at `~/.local/bin/gsd-watch`
   5. The installed binary is under 15MB, passes `file` as a static Mach-O, and runs on both darwin/arm64 and darwin/amd64
-**Plans**: TBD
+**Plans:** 1/2 plans executed
+
+Plans:
+- [ ] 04-01-PLAN.md — Makefile cross-compilation + main.go pane title
+- [ ] 04-02-PLAN.md — Slash command + end-to-end verification
 
 ## Progress
 
@@ -92,4 +96,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Core TUI Scaffold | 4/4 | Complete   | 2026-03-19 |
 | 2. Live Data Layer | 3/3 | Complete   | 2026-03-20 |
 | 3. File Watching | 3/3 | Complete   | 2026-03-20 |
-| 4. Plugin & Delivery | 0/? | Not started | - |
+| 4. Plugin & Delivery | 1/2 | In Progress|  |
