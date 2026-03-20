@@ -14,54 +14,76 @@ import (
 	"github.com/radu/gsd-watch/internal/tui"
 	"github.com/radu/gsd-watch/internal/tui/footer"
 	"github.com/radu/gsd-watch/internal/tui/header"
-	"github.com/radu/gsd-watch/internal/tui/mock"
 	"github.com/radu/gsd-watch/internal/tui/tree"
+	"github.com/radu/gsd-watch/internal/watcher"
 )
 
 // Model is the root Bubble Tea model that composes tree, header, footer, and viewport.
 // All sub-models are stored as value types following the Elm pattern.
 type Model struct {
-	tree     tree.TreeModel
-	header   header.HeaderModel
-	footer   footer.FooterModel
-	viewport viewport.Model
-	keys     tui.KeyMap
-	width    int
-	height   int
-	ready    bool // set to true after first WindowSizeMsg
+	tree         tree.TreeModel
+	header       header.HeaderModel
+	footer       footer.FooterModel
+	viewport     viewport.Model
+	keys         tui.KeyMap
+	width        int
+	height       int
+	ready        bool // set to true after first WindowSizeMsg
+	cache        *parser.ProjectCache // incremental cache backed by .planning/
+	events       chan tea.Msg          // watcher event channel
+	planningRoot string               // path to .planning/ dir
 }
 
-// New returns a Model initialized with mock project data.
-func New() Model {
-	data := mock.MockProject()
+// New returns a Model initialized with empty project data. Data arrives via
+// ParsedMsg dispatched from Init(). The events channel is created in main()
+// and passed here so the watcher goroutine and Bubble Tea runtime share it.
+func New(events chan tea.Msg) Model {
+	root, _ := os.Getwd()
+	planningRoot := filepath.Join(root, ".planning")
 	keys := tui.DefaultKeyMap()
-	t := tree.New().SetData(data)
-	h := header.New(data)
-	f := footer.New(data, keys)
+	t := tree.New()
+	h := header.New(parser.ProjectData{})
+	f := footer.New(parser.ProjectData{}, keys)
 	vp := viewport.New(0, 0)
 	return Model{
-		tree:     t,
-		header:   h,
-		footer:   f,
-		viewport: vp,
-		keys:     keys,
-		ready:    false,
+		tree:         t,
+		header:       h,
+		footer:       f,
+		viewport:     vp,
+		keys:         keys,
+		ready:        false,
+		events:       events,
+		planningRoot: planningRoot,
+		cache:        parser.NewCache(planningRoot),
 	}
 }
 
-// Init implements tea.Model. Dispatches an async parse command to load live .planning/ data.
+// waitForEvent returns a tea.Cmd that blocks until the next message arrives on
+// ch. It is returned from Init() and re-armed after every FileChangedMsg so
+// the event loop perpetuates indefinitely.
+func waitForEvent(ch chan tea.Msg) tea.Cmd {
+	return func() tea.Msg { return <-ch }
+}
+
+// Init implements tea.Model. Starts the watcher goroutine and dispatches both
+// an async full-parse cmd and a waitForEvent cmd so the loop is live from
+// the first frame.
 func (m Model) Init() tea.Cmd {
-	return func() tea.Msg {
-		root, err := os.Getwd()
-		if err != nil {
-			return tui.ParseErrorMsg{Err: err}
-		}
-		project := parser.ParseProject(filepath.Join(root, ".planning"))
-		return tui.ParsedMsg{Project: project}
-	}
+	// Start watcher goroutine (PROJECT.md decision: from Init(), not New()).
+	go watcher.Run(m.planningRoot, m.events)
+
+	cache := m.cache
+	return tea.Batch(
+		func() tea.Msg {
+			project := cache.ParseFull()
+			return tui.ParsedMsg{Project: project}
+		},
+		waitForEvent(m.events),
+	)
 }
 
-// Update implements tea.Model. Handles resize, quit, key delegation, and ParsedMsg.
+// Update implements tea.Model. Handles resize, quit, key delegation, ParsedMsg,
+// and FileChangedMsg.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -89,12 +111,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tui.ParsedMsg:
-		// Phase 2: live data comes through here.
+		// Live data flows here from both ParseFull (startup) and cache.Update (incremental).
 		m.tree = m.tree.SetData(msg.Project)
 		m.header = m.header.SetData(msg.Project)
 		m.footer = m.footer.SetData(msg.Project)
 		m.viewport.SetContent(m.tree.View(m.width))
 		return m, nil
+
+	case tui.FileChangedMsg:
+		path := msg.Path
+		cache := m.cache
+		return m, tea.Batch(
+			func() tea.Msg {
+				project := cache.Update(path)
+				return tui.ParsedMsg{Project: project}
+			},
+			waitForEvent(m.events),
+		)
 	}
 
 	// Let viewport handle its own messages (scroll, mouse, etc.).

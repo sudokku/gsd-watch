@@ -9,8 +9,9 @@ import (
 )
 
 func main() {
+	events := make(chan tea.Msg, 10)
 	p := tea.NewProgram(
-		app.New(),
+		app.New(events),
 		tea.WithAltScreen(),
 	)
 	if _, err := p.Run(); err != nil {

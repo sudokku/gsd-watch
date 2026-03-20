@@ -8,7 +8,9 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/radu/gsd-watch/internal/tui"
 	"github.com/radu/gsd-watch/internal/tui/app"
+	"github.com/radu/gsd-watch/internal/tui/mock"
 )
 
 // helper: call Update and cast back to app.Model
@@ -17,8 +19,14 @@ func updateModel(m app.Model, msg tea.Msg) (app.Model, tea.Cmd) {
 	return newModel.(app.Model), cmd
 }
 
+// newTestModel creates a Model with a buffered events channel for testing.
+// Tests never send to the channel, so it just needs to be non-nil.
+func newTestModel() app.Model {
+	return app.New(make(chan tea.Msg, 10))
+}
+
 func TestWindowSizeNormal(t *testing.T) {
-	m := app.New()
+	m := newTestModel()
 	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
 	// viewport height should be 24 - header(3) - footer(2) = 19
 	got := m.ViewportHeight()
@@ -28,7 +36,7 @@ func TestWindowSizeNormal(t *testing.T) {
 }
 
 func TestWindowSizeTiny(t *testing.T) {
-	m := app.New()
+	m := newTestModel()
 	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 3})
 	// 3 - 3 - 2 = -2; clamped to 0
 	got := m.ViewportHeight()
@@ -38,7 +46,7 @@ func TestWindowSizeTiny(t *testing.T) {
 }
 
 func TestWindowSizeNarrow(t *testing.T) {
-	m := app.New()
+	m := newTestModel()
 	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 10, Height: 24})
 	// Width should be stored; View handles "too narrow"
 	got := m.Width()
@@ -48,7 +56,7 @@ func TestWindowSizeNarrow(t *testing.T) {
 }
 
 func TestQuitQ(t *testing.T) {
-	m := app.New()
+	m := newTestModel()
 	_, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
 	if cmd == nil {
 		t.Fatal("expected quit command, got nil")
@@ -61,7 +69,7 @@ func TestQuitQ(t *testing.T) {
 }
 
 func TestQuitCtrlC(t *testing.T) {
-	m := app.New()
+	m := newTestModel()
 	_, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyCtrlC})
 	if cmd == nil {
 		t.Fatal("expected quit command, got nil")
@@ -73,7 +81,9 @@ func TestQuitCtrlC(t *testing.T) {
 }
 
 func TestKeyDelegationMovesTreeCursor(t *testing.T) {
-	m := app.New()
+	m := newTestModel()
+	// Inject project data via ParsedMsg (new live-data path) so tree has items to navigate.
+	m, _ = updateModel(m, tui.ParsedMsg{Project: mock.MockProject()})
 	// Must resize first to make model ready
 	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
 	cursorBefore := m.TreeCursor()
@@ -85,7 +95,9 @@ func TestKeyDelegationMovesTreeCursor(t *testing.T) {
 }
 
 func TestViewContainsHeaderAndFooter(t *testing.T) {
-	m := app.New()
+	m := newTestModel()
+	// Inject project data via ParsedMsg (new live-data path) so header has project name.
+	m, _ = updateModel(m, tui.ParsedMsg{Project: mock.MockProject()})
 	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
 	view := m.View()
 	if !strings.Contains(view, "gsd-watch") {
