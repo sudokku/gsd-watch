@@ -71,15 +71,17 @@ completed: 2026-03-20
 
 - **Duration:** 5 min
 - **Started:** 2026-03-19T23:24:07Z
-- **Completed:** 2026-03-20T00:28:00Z
-- **Tasks:** 2 completed (Task 3 is checkpoint awaiting visual verification)
-- **Files modified:** 10
+- **Completed:** 2026-03-20
+- **Tasks:** 3 completed (including human-verify checkpoint, plus 2 post-checkpoint bug fixes)
+- **Files modified:** 10 (+ 3 modified in post-checkpoint fixes)
 
 ## Accomplishments
 - Implemented `parsePhases()` directory walker with badge detection, SUMMARY.md override, phase status derivation, and active plan marking
 - Added `ProgressPercent float64` field to `ProjectData` — sourced from STATE.md progress.percent (0.0-1.0)
 - Created `ParseProject()` — the single public assembler that composes config, state, roadmap, and phase parsers
 - Wired live data into TUI: `app.Init()` dispatches async `ParseProject` command; header reads `ProgressPercent` from STATE.md
+- Visual verification approved: user confirmed TUI shows live .planning/ data correctly
+- Post-checkpoint: fixed header `SetData()` bug (was using `CompletionPercent()` instead of `ProgressPercent`) and added roadmap stub phases for unplanned future phases
 
 ## Task Commits
 
@@ -87,8 +89,8 @@ Each task was committed atomically:
 
 1. **Task 1: Add ProgressPercent field + phases.go directory walker + badge detection + SUMMARY.md override** - `483f974` (feat)
 2. **Task 2: ParseProject assembler + TUI wiring (app.Init + header ProgressPercent)** - `1d0b537` (feat)
-
-_Task 3 is a human-verify checkpoint (visual TUI verification) — no commit required._
+3. **Task 3: Visual verification checkpoint** - approved by user (no commit)
+4. **Post-checkpoint fixes: header SetData bug + roadmap stub phases** - `9582895` (fix)
 
 ## Files Created/Modified
 - `internal/parser/types.go` — Added ProgressPercent float64 field to ProjectData
@@ -101,6 +103,8 @@ _Task 3 is a human-verify checkpoint (visual TUI verification) — no commit req
 - `internal/tui/header/model.go` — SetData/New use data.ProgressPercent instead of CompletionPercent()
 - `internal/tui/header/model_test.go` — Updated progress bar tests to use ProgressPercent field directly
 - `internal/tui/app/model.go` — Init() dispatches async parser.ParseProject via tea.Cmd
+- `internal/parser/phases.go` — (post-checkpoint) roadmap stub phases + extractPhaseNum helper + re-sort by phase number
+- `internal/parser/parser_test.go` — (post-checkpoint) updated to expect 4 phases (2 dirs + 2 roadmap stubs)
 
 ## Decisions Made
 - `parsePhases` walks the filesystem as primary source of truth (PARSE-07) — phase list is not config-driven
@@ -122,13 +126,29 @@ _Task 3 is a human-verify checkpoint (visual TUI verification) — no commit req
 - **Verification:** go test ./internal/tui/header/ passes
 - **Committed in:** 1d0b537 (Task 2 commit)
 
+**2. [Rule 1 - Bug] header/model.go SetData() used CompletionPercent() instead of ProgressPercent**
+- **Found during:** Post-checkpoint (visual verification revealed header progress not reflecting STATE.md value)
+- **Issue:** SetData() still called `data.CompletionPercent()` — the fix in Task 2 was only applied to `New()`
+- **Fix:** Changed `h.completion = data.CompletionPercent()` to `h.completion = data.ProgressPercent` in SetData()
+- **Files modified:** `internal/tui/header/model.go`
+- **Verification:** `go test ./internal/tui/header/ -count=1` passes
+- **Committed in:** `9582895`
+
+**3. [Rule 2 - Missing Critical] phases.go did not include roadmap stub phases for unplanned future phases**
+- **Found during:** Post-checkpoint (TUI only showed 2 of 4 planned phases)
+- **Issue:** Phase list only contained directories; phases 3 and 4 from ROADMAP.md were invisible in TUI
+- **Fix:** After directory walk, appended stub Phase entries for phaseNames entries not in seenPhaseNums, then re-sorted all phases by extractPhaseNum
+- **Files modified:** `internal/parser/phases.go`, `internal/parser/parser_test.go`
+- **Verification:** `go test ./internal/parser/ -count=1` passes (updated expectation: 4 phases)
+- **Committed in:** `9582895`
+
 ---
 
-**Total deviations:** 1 auto-fixed (Rule 2 - correctness)
-**Impact on plan:** Test update was required for correctness after header API change. No scope creep.
+**Total deviations:** 3 auto-fixed (1 Rule 2 during Task 2, 1 Rule 1 post-checkpoint, 1 Rule 2 post-checkpoint)
+**Impact on plan:** All fixes necessary for correctness and complete TUI display. No scope creep.
 
 ## Issues Encountered
-None — plan executed as specified with one test update required by the ProgressPercent API change.
+None during planned tasks. Two bugs discovered post-checkpoint during visual verification and fixed immediately.
 
 ## User Setup Required
 None - no external service configuration required.
@@ -149,6 +169,7 @@ None - no external service configuration required.
 - .planning/phases/02-live-data-layer/02-03-SUMMARY.md: FOUND
 - commit 483f974: FOUND
 - commit 1d0b537: FOUND
+- commit 9582895: FOUND (post-checkpoint fixes)
 
 ---
 *Phase: 02-live-data-layer*
