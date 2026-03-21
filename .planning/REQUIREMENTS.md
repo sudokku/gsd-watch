@@ -39,9 +39,9 @@
 
 ### Plugin & Delivery
 
-- [ ] **PLUGIN-01**: `/gsd-watch` slash command spawns a tmux split pane (35% width, right side) running the gsd-watch binary
-- [ ] **PLUGIN-02**: Slash command detects if running inside tmux (`$TMUX`); if not, prints instructions to start tmux manually rather than attempting to wrap the session
-- [ ] **PLUGIN-03**: Slash command detects if gsd-watch is already running (socket or pane title check) and avoids spawning a duplicate
+- [x] **PLUGIN-01**: `/gsd-watch` slash command spawns a tmux split pane (35% width, right side) running the gsd-watch binary
+- [x] **PLUGIN-02**: Slash command detects if running inside tmux (`$TMUX`); if not, prints instructions to start tmux manually rather than attempting to wrap the session
+- [x] **PLUGIN-03**: Slash command detects if gsd-watch is already running (socket or pane title check) and avoids spawning a duplicate
 - [x] **PLUGIN-04**: Go binary compiles with `CGO_ENABLED=0` to a static binary under 15MB with no runtime dependencies except tmux
 - [x] **PLUGIN-05**: Makefile provides `build` (darwin/arm64), `install` (→ ~/.local/bin/), `plugin-install` (→ Claude Code commands dir), `all`, and `clean` targets
 - [x] **PLUGIN-06**: Makefile also builds `darwin/amd64` target for Intel Mac friends
@@ -107,9 +107,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WATCH-03 | Phase 3 | Complete |
 | WATCH-04 | Phase 3 | Complete |
 | WATCH-05 | Phase 3 | Complete |
-| PLUGIN-01 | Phase 4 | Pending |
-| PLUGIN-02 | Phase 4 | Pending |
-| PLUGIN-03 | Phase 4 | Pending |
+| PLUGIN-01 | Phase 4 | Complete |
+| PLUGIN-02 | Phase 4 | Complete |
+| PLUGIN-03 | Phase 4 | Complete |
 | PLUGIN-04 | Phase 4 | Complete |
 | PLUGIN-05 | Phase 4 | Complete |
 | PLUGIN-06 | Phase 4 | Complete |

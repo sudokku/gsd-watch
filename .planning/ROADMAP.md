@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Core TUI Scaffold** - Bubble Tea root model, collapsible tree, header/footer, keyboard nav — static mock data (completed 2026-03-19)
 - [x] **Phase 2: Live Data Layer** - All parsers (PLAN.md, ROADMAP.md, STATE.md, config.json), phase lifecycle badges, wired to TUI (completed 2026-03-19)
 - [x] **Phase 3: File Watching** - fsnotify recursive watcher, debounce, incremental cache, sub-300ms live updates (completed 2026-03-20)
-- [ ] **Phase 4: Plugin & Delivery** - Slash command, Stop hooks, Makefile, static binary, installable
+- [x] **Phase 4: Plugin & Delivery** - Slash command, Stop hooks, Makefile, static binary, installable (completed 2026-03-21)
 
 ## Phase Details
 
@@ -80,11 +80,11 @@ Plans:
   3. Running `/gsd-watch` a second time does not spawn a duplicate pane
   4. `make install && make plugin-install` completes without error and the binary is available at `~/.local/bin/gsd-watch`
   5. The installed binary is under 15MB, passes `file` as a static Mach-O, and runs on both darwin/arm64 and darwin/amd64
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 04-01-PLAN.md — Makefile cross-compilation + main.go pane title
-- [ ] 04-02-PLAN.md — Slash command + end-to-end verification
+- [x] 04-01-PLAN.md — Makefile cross-compilation + main.go pane title
+- [x] 04-02-PLAN.md — Slash command + end-to-end verification
 
 ## Progress
 
@@ -96,4 +96,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Core TUI Scaffold | 4/4 | Complete   | 2026-03-19 |
 | 2. Live Data Layer | 3/3 | Complete   | 2026-03-20 |
 | 3. File Watching | 3/3 | Complete   | 2026-03-20 |
-| 4. Plugin & Delivery | 1/2 | In Progress|  |
+| 4. Plugin & Delivery | 2/2 | Complete   | 2026-03-21 |

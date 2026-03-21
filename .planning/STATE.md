@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-20T13:47:59.902Z"
-last_activity: 2026-03-20 — Plan 03-01 complete
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-03-21T01:59:05.028Z"
+last_activity: 2026-03-21
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
   percent: 30
 ---
 
@@ -26,15 +26,16 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 3 of 4 (File Watching)
-Plan: 1 of 3 in current phase (Plan 03-01 complete)
+Plan: 2 of 3 in current phase (Plan 03-01 complete)
 Status: In progress
-Last activity: 2026-03-20 — Plan 03-01 complete
+Last activity: 2026-03-21
 
 Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 1
 - Average duration: 6 min
 - Total execution time: 0.1 hours
@@ -46,6 +47,7 @@ Progress: [███░░░░░░░] 30%
 | 01-core-tui-scaffold | 1/4 | 6 min | 6 min |
 
 **Recent Trend:**
+
 - Last 5 plans: 01-01 (6 min)
 - Trend: -
 
@@ -62,6 +64,7 @@ Progress: [███░░░░░░░] 30%
 | Phase 03-file-watching P03 | 4 | 1 tasks | 3 files |
 | Phase 03-file-watching P03 | 25 | 2 tasks | 3 files |
 | Phase 04-plugin-delivery P01 | 2 | 1 tasks | 3 files |
+| Phase 04-plugin-delivery P02 | 5 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -111,6 +114,9 @@ Recent decisions affecting current work:
 - [Phase 04-01]: build/ directory added to .gitignore — binaries are generated output, not source-controlled
 - [Phase 04-01]: OSC 2 pane title set before tea.NewProgram — title available from process start before any Bubble Tea rendering
 - [Phase 04-01]: uname -m used in Makefile install for arch detection: arm64 maps to arm64 binary, x86_64 maps to amd64 binary
+- [Phase 04-plugin-delivery]: disable-model-invocation: true keeps slash command invocation instant — Claude runs Bash steps directly without composing prose
+- [Phase 04-plugin-delivery]: Duplicate detection keyed on pane_title matching gsd-watch:<project> set by OSC 2 in main.go (plan 01)
+- [Phase 04-plugin-delivery]: tmux split-window -d flag keeps focus on original pane after spawning sidebar so developer workflow is uninterrupted
 
 ### Pending Todos
 
@@ -124,6 +130,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T13:47:59.898Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-21T01:59:05.025Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
