@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-03-21T05:23:18.987Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-03-21T11:57:37.794Z"
 progress:
-  total_phases: 5
+  total_phases: 7
   completed_phases: 5
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 17
+  completed_plans: 16
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 05 — tui-polish
+**Current focus:** Phase 06 — onboarding-docs-ux
 
 ## Current Position
 
-Phase: 05
-Plan: Not started
+Phase: 06 (onboarding-docs-ux) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Plan: Not started
 | Phase 05-tui-polish P02 | 3 | 1 tasks | 4 files |
 | Phase 05-tui-polish P01 | 5 | 2 tasks | 7 files |
 | Phase 05-tui-polish P03 | 15 | 2 tasks | 2 files |
+| Phase 06-onboarding-docs-ux P02 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,8 @@ Recent decisions affecting current work:
 - [Phase 05-03]: [05-03] helpView() is a package-level function taking width — keeps View() readable and avoids accessing model state in render path
 - [Phase 05-03]: [05-03] quitPending reset on every non-quit key — simpler than a timeout, matches expected UX for CLI tools
 - [Phase 05-03]: [05-03] Help overlay captures all keys except Ctrl+C — q single-press closes overlay without entering double-quit flow
+- [Phase 06-02]: README audience is GSD+Claude Code users — GSD framework not explained
+- [Phase 06-02]: Demo section uses placeholder image tag with vhs/ttyrec comment for future recording
 
 ### Roadmap Evolution
 
@@ -139,6 +142,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T05:20:49.167Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-03-21T11:57:37.791Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
