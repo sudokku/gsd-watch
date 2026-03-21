@@ -83,7 +83,9 @@ Press `?` at any time to open the help overlay, which shows keybindings and badg
 |-------|---------|
 | 💬 | Discussed |
 | 🔎 | Researched |
+| 🎨 | UI Spec |
 | 📋 | Planned |
+| 🚀 | Executed |
 | ✅ | Verified |
 | 🧪 | UAT |
 

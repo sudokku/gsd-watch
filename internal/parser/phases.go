@@ -54,6 +54,9 @@ func parsePhases(phasesDir string, phaseNames map[int]string, activePhase, activ
 			continue
 		}
 		phaseNum, _ := strconv.Atoi(m[1])
+		if seenPhaseNums[phaseNum] {
+			continue
+		}
 		seenPhaseNums[phaseNum] = true
 		phaseDir := filepath.Join(phasesDir, entry.Name())
 

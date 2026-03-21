@@ -243,7 +243,9 @@ esc  quit gsd-watch
 Phase stages
 💬  discussed
 🔎  researched
+🎨  ui spec
 📋  planned
+🚀  executed
 ✅  verified
 🧪  UAT
 
