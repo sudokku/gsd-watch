@@ -29,7 +29,7 @@ Then stop. Do not continue to step 3.
 
 **Step 3 — Check for duplicate instance:**
 
-Run: `tmux list-panes -a -F '#{pane_current_command}'` to list the current command of all panes.
+Run: `tmux list-panes -s -F '#{pane_current_command}'` to list the current command of all panes in the current session.
 
 If any line from the output is exactly `gsd-watch`, print exactly:
 
