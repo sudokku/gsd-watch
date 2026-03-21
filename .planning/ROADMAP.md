@@ -111,7 +111,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -121,12 +121,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 4. Plugin & Delivery | 2/2 | Complete   | 2026-03-21 |
 | 5. TUI Polish | 3/3 | Complete   | 2026-03-21 |
 
-### Phase 6: Onboarding, documentation, and UX improvements
+### Phase 6: Onboarding, Documentation & UX Improvements
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Users can find, install, and understand gsd-watch from the GitHub README alone; the binary is self-explanatory via `--help`; and the TUI footer and help overlay are updated to surface the `?` keybinding and phase lifecycle badge meanings
+**Requirements**: DOC-01, DOC-02, DOC-03, UX-01, UX-02, UX-03
 **Depends on:** Phase 5
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 6 to break down)
+- [ ] 06-01-PLAN.md — TUI code edits (footer hint, help overlay phase stages, phase name wrapping) + binary --help and tmux detection
+- [ ] 06-02-PLAN.md — README.md with all required sections
