@@ -37,9 +37,12 @@ Then start a session: tmux new-session`)
 		os.Exit(1)
 	}
 
-	// Set tmux pane title for duplicate detection
+	// Set tmux pane title for duplicate detection.
+	// Deferred reset clears the window-level title on exit so the stale
+	// title does not block a future /gsd-watch invocation.
 	cwd, _ := os.Getwd()
 	fmt.Printf("\033]2;gsd-watch:%s\007", filepath.Base(cwd))
+	defer fmt.Printf("\033]2;\007")
 
 	events := make(chan tea.Msg, 10)
 	p := tea.NewProgram(

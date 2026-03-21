@@ -29,11 +29,9 @@ Then stop. Do not continue to step 3.
 
 **Step 3 — Check for duplicate instance:**
 
-Run: `basename "$PWD"` to get the project name.
+Run: `tmux list-panes -a -F '#{pane_current_command}'` to list the current command of all panes.
 
-Run: `tmux list-panes -a -F '#{pane_title}'` to list all pane titles in the current tmux session.
-
-If any line from the pane titles output matches `gsd-watch:<project-name>` (where `<project-name>` is the result of `basename "$PWD"`), print exactly:
+If any line from the output is exactly `gsd-watch`, print exactly:
 
 `gsd-watch is already running in this session. Use Ctrl+C in that pane to stop it first.`
 
