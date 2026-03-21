@@ -1,64 +1,74 @@
 # gsd-watch
 
-A read-only terminal sidebar that shows your GSD project state live in a tmux split pane. It renders a collapsible phase/plan tree with status icons, phase lifecycle badges, and automatic file-watching updates. Keyboard-navigable. The pane sits alongside Claude Code so you always know where you are in your project without switching context.
+> Live GSD project status sidebar for Claude Code — in your terminal, always visible.
 
-## Demo
+![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Built with Go](https://img.shields.io/badge/built%20with-Go-00ADD8)
 
-![gsd-watch demo](docs/demo.gif)
+<p align="center">
+  <img src="gsd-watch-demo.gif" alt="gsd-watch demo" width="800" />
+</p>
 
-<!-- Placeholder — record with: ttyrec or vhs (https://github.com/charmbracelet/vhs) -->
+A read-only tmux sidebar that renders your [GSD](https://github.com/anthropics/claude-code) project tree live — phases, plans, status icons, and lifecycle badges — updating within a second of any file change. Sits alongside Claude Code so you always know where you are without switching context.
 
-Sidebar updates live as GSD phases progress.
+---
 
-## Dependencies
+## Requirements
 
-tmux is the only dependency:
+- **macOS** (darwin/arm64 or darwin/amd64)
+- **tmux** — `brew install tmux`
+- **Claude Code** running inside a tmux session
+- **GSD v1** project with a `.planning/` directory
 
-```bash
-brew install tmux
-```
-
-macOS only — builds for darwin/arm64 and darwin/amd64.
+---
 
 ## Installation
 
+**Option A — Download binary (recommended, no Go required):**
+
 ```bash
-git clone https://github.com/radu/gsd-watch.git
+# Apple Silicon (M1/M2/M3/M4)
+curl -L https://github.com/sudokku/gsd-watch/releases/latest/download/gsd-watch-darwin-arm64 \
+  -o ~/.local/bin/gsd-watch && chmod +x ~/.local/bin/gsd-watch
+
+# Intel Mac
+curl -L https://github.com/sudokku/gsd-watch/releases/latest/download/gsd-watch-darwin-amd64 \
+  -o ~/.local/bin/gsd-watch && chmod +x ~/.local/bin/gsd-watch
+```
+
+Make sure `~/.local/bin` is on your `$PATH`. Add this to your shell profile if needed:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+**Option B — Build from source:**
+
+```bash
+git clone https://github.com/sudokku/gsd-watch.git
 cd gsd-watch
-make all
+make all   # builds + installs to ~/.local/bin/gsd-watch
 ```
 
-`make all` cross-compiles both architectures and copies the architecture-appropriate binary to `~/.local/bin/gsd-watch`. Make sure `~/.local/bin` is on your `$PATH`.
-
-Then install the Claude Code slash command:
+Then install the `/gsd-watch` slash command into Claude Code:
 
 ```bash
-# Available in all projects (recommended):
-make plugin-install-global
-
-# Or available in current project only:
-make plugin-install-local
+make plugin-install-global   # available in all projects (recommended)
+make plugin-install-local    # available in current project only
 ```
 
-`plugin-install-global` copies `commands/gsd-watch.md` to `~/.claude/commands/`. `plugin-install-local` copies it to `.claude/commands/` in your current project.
+---
 
-## Starting the sidebar
+## Usage
 
-Inside a Claude Code session that is running in tmux, run:
+Inside a Claude Code session running in tmux, run:
 
 ```
 /gsd-watch
 ```
 
-What happens:
-
-- **Inside tmux:** opens a 35%-width right-side split pane running `gsd-watch` from your current project directory. Focus stays on the original pane.
-- **Not in tmux:** prints a message asking you to start a tmux session first.
-- **Already running:** detects the existing pane by its title and tells you gsd-watch is already open — no duplicates.
-
-## Usage
-
-Switch between Claude Code and the gsd-watch pane using standard tmux pane navigation: `Ctrl+b` then an arrow key, or `Ctrl+b o` to cycle panes.
+This opens a 35%-width right-side pane running gsd-watch for your current project. Focus stays on the Claude Code pane. The sidebar updates automatically as GSD phases progress — no manual refresh needed.
 
 ### Keyboard shortcuts
 
@@ -68,44 +78,49 @@ Switch between Claude Code and the gsd-watch pane using standard tmux pane navig
 | `k` / `↑` | Move up |
 | `l` / `→` | Expand phase |
 | `h` / `←` | Collapse phase |
-| `e` | Expand all phases |
-| `w` | Collapse all phases |
-| `?` | Open help overlay |
-| `qq` | Quit |
-| `Esc Esc` | Quit |
-| `Ctrl+C` | Quit immediately |
-
-Press `?` at any time to open the help overlay, which shows keybindings and badge meanings inline.
+| `e` | Expand all |
+| `w` | Collapse all |
+| `?` | Help overlay |
+| `qq` / `Esc Esc` | Quit |
+| `Ctrl+C` | Force quit |
 
 ### Phase lifecycle badges
 
-| Badge | Meaning |
-|-------|---------|
-| 💬 | Discussed |
-| 🔎 | Researched |
-| 🎨 | UI Spec |
-| 📋 | Planned |
-| 🚀 | Executed |
-| ✅ | Verified |
-| 🧪 | UAT |
+Badges appear under each phase when the corresponding GSD lifecycle file exists in the phase directory:
 
-These appear under each phase in the tree when the corresponding lifecycle file (e.g. `01-CONTEXT.md`, `01-RESEARCH.md`) exists in the phase directory.
+| Badge | Stage | File |
+|-------|-------|------|
+| 💬 | Discussed | `NN-CONTEXT.md` |
+| 🔎 | Researched | `NN-RESEARCH.md` |
+| 🎨 | UI Spec | `NN-UI-SPEC.md` |
+| 📋 | Planned | `NN-01-PLAN.md` |
+| 🚀 | Executed | `NN-01-SUMMARY.md` |
+| ✅ | Verified | `NN-VERIFICATION.md` |
+| 🧪 | UAT | `NN-HUMAN-UAT.md` |
+
+---
+
+## How it works
+
+gsd-watch watches `.planning/` with fsnotify (recursive, debounced at 300ms) and re-renders on any file change. Claude Code's `Stop` hook signals the sidebar via a Unix socket for an immediate refresh at the end of each agent turn — so the tree is always current without polling.
+
+---
 
 ## Building
 
 ```bash
-make build    # compiles build/gsd-watch-arm64 and build/gsd-watch-amd64
-make install  # copies the arch-appropriate binary to ~/.local/bin/gsd-watch
-make clean    # removes the build/ directory
+make build    # build/gsd-watch-arm64 + build/gsd-watch-amd64
+make install  # copy arch-appropriate binary to ~/.local/bin
+make clean    # remove build/
 ```
 
-Written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea). No CGO dependencies — static binary, zero runtime dependencies except tmux.
+Static binary, no CGO, no runtime dependencies except tmux. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
+
+---
 
 ## Contributing
 
-This project is actively maintained and very much open to contributions. If you run into a bug, have a feature idea, or want to propose an improvement — open a GitHub issue. I'm genuinely interested in hearing how other GSD users are using the tool and what would make it better for their workflow.
-
-All input is welcome: bug reports, feature proposals, questions, or just a note that you're using it. Looking forward to it.
+Bugs, feature ideas, and workflow suggestions are all welcome — open a GitHub issue. Especially interested in hearing how other GSD users are using it and what would make it more useful day-to-day.
 
 ---
 
