@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/radu/gsd-watch/internal/parser"
 	tui "github.com/radu/gsd-watch/internal/tui"
 )
 
@@ -14,6 +15,21 @@ var highlightStyle = lipgloss.NewStyle().Bold(true)
 func (t TreeModel) View(width int) string {
 	if width < tui.MinWidth {
 		return "◀ too narrow"
+	}
+
+	// Empty state (D-01): no phases in project data.
+	if len(t.data.Phases) == 0 {
+		msg := "No GSD project found.\n\nTo get started, open\nClaude Code and run:\n/gsd:new-project"
+		centered := lipgloss.NewStyle().
+			Width(width - 2).
+			Align(lipgloss.Center).
+			Foreground(tui.ColorGray).
+			Render(msg)
+		var padded []string
+		for _, line := range strings.Split(centered, "\n") {
+			padded = append(padded, " "+line)
+		}
+		return strings.Join(padded, "\n")
 	}
 
 	rows := t.VisibleRows()
@@ -33,7 +49,12 @@ func (t TreeModel) View(width int) string {
 			if i == t.cursor {
 				name = highlightStyle.Render(name)
 			}
-			lines = append(lines, expandIndicator+icon+" "+name)
+			// D-03: dim completed phase header line.
+			phaseLine := expandIndicator + icon + " " + name
+			if row.Phase.Status == parser.StatusComplete {
+				phaseLine = tui.PendingStyle.Render(phaseLine)
+			}
+			lines = append(lines, phaseLine)
 
 			// Render badges on a separate line below the phase header.
 			if len(row.Phase.Badges) > 0 {
@@ -47,6 +68,11 @@ func (t TreeModel) View(width int) string {
 				if len(badgeParts) > 0 {
 					lines = append(lines, "    "+strings.Join(badgeParts, " "))
 				}
+			}
+
+			// D-02: show "(no plans yet)" for expanded phases with no plans.
+			if t.expanded[row.Phase.DirName] && len(row.Phase.Plans) == 0 {
+				lines = append(lines, "    "+tui.PendingStyle.Render("(no plans yet)"))
 			}
 
 		case RowPlan:
@@ -74,6 +100,9 @@ func (t TreeModel) View(width int) string {
 			continuation := strings.Repeat(" ", prefixWidth)
 			titleParts := tui.WordWrap(row.Plan.Title, wrapWidth)
 
+			// D-03: check if parent phase is complete for dimming plan rows.
+			parentPhase := t.data.Phases[row.PhaseIdx]
+
 			// Apply highlight to each text part individually so the icon's ANSI
 			// reset code on line 1 does not interfere with subsequent lines.
 			var itemLines []string
@@ -92,13 +121,22 @@ func (t TreeModel) View(width int) string {
 				} else {
 					l = continuation + text
 				}
+				// D-03: dim plan rows belonging to a completed phase.
+				if parentPhase.Status == parser.StatusComplete {
+					l = tui.PendingStyle.Render(l)
+				}
 				itemLines = append(itemLines, l)
 			}
 			lines = append(lines, strings.Join(itemLines, "\n"))
 		}
 	}
 
-	return strings.Join(lines, "\n")
+	// D-10: add 1-char left padding to every line.
+	var padded []string
+	for _, line := range strings.Split(strings.Join(lines, "\n"), "\n") {
+		padded = append(padded, " "+line)
+	}
+	return strings.Join(padded, "\n")
 }
 
 // RenderedCursorLine returns the line index (0-based) of the cursor row's
@@ -128,6 +166,10 @@ func renderedRowLines(row Row, width int) int {
 					break
 				}
 			}
+		}
+		// D-02: "(no plans yet)" placeholder line when expanded and no plans.
+		if row.Expanded && len(row.Phase.Plans) == 0 {
+			n++ // placeholder line
 		}
 		return n
 
