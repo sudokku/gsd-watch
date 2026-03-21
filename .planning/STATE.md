@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-03-21T11:57:37.794Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-21T11:58:51.218Z"
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 17
-  completed_plans: 16
+  completed_plans: 17
 ---
 
 # Project State
@@ -63,6 +63,7 @@ Plan: 2 of 2
 | Phase 05-tui-polish P01 | 5 | 2 tasks | 7 files |
 | Phase 05-tui-polish P03 | 15 | 2 tasks | 2 files |
 | Phase 06-onboarding-docs-ux P02 | 1 | 1 tasks | 1 files |
+| Phase 06-onboarding-docs-ux P01 | 2 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,7 @@ Recent decisions affecting current work:
 - [Phase 05-03]: [05-03] Help overlay captures all keys except Ctrl+C — q single-press closes overlay without entering double-quit flow
 - [Phase 06-02]: README audience is GSD+Claude Code users — GSD framework not explained
 - [Phase 06-02]: Demo section uses placeholder image tag with vhs/ttyrec comment for future recording
+- [Phase 06-01]: [06-01] Footer hint uses static string '? help' appended to existing hints; help overlay adds Phase stages with badge emojis; phase names word-wrap per-line with independent highlight/dim; --help uses flag stdlib; TMUX check uses os.Getenv
 
 ### Roadmap Evolution
 
@@ -142,6 +144,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T11:57:37.791Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-03-21T11:58:51.216Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
