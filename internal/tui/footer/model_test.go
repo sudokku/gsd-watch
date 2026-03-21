@@ -34,11 +34,11 @@ func TestFooterView_ContainsKeyHints(t *testing.T) {
 	data := mock.MockProject()
 	f := footer.New(data, tui.DefaultKeyMap())
 	out := f.View(80)
-	if !strings.Contains(out, "↑/k") {
-		t.Errorf("expected View(80) to contain key hint '↑/k', got:\n%s", out)
+	if !strings.Contains(out, "←h") {
+		t.Errorf("expected View(80) to contain nav hint '←h', got:\n%s", out)
 	}
-	if !strings.Contains(out, "q") {
-		t.Errorf("expected View(80) to contain key hint 'q', got:\n%s", out)
+	if !strings.Contains(out, "qq esc quit") {
+		t.Errorf("expected View(80) to contain 'qq esc quit', got:\n%s", out)
 	}
 }
 
@@ -52,8 +52,9 @@ func TestFooterView_TooNarrow(t *testing.T) {
 
 func TestFooterHeight(t *testing.T) {
 	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
-	if f.Height() != 2 {
-		t.Errorf("expected Height() to return 2, got %d", f.Height())
+	f = f.SetWidth(80)
+	if f.Height() != 3 {
+		t.Errorf("expected Height() to return 3, got %d", f.Height())
 	}
 }
 
@@ -73,5 +74,45 @@ func TestFooterSetData_UpdatesAction(t *testing.T) {
 	out := f.View(80)
 	if !strings.Contains(out, "Phase 2 — parsing files") {
 		t.Errorf("expected View(80) after SetData to contain new action, got:\n%s", out)
+	}
+}
+
+func TestFooter_RefreshIdle(t *testing.T) {
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	out := f.View(80)
+	if !strings.Contains(out, "↺") {
+		t.Errorf("expected idle refresh icon ↺, got:\n%s", out)
+	}
+}
+
+func TestFooter_RefreshFlash(t *testing.T) {
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	f = f.SetRefreshFlash(true)
+	out := f.View(80)
+	if !strings.Contains(out, "⟳") {
+		t.Errorf("expected flash refresh icon ⟳, got:\n%s", out)
+	}
+}
+
+func TestFooterHeight_ThreeLines(t *testing.T) {
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	f = f.SetWidth(80)
+	got := f.Height()
+	if got != 3 {
+		t.Errorf("expected Height() == 3 after redesign, got %d", got)
+	}
+}
+
+func TestFooterSetRefreshFlash(t *testing.T) {
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	f = f.SetRefreshFlash(true)
+	out1 := f.View(80)
+	if !strings.Contains(out1, "⟳") {
+		t.Errorf("expected flash icon after SetRefreshFlash(true)")
+	}
+	f = f.SetRefreshFlash(false)
+	out2 := f.View(80)
+	if !strings.Contains(out2, "↺") {
+		t.Errorf("expected idle icon after SetRefreshFlash(false)")
 	}
 }

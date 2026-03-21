@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Live Data Layer** - All parsers (PLAN.md, ROADMAP.md, STATE.md, config.json), phase lifecycle badges, wired to TUI (completed 2026-03-19)
 - [x] **Phase 3: File Watching** - fsnotify recursive watcher, debounce, incremental cache, sub-300ms live updates (completed 2026-03-20)
 - [x] **Phase 4: Plugin & Delivery** - Slash command, Stop hooks, Makefile, static binary, installable (completed 2026-03-21)
+- [ ] **Phase 5: TUI Polish** - Visual hierarchy improvements, empty-state handling, live refresh indicator, discoverability
 
 ## Phase Details
 
@@ -86,10 +87,31 @@ Plans:
 - [x] 04-01-PLAN.md — Makefile cross-compilation + main.go pane title
 - [x] 04-02-PLAN.md — Slash command + end-to-end verification
 
+### Phase 5: TUI Polish
+**Goal**: Users see a polished TUI with clear visual hierarchy, graceful empty states, and enough discoverability that a new user understands the tool within 30 seconds
+**Depends on**: Phase 4
+**Requirements**: D-01, D-02, D-03, D-04, D-05, D-06, D-07, D-08, D-09, D-10
+**Success Criteria** (what must be TRUE):
+  1. When no `.planning/` directory exists, tree shows a centered "No GSD project found" message in gray
+  2. Phases with no plans show "(no plans yet)" placeholder when expanded
+  3. Completed phases render in dimmed gray for both phase and plan rows
+  4. Footer shows a refresh icon that briefly flashes green on file change events
+  5. Single q/Esc does not quit; double-q or double-Esc quits; Ctrl+C always quits immediately
+  6. "?" opens a full-pane help overlay; single q/Esc dismisses it without quitting
+  7. "e" expands all phases; "w" collapses all phases
+  8. Footer displays two-line keybinding hints (navigation + actions)
+  9. All TUI content has 1-character left/right padding
+**Plans:** 3 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Foundation + tree polish (keys, messages, styles, empty states, dimming, padding)
+- [ ] 05-02-PLAN.md — Footer redesign (refresh indicator, two-line hints)
+- [ ] 05-03-PLAN.md — App model wiring (double-quit, help overlay, expand/collapse-all, refresh flash routing)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -97,3 +119,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Live Data Layer | 3/3 | Complete   | 2026-03-20 |
 | 3. File Watching | 3/3 | Complete   | 2026-03-20 |
 | 4. Plugin & Delivery | 2/2 | Complete   | 2026-03-21 |
+| 5. TUI Polish | 0/3 | Not started | - |
