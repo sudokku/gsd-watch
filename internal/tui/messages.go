@@ -24,3 +24,6 @@ type FileChangedMsg struct {
 // RefreshMsg is sent by the Unix socket listener to trigger a full re-parse.
 // Phase 3 will use this for the Stop hook signal from Claude Code.
 type RefreshMsg struct{}
+
+// RefreshFlashMsg is sent by a tea.Tick to clear the refresh flash indicator.
+type RefreshFlashMsg struct{}

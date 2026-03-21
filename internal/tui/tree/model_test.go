@@ -43,9 +43,9 @@ func TestSetDataAllCollapsed(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
 	rows := m.VisibleRows()
-	// 4 phases, all collapsed → 4 rows
-	if len(rows) != 4 {
-		t.Errorf("expected 4 rows (all phases collapsed), got %d", len(rows))
+	// 6 phases, all collapsed -> 6 rows
+	if len(rows) != 6 {
+		t.Errorf("expected 6 rows (all phases collapsed), got %d", len(rows))
 	}
 	for i, row := range rows {
 		if row.Kind != tree.RowPhase {
@@ -61,9 +61,9 @@ func TestExpandPhase(t *testing.T) {
 	// cursor is at row 0 (Phase 1); expand it
 	m = pressKey(t, m, "l")
 	rows := m.VisibleRows()
-	// Phase 1 has 4 plans → 4 phases + 4 plans = 8 rows
-	if len(rows) != 8 {
-		t.Errorf("expected 8 rows after expanding phase 1, got %d", len(rows))
+	// Phase 1 has 4 plans -> 6 phases + 4 plans = 10 rows
+	if len(rows) != 10 {
+		t.Errorf("expected 10 rows after expanding phase 1, got %d", len(rows))
 	}
 }
 
@@ -75,8 +75,8 @@ func TestCollapsePhase(t *testing.T) {
 	m = pressKey(t, m, "l")
 	m = pressKey(t, m, "h")
 	rows := m.VisibleRows()
-	if len(rows) != 4 {
-		t.Errorf("expected 4 rows after collapsing phase 1, got %d", len(rows))
+	if len(rows) != 6 {
+		t.Errorf("expected 6 rows after collapsing phase 1, got %d", len(rows))
 	}
 }
 
@@ -90,9 +90,9 @@ func TestExpandCollapsePreservesKeyedState(t *testing.T) {
 	// call SetData again with same data (simulates a refresh)
 	m = m.SetData(data)
 	rows := m.VisibleRows()
-	// Phase 1 should still be expanded → 8 rows
-	if len(rows) != 8 {
-		t.Errorf("expected 8 rows (expanded state preserved), got %d", len(rows))
+	// Phase 1 should still be expanded -> 6 phases + 4 plans = 10 rows
+	if len(rows) != 10 {
+		t.Errorf("expected 10 rows (expanded state preserved), got %d", len(rows))
 	}
 }
 
@@ -100,7 +100,7 @@ func TestExpandCollapsePreservesKeyedState(t *testing.T) {
 func TestCursorDownUp(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
-	// 4 collapsed phases; cursor starts at 0
+	// 6 collapsed phases; cursor starts at 0
 	m = pressKey(t, m, "j") // down
 	if m.Cursor() != 1 {
 		t.Errorf("expected cursor 1 after down, got %d", m.Cursor())
@@ -114,13 +114,15 @@ func TestCursorDownUp(t *testing.T) {
 	if m.Cursor() != 0 {
 		t.Errorf("expected cursor clamped at 0, got %d", m.Cursor())
 	}
-	// go to bottom (3) and try to go further
+	// go to bottom (5) and try to go further
 	m = pressKey(t, m, "j")
 	m = pressKey(t, m, "j")
 	m = pressKey(t, m, "j")
-	m = pressKey(t, m, "j") // clamp at 3
-	if m.Cursor() != 3 {
-		t.Errorf("expected cursor clamped at 3, got %d", m.Cursor())
+	m = pressKey(t, m, "j")
+	m = pressKey(t, m, "j")
+	m = pressKey(t, m, "j") // clamp at 5
+	if m.Cursor() != 5 {
+		t.Errorf("expected cursor clamped at 5, got %d", m.Cursor())
 	}
 }
 
@@ -143,8 +145,8 @@ func TestCursorJumpOnCollapse(t *testing.T) {
 		t.Errorf("expected cursor to jump to phase row 0, got %d", m.Cursor())
 	}
 	rows := m.VisibleRows()
-	if len(rows) != 4 {
-		t.Errorf("expected 4 rows after collapse, got %d", len(rows))
+	if len(rows) != 6 {
+		t.Errorf("expected 6 rows after collapse, got %d", len(rows))
 	}
 }
 
@@ -162,11 +164,7 @@ func TestCollapseNoJumpWhenCursorNotOnChild(t *testing.T) {
 	if m.Cursor() != 5 {
 		t.Fatalf("expected cursor at 5 (Phase 2 row), got %d", m.Cursor())
 	}
-	// now collapse phase 1 by pressing "h" on a phase row
-	// cursor is at row 5 which is Phase 2 — pressing "h" collapses Phase 2 (no-op since it's already collapsed)
-	// instead let's move cursor back to phase 1 row, then collapse from there but cursor is on phase 2
-	// The test scenario: cursor is on phase 2 row, collapse phase 1 via SetData trick is complex.
-	// Simpler: cursor on phase 1 row, not a child plan → cursor stays on phase 1 row.
+	// Simpler: cursor on phase 1 row, not a child plan -> cursor stays on phase 1 row.
 	m2 := tree.New().SetData(data)
 	m2 = pressKey(t, m2, "l") // expand phase 1, cursor at 0 (phase 1 row)
 	// collapse phase 1 from phase row (cursor at 0 = phase 1 row)
@@ -183,8 +181,8 @@ func TestExpandAlreadyExpanded(t *testing.T) {
 	m = pressKey(t, m, "l") // expand
 	m = pressKey(t, m, "l") // expand again (no-op)
 	rows := m.VisibleRows()
-	if len(rows) != 8 {
-		t.Errorf("expected 8 rows (double expand is no-op), got %d", len(rows))
+	if len(rows) != 10 {
+		t.Errorf("expected 10 rows (double expand is no-op), got %d", len(rows))
 	}
 }
 
@@ -202,19 +200,18 @@ func TestExpandOnPlanRow(t *testing.T) {
 	}
 }
 
-// TestVisibleRowsWith4Collapsed verifies exactly 4 rows with all phases collapsed.
+// TestVisibleRowsWith4Collapsed verifies exactly 6 rows with all phases collapsed.
 func TestVisibleRowsWith4Collapsed(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
 	rows := m.VisibleRows()
-	if len(rows) != 4 {
-		t.Errorf("expected 4 rows (4 phases collapsed), got %d", len(rows))
+	if len(rows) != 6 {
+		t.Errorf("expected 6 rows (6 phases collapsed), got %d", len(rows))
 	}
 }
 
-// TestVisibleRowsWithPhase1Expanded verifies 7 rows when phase 1 (3 plans) expanded.
-// Note: mock phase 1 has 4 plans; the plan says phase with 3 plans → 4+3=7.
-// We'll use phase 2 which has 3 plans.
+// TestVisibleRowsWithPhase1Expanded verifies 9 rows when phase 2 (3 plans) is expanded.
+// Mock phase 2 has 3 plans; 6 phases + 3 plans = 9 rows.
 func TestVisibleRowsWithPhase1Expanded(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
@@ -222,9 +219,9 @@ func TestVisibleRowsWithPhase1Expanded(t *testing.T) {
 	m = pressKey(t, m, "j") // cursor at row 1 (Phase 2)
 	m = pressKey(t, m, "l") // expand Phase 2
 	rows := m.VisibleRows()
-	// 4 phases + 3 plans from phase 2 = 7 rows
-	if len(rows) != 7 {
-		t.Errorf("expected 7 rows (4 phases + 3 plans from phase 2), got %d", len(rows))
+	// 6 phases + 3 plans from phase 2 = 9 rows
+	if len(rows) != 9 {
+		t.Errorf("expected 9 rows (6 phases + 3 plans from phase 2), got %d", len(rows))
 	}
 }
 
@@ -265,9 +262,9 @@ func TestViewStatusIcons(t *testing.T) {
 	m := tree.New().SetData(data)
 	m = pressKey(t, m, "l") // expand phase 1
 	out := m.View(80)
-	// phase 1 status is "in_progress" → ▶ icon
-	// plan 0 status is "complete" → ✓ icon
-	// plan 2 status is "pending" → ○ icon
+	// phase 1 status is "in_progress" -> arrow icon
+	// plan 0 status is "complete" -> check icon
+	// plan 2 status is "pending" -> circle icon
 	for _, icon := range []string{"▶", "✓", "○"} {
 		if !strings.Contains(out, icon) {
 			t.Errorf("View output missing icon %q\nOutput:\n%s", icon, out)
@@ -275,7 +272,7 @@ func TestViewStatusIcons(t *testing.T) {
 	}
 }
 
-// TestViewActiveMarker verifies the "← now" marker appears on the active plan.
+// TestViewActiveMarker verifies the "now" marker appears on the active plan.
 func TestViewActiveMarker(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
@@ -291,7 +288,7 @@ func TestViewBadges(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
 	out := m.View(80)
-	// Phase 1 has badges "discussed" (💬) and "researched" (🔬)
+	// Phase 1 has badges "discussed" and "researched"
 	if !strings.Contains(out, "💬") {
 		t.Errorf("View output missing badge 💬\nOutput:\n%s", out)
 	}

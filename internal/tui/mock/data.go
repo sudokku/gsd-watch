@@ -60,6 +60,23 @@ func MockProject() parser.ProjectData {
 					{Filename: "04-02-PLAN.md", Title: "Static binary + install", Status: "pending"},
 				},
 			},
+			{
+				DirName: "05-tui-polish",
+				Name:    "Phase 5: TUI Polish",
+				Status:  "complete",
+				Badges:  []string{"discussed", "researched", "verified"},
+				Plans: []parser.Plan{
+					{Filename: "05-01-PLAN.md", Title: "Tree + footer polish", Status: "complete"},
+					{Filename: "05-02-PLAN.md", Title: "App model wiring", Status: "complete"},
+				},
+			},
+			{
+				DirName: "06-future",
+				Name:    "Phase 6: Future Work",
+				Status:  "pending",
+				Badges:  nil,
+				Plans:   nil,
+			},
 		},
 	}
 }

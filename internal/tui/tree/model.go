@@ -22,6 +22,7 @@ type Row struct {
 	Phase    parser.Phase // populated for RowPhase rows
 	Plan     parser.Plan  // populated for RowPlan rows
 	PhaseIdx int          // index into data.Phases (for both row types)
+	Expanded bool         // true when this phase row is currently expanded
 }
 
 // TreeModel manages collapsible tree state: data, expanded map, and cursor.
@@ -53,13 +54,15 @@ func (t TreeModel) SetData(d parser.ProjectData) TreeModel {
 func (t TreeModel) visibleRows() []Row {
 	var rows []Row
 	for i, phase := range t.data.Phases {
+		expanded := t.expanded[phase.DirName]
 		rows = append(rows, Row{
 			Key:      phase.DirName,
 			Kind:     RowPhase,
 			Phase:    phase,
 			PhaseIdx: i,
+			Expanded: expanded,
 		})
-		if t.expanded[phase.DirName] {
+		if expanded {
 			for _, plan := range phase.Plans {
 				rows = append(rows, Row{
 					Key:      plan.Filename,
@@ -71,6 +74,21 @@ func (t TreeModel) visibleRows() []Row {
 		}
 	}
 	return rows
+}
+
+// ExpandAll returns a TreeModel with all phases expanded.
+func (t TreeModel) ExpandAll() TreeModel {
+	for _, phase := range t.data.Phases {
+		t.expanded[phase.DirName] = true
+	}
+	return t
+}
+
+// CollapseAll returns a TreeModel with all phases collapsed and cursor reset to 0.
+func (t TreeModel) CollapseAll() TreeModel {
+	t.expanded = make(map[string]bool)
+	t.cursor = 0
+	return t
 }
 
 // VisibleRows is the public version of visibleRows.
@@ -108,6 +126,12 @@ func (t TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 			t.expanded[row.Phase.DirName] = true
 		}
 		// no-op for RowPlan
+
+	case key.Matches(keyMsg, t.keys.ExpandAll):
+		return t.ExpandAll(), nil
+
+	case key.Matches(keyMsg, t.keys.CollapseAll):
+		return t.CollapseAll(), nil
 
 	case key.Matches(keyMsg, t.keys.Collapse):
 		row := rows[t.cursor]
