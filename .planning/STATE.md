@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-03-21T01:59:05.028Z"
-last_activity: 2026-03-21
+status: unknown
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-21T03:22:07.294Z"
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 4
-  total_plans: 12
-  completed_plans: 12
-  percent: 30
+  total_plans: 15
+  completed_plans: 13
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 3 — File Watching
+**Current focus:** Phase 05 — tui-polish
 
 ## Current Position
 
-Phase: 3 of 4 (File Watching)
-Plan: 2 of 3 in current phase (Plan 03-01 complete)
-Status: In progress
-Last activity: 2026-03-21
-
-Progress: [███░░░░░░░] 30%
+Phase: 05 (tui-polish) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -65,6 +59,7 @@ Progress: [███░░░░░░░] 30%
 | Phase 03-file-watching P03 | 25 | 2 tasks | 3 files |
 | Phase 04-plugin-delivery P01 | 2 | 1 tasks | 3 files |
 | Phase 04-plugin-delivery P02 | 5 | 2 tasks | 1 files |
+| Phase 05-tui-polish P02 | 3 | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -117,6 +112,8 @@ Recent decisions affecting current work:
 - [Phase 04-plugin-delivery]: disable-model-invocation: true keeps slash command invocation instant — Claude runs Bash steps directly without composing prose
 - [Phase 04-plugin-delivery]: Duplicate detection keyed on pane_title matching gsd-watch:<project> set by OSC 2 in main.go (plan 01)
 - [Phase 04-plugin-delivery]: tmux split-window -d flag keeps focus on original pane after spawning sidebar so developer workflow is uninterrupted
+- [Phase 05-02]: [05-02] Footer two-line hints use static strings not KeyMap.ShortHelp() for layout control
+- [Phase 05-02]: [05-02] Footer Height() default changed from 2 to 3 to match two-hint-line layout
 
 ### Pending Todos
 
@@ -130,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T01:59:05.025Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-03-21T03:22:07.292Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None

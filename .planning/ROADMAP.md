@@ -101,11 +101,11 @@ Plans:
   7. "e" expands all phases; "w" collapses all phases
   8. Footer displays two-line keybinding hints (navigation + actions)
   9. All TUI content has 1-character left/right padding
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 05-01-PLAN.md — Foundation + tree polish (keys, messages, styles, empty states, dimming, padding)
-- [ ] 05-02-PLAN.md — Footer redesign (refresh indicator, two-line hints)
+- [x] 05-02-PLAN.md — Footer redesign (refresh indicator, two-line hints)
 - [ ] 05-03-PLAN.md — App model wiring (double-quit, help overlay, expand/collapse-all, refresh flash routing)
 
 ## Progress
@@ -119,4 +119,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Live Data Layer | 3/3 | Complete   | 2026-03-20 |
 | 3. File Watching | 3/3 | Complete   | 2026-03-20 |
 | 4. Plugin & Delivery | 2/2 | Complete   | 2026-03-21 |
-| 5. TUI Polish | 0/3 | Not started | - |
+| 5. TUI Polish | 1/3 | In Progress|  |
