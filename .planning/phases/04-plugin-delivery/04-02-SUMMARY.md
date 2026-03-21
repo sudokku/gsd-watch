@@ -107,6 +107,13 @@ Phase 4 is now complete. All four phases of gsd-watch are done:
 
 The project is at v1.0. Users can `make all` and `make plugin-install-global`, then invoke `/gsd-watch` from any Claude Code tmux session to get a live project sidebar.
 
+## Self-Check: PASSED
+
+- `commands/gsd-watch.md` — FOUND
+- `.planning/phases/04-plugin-delivery/04-02-SUMMARY.md` — FOUND
+- commit `cead598` (Task 1: slash command) — FOUND
+- commit `99155d2` (docs: plan complete) — FOUND
+
 ---
 *Phase: 04-plugin-delivery*
 *Completed: 2026-03-21*
