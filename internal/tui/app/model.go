@@ -104,16 +104,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Double-quit state machine (D-06).
+		// Double-quit with 1.5s confirm window (D-06).
+		// First press: show confirmation prompt and start timeout.
+		// Second press within window: quit. Timeout or any other key: reset.
 		if msg.String() == "q" || msg.Type == tea.KeyEscape {
 			if m.quitPending {
 				return m, tea.Quit
 			}
 			m.quitPending = true
-			return m, nil
+			m.footer = m.footer.SetQuitPending(true)
+			return m, tea.Tick(1500*time.Millisecond, func(time.Time) tea.Msg {
+				return tui.QuitTimeoutMsg{}
+			})
 		}
-		// Any non-quit key resets quitPending.
-		m.quitPending = false
+		// Any non-quit key resets quitPending immediately.
+		if m.quitPending {
+			m.quitPending = false
+			m.footer = m.footer.SetQuitPending(false)
+		}
 
 		// Help key opens overlay (D-08).
 		if key.Matches(msg, m.keys.Help) {
@@ -193,6 +201,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// D-05: clear refresh flash after the tick fires.
 		m.footer = m.footer.SetRefreshFlash(false)
 		return m, nil
+
+	case tui.QuitTimeoutMsg:
+		// Confirm window expired — reset pending state if user didn't press again.
+		if m.quitPending {
+			m.quitPending = false
+			m.footer = m.footer.SetQuitPending(false)
+		}
+		return m, nil
 	}
 
 	// Let viewport handle its own messages (scroll, mouse, etc.).
@@ -223,6 +239,13 @@ w    collapse all
 Quit
 qq   quit gsd-watch
 esc  quit gsd-watch
+
+Phase stages
+💬  discussed
+🔎  researched
+📋  planned
+✅  verified
+🧪  UAT
 
 press q or esc to close`
 

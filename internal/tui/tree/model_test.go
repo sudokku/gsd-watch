@@ -292,8 +292,8 @@ func TestViewBadges(t *testing.T) {
 	if !strings.Contains(out, "💬") {
 		t.Errorf("View output missing badge 💬\nOutput:\n%s", out)
 	}
-	if !strings.Contains(out, "🔬") {
-		t.Errorf("View output missing badge 🔬\nOutput:\n%s", out)
+	if !strings.Contains(out, "🔎") {
+		t.Errorf("View output missing badge 🔎\nOutput:\n%s", out)
 	}
 }
 
@@ -405,6 +405,19 @@ func TestCollapseAll(t *testing.T) {
 	}
 	if m.Cursor() != 0 {
 		t.Errorf("expected cursor 0 after CollapseAll, got %d", m.Cursor())
+	}
+}
+
+// TestView_PhaseNameWrapping verifies phase names wrap at narrow widths.
+func TestView_PhaseNameWrapping(t *testing.T) {
+	// Use a narrow width (32) to force wrapping on long phase names.
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	out := m.View(32)
+	// At width 32, phase names longer than ~25 chars should wrap.
+	// Just verify it doesn't crash and produces output with the phase name text.
+	if !strings.Contains(out, "Core TUI") {
+		t.Errorf("expected wrapped output to contain phase name fragment 'Core TUI'\nOutput:\n%s", out)
 	}
 }
 

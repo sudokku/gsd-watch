@@ -53,8 +53,8 @@ func TestFooterView_TooNarrow(t *testing.T) {
 func TestFooterHeight(t *testing.T) {
 	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
 	f = f.SetWidth(80)
-	if f.Height() != 3 {
-		t.Errorf("expected Height() to return 3, got %d", f.Height())
+	if f.Height() != 5 {
+		t.Errorf("expected Height() to return 5, got %d", f.Height())
 	}
 }
 
@@ -94,12 +94,25 @@ func TestFooter_RefreshFlash(t *testing.T) {
 	}
 }
 
-func TestFooterHeight_ThreeLines(t *testing.T) {
+func TestFooterHeight_FiveLines(t *testing.T) {
 	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
 	f = f.SetWidth(80)
 	got := f.Height()
-	if got != 3 {
-		t.Errorf("expected Height() == 3 after redesign, got %d", got)
+	if got != 5 {
+		t.Errorf("expected Height() == 5 after layout changes, got %d", got)
+	}
+}
+
+func TestFooter_QuitPending(t *testing.T) {
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	f = f.SetQuitPending(true)
+	out := f.View(80)
+	if !strings.Contains(out, "press q or esc again to exit") {
+		t.Errorf("expected quit-pending message in footer, got:\n%s", out)
+	}
+	// Normal hints should not appear while pending.
+	if strings.Contains(out, "←h") {
+		t.Errorf("expected nav hints hidden while quit-pending, got:\n%s", out)
 	}
 }
 
@@ -114,5 +127,13 @@ func TestFooterSetRefreshFlash(t *testing.T) {
 	out2 := f.View(80)
 	if !strings.Contains(out2, "↺") {
 		t.Errorf("expected idle icon after SetRefreshFlash(false)")
+	}
+}
+
+func TestFooterView_ContainsHelpHint(t *testing.T) {
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	out := f.View(80)
+	if !strings.Contains(out, "? help") {
+		t.Errorf("expected footer to contain '? help' hint, got:\n%s", out)
 	}
 }

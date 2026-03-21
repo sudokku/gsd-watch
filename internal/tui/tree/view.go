@@ -43,18 +43,47 @@ func (t TreeModel) View(width int) string {
 				expandIndicator = "▼ "
 			}
 			icon := tui.StatusIcon(row.Phase.Status)
-			// Apply highlight to the name text only — the icon contains ANSI reset
-			// codes that would kill bold if the entire line were wrapped.
-			name := row.Phase.Name
-			if i == t.cursor {
-				name = highlightStyle.Render(name)
+			isDimmedPhase := row.Phase.Status == parser.StatusComplete
+
+			// Calculate prefix width and available wrap width for phase name.
+			prefixStr := expandIndicator + icon + " "
+			prefixWidth := lipgloss.Width(prefixStr)
+			// -1 mirrors D-10 left-padding added at bottom of View().
+			wrapWidth := width - 1 - prefixWidth
+			if wrapWidth < 1 {
+				wrapWidth = 1
 			}
-			// D-03: dim completed phase header line.
-			phaseLine := expandIndicator + icon + " " + name
-			if row.Phase.Status == parser.StatusComplete {
-				phaseLine = tui.PendingStyle.Render(phaseLine)
+			nameParts := tui.WordWrap(row.Phase.Name, wrapWidth)
+
+			continuation := strings.Repeat(" ", prefixWidth)
+
+			for j, part := range nameParts {
+				var text string
+				switch {
+				case i == t.cursor:
+					text = highlightStyle.Render(part)
+				case isDimmedPhase:
+					text = tui.PendingStyle.Render(part)
+				default:
+					text = part
+				}
+
+				var phaseLine string
+				if j == 0 {
+					if isDimmedPhase {
+						phaseLine = tui.PendingStyle.Render(prefixStr) + text
+					} else {
+						phaseLine = prefixStr + text
+					}
+				} else {
+					cont := continuation
+					if isDimmedPhase {
+						cont = tui.PendingStyle.Render(continuation)
+					}
+					phaseLine = cont + text
+				}
+				lines = append(lines, phaseLine)
 			}
-			lines = append(lines, phaseLine)
 
 			// Render badges on a separate line below the phase header.
 			if len(row.Phase.Badges) > 0 {
@@ -90,40 +119,62 @@ func (t TreeModel) View(width int) string {
 				nowMarker = " " + tui.NowMarkerStyle.Render("← now")
 			}
 
-			// Word-wrap the title to fit within the available width.
+			// Bug-2 fix: subtract 1 for the D-10 left-padding so the assembled line
+			// is exactly `width` cells wide after the pad is prepended.
 			prefixWidth := lipgloss.Width(connector) + lipgloss.Width(icon) + 1
 			nowWidth := lipgloss.Width(nowMarker)
-			wrapWidth := width - prefixWidth - nowWidth
+			wrapWidth := width - 1 - prefixWidth - nowWidth
 			if wrapWidth < 1 {
 				wrapWidth = 1
 			}
-			continuation := strings.Repeat(" ", prefixWidth)
+			// Bug-1 fix: use │ (U+2502) which aligns with ├/└ on the right cell edge.
+			// Bug-2 fix: same -1 adjustment so continuation column matches wrapWidth.
+			var continuation string
+			if isLast {
+				continuation = strings.Repeat(" ", prefixWidth)
+			} else {
+				continuation = "    │" + strings.Repeat(" ", prefixWidth-5)
+			}
 			titleParts := tui.WordWrap(row.Plan.Title, wrapWidth)
 
-			// D-03: check if parent phase is complete for dimming plan rows.
-			parentPhase := t.data.Phases[row.PhaseIdx]
+			// D-03: dim plan rows belonging to a completed phase.
+			// Bug-3 fix: apply dim independently to the connector/continuation and
+			// the text rather than to the whole assembled line. Wrapping the entire
+			// line with PendingStyle.Render() causes the icon's inner \033[0m reset
+			// to kill the gray mid-string, so line-1 text ends up white while
+			// line-2 continuation (no inner reset) stays gray.
+			isDimmed := phase.Status == parser.StatusComplete
 
-			// Apply highlight to each text part individually so the icon's ANSI
-			// reset code on line 1 does not interfere with subsequent lines.
 			var itemLines []string
 			for j, part := range titleParts {
 				suffix := ""
 				if j == len(titleParts)-1 {
 					suffix = nowMarker
 				}
-				text := part + suffix
-				if i == t.cursor {
-					text = highlightStyle.Render(text)
+				rawText := part + suffix
+				var text string
+				switch {
+				case i == t.cursor:
+					text = highlightStyle.Render(rawText)
+				case isDimmed:
+					text = tui.PendingStyle.Render(rawText)
+				default:
+					text = rawText
 				}
+
 				var l string
 				if j == 0 {
-					l = connector + icon + " " + text
+					c := connector
+					if isDimmed {
+						c = tui.PendingStyle.Render(connector)
+					}
+					l = c + icon + " " + text
 				} else {
-					l = continuation + text
-				}
-				// D-03: dim plan rows belonging to a completed phase.
-				if parentPhase.Status == parser.StatusComplete {
-					l = tui.PendingStyle.Render(l)
+					cont := continuation
+					if isDimmed {
+						cont = tui.PendingStyle.Render(continuation)
+					}
+					l = cont + text
 				}
 				itemLines = append(itemLines, l)
 			}
@@ -158,7 +209,17 @@ func (t TreeModel) RenderedCursorLine(width int) int {
 func renderedRowLines(row Row, width int) int {
 	switch row.Kind {
 	case RowPhase:
-		n := 1 // phase header line
+		// Calculate wrapped phase name line count.
+		// expandIndicator ("▶ " or "▼ ") is always 2 chars wide. icon + " " is prefix.
+		// We use a fixed prefix string for width calculation.
+		expandIndicatorWidth := 2 // "▶ " or "▼ " — both 2 display cells
+		icon := tui.StatusIcon(row.Phase.Status)
+		prefixWidth := expandIndicatorWidth + lipgloss.Width(icon) + 1
+		wrapWidth := width - 1 - prefixWidth
+		if wrapWidth < 1 {
+			wrapWidth = 1
+		}
+		n := len(tui.WordWrap(row.Phase.Name, wrapWidth))
 		if len(row.Phase.Badges) > 0 {
 			for _, b := range row.Phase.Badges {
 				if tui.BadgeString(b) != "" {
@@ -181,7 +242,8 @@ func renderedRowLines(row Row, width int) int {
 		}
 		const connectorWidth = 8 // "    ├── " or "    └── " = 8 cells
 		prefixWidth := connectorWidth + lipgloss.Width(icon) + 1
-		wrapWidth := width - prefixWidth - nowWidth
+		// -1 mirrors the D-10 left-padding adjustment in View() so line counts match.
+		wrapWidth := width - 1 - prefixWidth - nowWidth
 		if wrapWidth < 1 {
 			wrapWidth = 1
 		}

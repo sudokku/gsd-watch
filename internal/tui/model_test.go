@@ -28,17 +28,17 @@ func newTestModel() app.Model {
 func TestWindowSizeNormal(t *testing.T) {
 	m := newTestModel()
 	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
-	// viewport height should be 24 - header(3) - footer(3) = 18
+	// viewport height should be 24 - header(4) - footer(5) = 15
 	got := m.ViewportHeight()
-	if got != 18 {
-		t.Errorf("expected viewport height 18, got %d", got)
+	if got != 15 {
+		t.Errorf("expected viewport height 15, got %d", got)
 	}
 }
 
 func TestWindowSizeTiny(t *testing.T) {
 	m := newTestModel()
 	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 3})
-	// 3 - 3 - 3 = -3; clamped to 0
+	// 3 - 4 - 5 = -6; clamped to 0
 	got := m.ViewportHeight()
 	if got != 0 {
 		t.Errorf("expected viewport height 0 for tiny window, got %d", got)
@@ -58,10 +58,10 @@ func TestWindowSizeNarrow(t *testing.T) {
 // TestQuit_DoubleQ: single q does not quit; second q does.
 func TestQuit_DoubleQ(t *testing.T) {
 	m := newTestModel()
-	// First q: no quit
+	// First q: schedules timeout tick (non-nil cmd), does not quit.
 	m, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-	if cmd != nil {
-		t.Fatal("expected nil cmd on first q, got non-nil")
+	if cmd == nil {
+		t.Fatal("expected tick cmd on first q (quit-pending), got nil")
 	}
 	// Second q: quits
 	_, cmd = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
@@ -78,8 +78,8 @@ func TestQuit_DoubleQ(t *testing.T) {
 func TestQuit_DoubleEsc(t *testing.T) {
 	m := newTestModel()
 	m, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyEscape})
-	if cmd != nil {
-		t.Fatal("expected nil cmd on first Esc, got non-nil")
+	if cmd == nil {
+		t.Fatal("expected tick cmd on first Esc (quit-pending), got nil")
 	}
 	_, cmd = updateModel(m, tea.KeyMsg{Type: tea.KeyEscape})
 	if cmd == nil {
@@ -91,14 +91,35 @@ func TestQuit_DoubleEsc(t *testing.T) {
 	}
 }
 
-// TestQuit_QResetByOtherKey: q then j resets quitPending, so next q does not quit.
+// TestQuit_TimeoutResets: QuitTimeoutMsg clears pending so next q starts fresh.
+func TestQuit_TimeoutResets(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}}) // pending=true
+	m, _ = updateModel(m, tui.QuitTimeoutMsg{})                               // timeout fires
+	// Next q should start a new pending (non-nil tick cmd), not quit.
+	_, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd == nil {
+		t.Fatal("expected tick cmd after timeout reset, got nil")
+	}
+	msg := cmd()
+	if _, ok := msg.(tea.QuitMsg); ok {
+		t.Error("expected timeout reset to prevent immediate quit on next q")
+	}
+}
+
+// TestQuit_QResetByOtherKey: q then j resets quitPending, so next q restarts the
+// confirm window (tick cmd) rather than quitting immediately.
 func TestQuit_QResetByOtherKey(t *testing.T) {
 	m := newTestModel()
-	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
-	_, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-	if cmd != nil {
-		t.Fatal("expected nil cmd after reset by 'j', got non-nil (quitPending should have been cleared)")
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}}) // pending=true
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}}) // reset
+	_, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}}) // new pending
+	if cmd == nil {
+		t.Fatal("expected tick cmd on q after reset, got nil")
+	}
+	msg := cmd()
+	if _, ok := msg.(tea.QuitMsg); ok {
+		t.Error("expected restart of confirm window (not quit) after j reset")
 	}
 }
 
@@ -219,6 +240,23 @@ func TestKeyDelegationMovesTreeCursor(t *testing.T) {
 	cursorAfter := m.TreeCursor()
 	if cursorAfter == cursorBefore {
 		t.Error("expected tree cursor to move after pressing j, but it did not change")
+	}
+}
+
+// TestHelpOverlay_ContainsPhaseStages: help overlay includes Phase stages section.
+func TestHelpOverlay_ContainsPhaseStages(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	view := m.View()
+	if !strings.Contains(view, "Phase stages") {
+		t.Error("expected help overlay to contain 'Phase stages' section")
+	}
+	if !strings.Contains(view, "💬") {
+		t.Error("expected help overlay to contain discussed badge 💬")
+	}
+	if !strings.Contains(view, "🧪") {
+		t.Error("expected help overlay to contain UAT badge 🧪")
 	}
 }
 
