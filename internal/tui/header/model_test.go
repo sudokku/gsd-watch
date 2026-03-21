@@ -89,7 +89,7 @@ func TestHeaderView_TooNarrow(t *testing.T) {
 
 func TestHeaderHeight(t *testing.T) {
 	h := header.New(mock.MockProject())
-	if h.Height() != 3 {
-		t.Errorf("expected Height() to return 3, got %d", h.Height())
+	if h.Height() != 4 {
+		t.Errorf("expected Height() to return 4, got %d", h.Height())
 	}
 }

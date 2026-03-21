@@ -10,10 +10,13 @@ const (
 	StatusFailed     = "failed"
 )
 
-// Badge constants for phase lifecycle badges.
+// Badge constants for phase lifecycle badges (in lifecycle order).
 const (
 	BadgeDiscussed  = "discussed"
 	BadgeResearched = "researched"
+	BadgeUISpec     = "ui_spec"
+	BadgePlanned    = "planned"
+	BadgeExecuted   = "executed"
 	BadgeVerified   = "verified"
 	BadgeUAT        = "uat"
 )

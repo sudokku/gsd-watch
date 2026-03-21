@@ -35,10 +35,10 @@ func (h HeaderModel) SetData(data parser.ProjectData) HeaderModel {
 	return h
 }
 
-// Height returns the fixed number of lines the header occupies (3).
+// Height returns the fixed number of lines the header occupies (4).
 // This is used by the root model for viewport height calculation.
 func (h HeaderModel) Height() int {
-	return 3
+	return 4
 }
 
 // View renders the header for the given terminal width.
@@ -48,7 +48,10 @@ func (h HeaderModel) View(width int) string {
 		return "◀ too narrow"
 	}
 
-	// Line 1: project name on left, profile·mode on right.
+	const pad = 1
+	contentWidth := width - 2*pad
+
+	// Line 1: project name on left, profile·mode on right (1-char L/R padding).
 	nameStr := lipgloss.NewStyle().Bold(true).Render(h.projectName)
 	profileModeStr := h.modelProfile + " · " + h.mode
 
@@ -56,20 +59,21 @@ func (h HeaderModel) View(width int) string {
 	// so we use lipgloss.Width for correct padding math).
 	nameWidth := lipgloss.Width(nameStr)
 	rightWidth := len(profileModeStr)
-	padding := width - nameWidth - rightWidth
+	padding := contentWidth - nameWidth - rightWidth
 	if padding < 0 {
 		padding = 0
 	}
-	line1 := nameStr + strings.Repeat(" ", padding) + profileModeStr
+	line1 := strings.Repeat(" ", pad) + nameStr + strings.Repeat(" ", padding) + profileModeStr
 
-	// Line 2: progress bar spanning full width.
-	line2 := progressBar(h.completion, width)
+	// Line 2: progress bar with 1-char left padding.
+	line2 := strings.Repeat(" ", pad) + progressBar(h.completion, width)
 
-	// Line 3: separator line in gray.
+	// Line 3: double-horizontal separator spanning full width.
 	separatorStyle := lipgloss.NewStyle().Foreground(tui.ColorGray)
-	line3 := separatorStyle.Render(strings.Repeat("─", width))
+	line3 := separatorStyle.Render(strings.Repeat("═", width))
 
-	return strings.Join([]string{line1, line2, line3}, "\n")
+	// Prepend a blank line for top breathing room.
+	return strings.Join([]string{"", line1, line2, line3}, "\n")
 }
 
 // progressBar renders a filled/empty block bar for the given percentage and width.

@@ -21,6 +21,7 @@ var (
 	FailedStyle       = lipgloss.NewStyle().Foreground(ColorRed)
 	NowMarkerStyle    = lipgloss.NewStyle().Foreground(ColorAmber)
 	RefreshFlashStyle = lipgloss.NewStyle().Bold(true).Foreground(ColorGreen)
+	QuitPendingStyle  = lipgloss.NewStyle().Bold(true).Foreground(ColorAmber)
 )
 
 // StatusIcon returns a styled status icon string for the given status value.
@@ -43,9 +44,15 @@ func BadgeString(badge string) string {
 	case "discussed":
 		return "💬"
 	case "researched":
-		return "🔬"
-	case "verified":
+		return "🔎"
+	case "ui_spec":
+		return "🎨"
+	case "planned":
 		return "📋"
+	case "executed":
+		return "🚀"
+	case "verified":
+		return "✅"
 	case "uat":
 		return "🧪"
 	default:

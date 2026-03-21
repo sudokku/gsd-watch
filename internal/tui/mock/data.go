@@ -64,7 +64,7 @@ func MockProject() parser.ProjectData {
 				DirName: "05-tui-polish",
 				Name:    "Phase 5: TUI Polish",
 				Status:  "complete",
-				Badges:  []string{"discussed", "researched", "verified"},
+				Badges:  []string{"discussed", "researched", "planned", "executed", "verified", "uat"},
 				Plans: []parser.Plan{
 					{Filename: "05-01-PLAN.md", Title: "Tree + footer polish", Status: "complete"},
 					{Filename: "05-02-PLAN.md", Title: "App model wiring", Status: "complete"},

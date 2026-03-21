@@ -27,3 +27,8 @@ type RefreshMsg struct{}
 
 // RefreshFlashMsg is sent by a tea.Tick to clear the refresh flash indicator.
 type RefreshFlashMsg struct{}
+
+// QuitTimeoutMsg is sent by a tea.Tick after the quit-confirm window expires.
+// If quitPending is still true when this arrives, it is cleared (user did not
+// confirm in time and the pending state is reset).
+type QuitTimeoutMsg struct{}

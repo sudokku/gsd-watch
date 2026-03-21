@@ -15,15 +15,19 @@ var (
 	planFileRe = regexp.MustCompile(`^\d{2}-\d{2}-PLAN\.md$`)
 )
 
-// badgeFiles maps filename suffix to badge constant.
+// badgeFiles maps filename suffix to badge constant, in lifecycle order.
+// Detection: phasePrefix + "-" + suffix (e.g. "01-CONTEXT.md").
 var badgeFiles = []struct {
 	suffix string
 	badge  string
 }{
 	{"CONTEXT.md", BadgeDiscussed},
 	{"RESEARCH.md", BadgeResearched},
+	{"UI-SPEC.md", BadgeUISpec},
+	{"01-PLAN.md", BadgePlanned},
+	{"01-SUMMARY.md", BadgeExecuted},
 	{"VERIFICATION.md", BadgeVerified},
-	{"UAT.md", BadgeUAT},
+	{"HUMAN-UAT.md", BadgeUAT},
 }
 
 // parsePhases walks the phases directory, discovers phase dirs, parses plans,
