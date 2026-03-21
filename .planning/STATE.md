@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-03-21T03:22:07.294Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-21T03:25:06.820Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 15
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 05 (tui-polish) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Plan: 2 of 3
 | Phase 04-plugin-delivery P01 | 2 | 1 tasks | 3 files |
 | Phase 04-plugin-delivery P02 | 5 | 2 tasks | 1 files |
 | Phase 05-tui-polish P02 | 3 | 1 tasks | 4 files |
+| Phase 05-tui-polish P01 | 5 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,9 @@ Recent decisions affecting current work:
 - [Phase 04-plugin-delivery]: tmux split-window -d flag keeps focus on original pane after spawning sidebar so developer workflow is uninterrupted
 - [Phase 05-02]: [05-02] Footer two-line hints use static strings not KeyMap.ShortHelp() for layout control
 - [Phase 05-02]: [05-02] Footer Height() default changed from 2 to 3 to match two-hint-line layout
+- [Phase 05-01]: Reuse PendingStyle (gray) for completed phase dimming — no new DimmedStyle needed
+- [Phase 05-01]: Add Expanded bool to Row struct so renderedRowLines can count the (no plans yet) line
+- [Phase 05-01]: TestView_CompletedPhaseDimmed uses structural assertions rather than ANSI escape checks — lipgloss strips colors without TTY
 
 ### Pending Todos
 
@@ -127,6 +131,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T03:22:07.292Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-03-21T03:25:06.818Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
