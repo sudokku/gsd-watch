@@ -10,7 +10,11 @@
   <img src="gsd-watch-demo.gif" alt="gsd-watch demo" width="800" />
 </p>
 
-A read-only tmux sidebar that renders your [GSD](https://github.com/anthropics/claude-code) project tree live — phases, plans, status icons, and lifecycle badges — updating within a second of any file change. Sits alongside Claude Code so you always know where you are without switching context.
+<p align="center">
+  <sub>Demo is sped up and has some minutes cut for convenience. Recorded on a real <a href="https://github.com/sudokku/micro-ffmpeg">micro-ffmpeg</a> project session.</sub>
+</p>
+
+A read-only tmux sidebar that renders your [GSD](https://github.com/gsd-build/get-shit-done) project tree live — phases, plans, status icons, and lifecycle badges — updating within a second of any file change. Sits alongside Claude Code so you always know where you are without switching context.
 
 ---
 
