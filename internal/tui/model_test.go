@@ -28,10 +28,10 @@ func newTestModel() app.Model {
 func TestWindowSizeNormal(t *testing.T) {
 	m := newTestModel()
 	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
-	// viewport height should be 24 - header(3) - footer(2) = 19
+	// viewport height should be 24 - header(3) - footer(3) = 18
 	got := m.ViewportHeight()
-	if got != 19 {
-		t.Errorf("expected viewport height 19, got %d", got)
+	if got != 18 {
+		t.Errorf("expected viewport height 18, got %d", got)
 	}
 }
 

@@ -17,6 +17,7 @@ type FooterModel struct {
 	lastUpdated   time.Time
 	keys          tui.KeyMap
 	width         int
+	refreshFlash  bool
 }
 
 // New creates a FooterModel populated from the given ProjectData and KeyMap.
@@ -41,17 +42,23 @@ func (f FooterModel) SetWidth(width int) FooterModel {
 	return f
 }
 
+// SetRefreshFlash returns a new FooterModel with the refresh flash state toggled.
+func (f FooterModel) SetRefreshFlash(flash bool) FooterModel {
+	f.refreshFlash = flash
+	return f
+}
+
 // Height returns the number of lines the footer occupies.
 // Dynamic: extra lines are added when currentAction wraps.
-// Returns 2 when width is not yet set (before first WindowSizeMsg).
+// Returns 3 when width is not yet set (before first WindowSizeMsg).
 func (f FooterModel) Height() int {
 	if f.width == 0 {
-		return 2 // default before width is known
+		return 3 // default before width is known (action + 2 hint lines)
 	}
 	if f.width < tui.MinWidth {
 		return 1 // single "too narrow" line
 	}
-	return len(f.actionLines()) + 1 // action lines + keybindings line
+	return len(f.actionLines()) + 2 // action lines + 2 hint lines
 }
 
 // actionLines word-wraps currentAction to fit beside timeSince on line 1.
@@ -73,7 +80,15 @@ func (f FooterModel) View(width int) string {
 	}
 
 	grayStyle := lipgloss.NewStyle().Foreground(tui.ColorGray)
-	timeSinceStr := timeSince(f.lastUpdated)
+
+	// Build the time-since string with refresh icon.
+	ts := timeSince(f.lastUpdated)
+	var timeSinceStr string
+	if f.refreshFlash {
+		timeSinceStr = tui.RefreshFlashStyle.Render("⟳ " + ts)
+	} else {
+		timeSinceStr = grayStyle.Render("↺ " + ts)
+	}
 	rightWidth := lipgloss.Width(timeSinceStr)
 
 	// Use stored width for wrapping; fall back to the passed width if not set.
@@ -87,7 +102,7 @@ func (f FooterModel) View(width int) string {
 	for i, part := range actionParts {
 		rendered := grayStyle.Render(part)
 		if i == 0 {
-			// Line 1: action on left, time-since on right.
+			// Line 1: action on left, time-since (with icon) on right.
 			actionW := lipgloss.Width(rendered)
 			padding := width - actionW - rightWidth
 			if padding < 0 {
@@ -99,16 +114,21 @@ func (f FooterModel) View(width int) string {
 		}
 	}
 
-	// Keybinding hints line.
-	bindings := f.keys.ShortHelp()
-	hints := make([]string, 0, len(bindings))
-	for _, b := range bindings {
-		help := b.Help()
-		if help.Key != "" {
-			hints = append(hints, help.Key+" "+help.Desc)
-		}
+	// Line 2: navigation hints
+	navLine := grayStyle.Render("←h · ↓j · ↑k · →l")
+	allLines = append(allLines, navLine)
+
+	// Line 3: actions left, quit right-aligned
+	leftActions := "w collapse · e expand"
+	rightQuit := "qq esc quit"
+	leftW := lipgloss.Width(leftActions)
+	rightW := lipgloss.Width(rightQuit)
+	actionPad := width - leftW - rightW
+	if actionPad < 1 {
+		actionPad = 1
 	}
-	allLines = append(allLines, grayStyle.Render(strings.Join(hints, " · ")))
+	actionsLine := grayStyle.Render(leftActions + strings.Repeat(" ", actionPad) + rightQuit)
+	allLines = append(allLines, actionsLine)
 
 	return strings.Join(allLines, "\n")
 }

@@ -15,11 +15,12 @@ var (
 
 // Shared styles for status rendering.
 var (
-	CompleteStyle  = lipgloss.NewStyle().Foreground(ColorGreen)
-	ActiveStyle    = lipgloss.NewStyle().Foreground(ColorGreen)
-	PendingStyle   = lipgloss.NewStyle().Foreground(ColorGray)
-	FailedStyle    = lipgloss.NewStyle().Foreground(ColorRed)
-	NowMarkerStyle = lipgloss.NewStyle().Foreground(ColorAmber)
+	CompleteStyle     = lipgloss.NewStyle().Foreground(ColorGreen)
+	ActiveStyle       = lipgloss.NewStyle().Foreground(ColorGreen)
+	PendingStyle      = lipgloss.NewStyle().Foreground(ColorGray)
+	FailedStyle       = lipgloss.NewStyle().Foreground(ColorRed)
+	NowMarkerStyle    = lipgloss.NewStyle().Foreground(ColorAmber)
+	RefreshFlashStyle = lipgloss.NewStyle().Bold(true).Foreground(ColorGreen)
 )
 
 // StatusIcon returns a styled status icon string for the given status value.
