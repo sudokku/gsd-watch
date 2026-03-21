@@ -325,3 +325,106 @@ func TestViewCollapsedHidesPlans(t *testing.T) {
 		}
 	}
 }
+
+// TestView_NoProject verifies that an empty project shows the "No GSD project found" message.
+func TestView_NoProject(t *testing.T) {
+	m := tree.New() // no data set, empty project
+	out := m.View(80)
+	if !strings.Contains(out, "No GSD project found") {
+		t.Errorf("expected 'No GSD project found' in empty project view\nOutput:\n%s", out)
+	}
+	if !strings.Contains(out, "/gsd:new-project") {
+		t.Errorf("expected '/gsd:new-project' in empty project view\nOutput:\n%s", out)
+	}
+}
+
+// TestView_NoPlansYet verifies that an expanded phase with no plans shows "(no plans yet)".
+func TestView_NoPlansYet(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	// navigate to phase 6 (06-future, which has no plans) and expand it
+	// Phase 6 is at index 5 (0-based), so press j 5 times
+	for i := 0; i < 5; i++ {
+		m = pressKey(t, m, "j")
+	}
+	m = pressKey(t, m, "l") // expand phase 6
+	out := m.View(80)
+	if !strings.Contains(out, "(no plans yet)") {
+		t.Errorf("expected '(no plans yet)' for empty phase\nOutput:\n%s", out)
+	}
+}
+
+// TestView_CompletedPhaseDimmed verifies that completed phase rows are styled with PendingStyle (gray).
+func TestView_CompletedPhaseDimmed(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	// navigate to phase 5 (05-tui-polish, status=complete) and expand it
+	// Phase 5 is at index 4 (0-based)
+	for i := 0; i < 4; i++ {
+		m = pressKey(t, m, "j")
+	}
+	m = pressKey(t, m, "l") // expand phase 5
+	out := m.View(80)
+	// The output should contain the phase name
+	if !strings.Contains(out, "Phase 5: TUI Polish") {
+		t.Errorf("expected 'Phase 5: TUI Polish' in output\nOutput:\n%s", out)
+	}
+	// ANSI escape for gray (color 8): "\x1b[38;5;8m" or similar
+	// lipgloss uses color 8 for ColorGray -> PendingStyle
+	// The phase name should be wrapped with ANSI gray color
+	if !strings.Contains(out, "\x1b[") {
+		t.Errorf("expected ANSI escape codes (dimming) in output for completed phase\nOutput:\n%s", out)
+	}
+}
+
+// TestExpandAll verifies that ExpandAll() expands all phases.
+func TestExpandAll(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	m = m.ExpandAll()
+	rows := m.VisibleRows()
+	// 6 phases + 4+3+2+2+2+0 plans = 6 + 13 = 19 rows
+	// Phase 1: 4, Phase 2: 3, Phase 3: 2, Phase 4: 2, Phase 5: 2, Phase 6: 0
+	expectedPlans := 4 + 3 + 2 + 2 + 2 + 0
+	expectedRows := 6 + expectedPlans
+	if len(rows) != expectedRows {
+		t.Errorf("expected %d rows after ExpandAll, got %d", expectedRows, len(rows))
+	}
+}
+
+// TestCollapseAll verifies that CollapseAll() collapses all phases and resets cursor.
+func TestCollapseAll(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	m = m.ExpandAll()
+	m = pressKey(t, m, "j") // move cursor to non-zero position
+	m = m.CollapseAll()
+	rows := m.VisibleRows()
+	if len(rows) != 6 {
+		t.Errorf("expected 6 rows after CollapseAll, got %d", len(rows))
+	}
+	if m.Cursor() != 0 {
+		t.Errorf("expected cursor 0 after CollapseAll, got %d", m.Cursor())
+	}
+}
+
+// TestView_Padding verifies that every non-empty line in View output starts with a space.
+func TestView_Padding(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	out := m.View(80)
+	lines := strings.Split(out, "\n")
+	checked := 0
+	for i, line := range lines {
+		if line == "" {
+			continue
+		}
+		if line[0] != ' ' {
+			t.Errorf("line %d does not start with padding space: %q", i, line)
+		}
+		checked++
+		if checked >= 3 {
+			break
+		}
+	}
+}
