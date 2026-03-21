@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Live Data Layer** - All parsers (PLAN.md, ROADMAP.md, STATE.md, config.json), phase lifecycle badges, wired to TUI (completed 2026-03-19)
 - [x] **Phase 3: File Watching** - fsnotify recursive watcher, debounce, incremental cache, sub-300ms live updates (completed 2026-03-20)
 - [x] **Phase 4: Plugin & Delivery** - Slash command, Stop hooks, Makefile, static binary, installable (completed 2026-03-21)
-- [ ] **Phase 5: TUI Polish** - Visual hierarchy improvements, empty-state handling, live refresh indicator, discoverability
+- [x] **Phase 5: TUI Polish** - Visual hierarchy improvements, empty-state handling, live refresh indicator, discoverability (completed 2026-03-21)
 
 ## Phase Details
 
@@ -101,12 +101,12 @@ Plans:
   7. "e" expands all phases; "w" collapses all phases
   8. Footer displays two-line keybinding hints (navigation + actions)
   9. All TUI content has 1-character left/right padding
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 05-01-PLAN.md — Foundation + tree polish (keys, messages, styles, empty states, dimming, padding)
 - [x] 05-02-PLAN.md — Footer redesign (refresh indicator, two-line hints)
-- [ ] 05-03-PLAN.md — App model wiring (double-quit, help overlay, expand/collapse-all, refresh flash routing)
+- [x] 05-03-PLAN.md — App model wiring (double-quit, help overlay, expand/collapse-all, refresh flash routing)
 
 ## Progress
 
@@ -119,4 +119,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Live Data Layer | 3/3 | Complete   | 2026-03-20 |
 | 3. File Watching | 3/3 | Complete   | 2026-03-20 |
 | 4. Plugin & Delivery | 2/2 | Complete   | 2026-03-21 |
-| 5. TUI Polish | 2/3 | In Progress|  |
+| 5. TUI Polish | 3/3 | Complete   | 2026-03-21 |
