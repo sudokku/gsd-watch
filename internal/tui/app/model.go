@@ -5,6 +5,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
@@ -28,7 +29,9 @@ type Model struct {
 	keys         tui.KeyMap
 	width        int
 	height       int
-	ready        bool // set to true after first WindowSizeMsg
+	ready        bool                 // set to true after first WindowSizeMsg
+	helpVisible  bool                 // true when the help overlay is shown
+	quitPending  bool                 // true after first q/Esc press (double-quit state machine)
 	cache        *parser.ProjectCache // incremental cache backed by .planning/
 	events       chan tea.Msg          // watcher event channel
 	planningRoot string               // path to .planning/ dir
@@ -83,15 +86,55 @@ func (m Model) Init() tea.Cmd {
 }
 
 // Update implements tea.Model. Handles resize, quit, key delegation, ParsedMsg,
-// and FileChangedMsg.
+// FileChangedMsg, and RefreshFlashMsg.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		// Quit handling takes priority.
-		if key.Matches(msg, m.keys.Quit) {
+		// Ctrl+C always quits immediately, even during overlay (Pitfall 3).
+		if msg.Type == tea.KeyCtrlC {
 			return m, tea.Quit
 		}
-		// Delegate navigation keys to tree.
+
+		// Help overlay captures all keys except Ctrl+C (D-08).
+		if m.helpVisible {
+			if msg.String() == "q" || msg.Type == tea.KeyEscape {
+				m.helpVisible = false
+			}
+			// All other keys ignored while overlay is open.
+			return m, nil
+		}
+
+		// Double-quit state machine (D-06).
+		if msg.String() == "q" || msg.Type == tea.KeyEscape {
+			if m.quitPending {
+				return m, tea.Quit
+			}
+			m.quitPending = true
+			return m, nil
+		}
+		// Any non-quit key resets quitPending.
+		m.quitPending = false
+
+		// Help key opens overlay (D-08).
+		if key.Matches(msg, m.keys.Help) {
+			m.helpVisible = true
+			return m, nil
+		}
+
+		// Expand-all / collapse-all delegation (D-07).
+		if key.Matches(msg, m.keys.ExpandAll) {
+			m.tree = m.tree.ExpandAll()
+			m.viewport.SetContent(m.tree.View(m.width))
+			return m, nil
+		}
+		if key.Matches(msg, m.keys.CollapseAll) {
+			m.tree = m.tree.CollapseAll()
+			m.viewport.SetContent(m.tree.View(m.width))
+			m.viewport.SetYOffset(0)
+			return m, nil
+		}
+
+		// Delegate navigation keys to tree (existing behavior).
 		var cmd tea.Cmd
 		m.tree, cmd = m.tree.Update(msg)
 		// Sync viewport content and scroll to keep cursor visible.
@@ -131,6 +174,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tui.FileChangedMsg:
+		// D-05: set refresh flash on file change, schedule tick to clear it.
+		m.footer = m.footer.SetRefreshFlash(true)
 		path := msg.Path
 		cache := m.cache
 		return m, tea.Batch(
@@ -139,7 +184,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return tui.ParsedMsg{Project: project}
 			},
 			waitForEvent(m.events),
+			tea.Tick(time.Second, func(time.Time) tea.Msg {
+				return tui.RefreshFlashMsg{}
+			}),
 		)
+
+	case tui.RefreshFlashMsg:
+		// D-05: clear refresh flash after the tick fires.
+		m.footer = m.footer.SetRefreshFlash(false)
+		return m, nil
 	}
 
 	// Let viewport handle its own messages (scroll, mouse, etc.).
@@ -148,13 +201,57 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// helpView renders the full-pane help overlay.
+func helpView(width int) string {
+	if width < tui.MinWidth {
+		return "\u25c0 too narrow"
+	}
+
+	helpText := `gsd-watch help
+
+Navigation
+←/h  move left / collapse
+↓/j  move down
+↑/k  move up
+→/l  move right / expand
+
+Tree
+e    expand all
+w    collapse all
+?    show this help
+
+Quit
+qq   quit gsd-watch
+esc  quit gsd-watch
+
+press q or esc to close`
+
+	inner := lipgloss.NewStyle().
+		Padding(1, 2).
+		Foreground(tui.ColorGray)
+
+	box := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(tui.ColorGray)
+
+	content := box.Render(inner.Render(helpText))
+	return lipgloss.NewStyle().
+		Width(width).
+		Align(lipgloss.Center).
+		Render(content)
+}
+
 // View implements tea.Model. Renders header, viewport (tree), and footer.
+// When helpVisible is true, renders the full-pane help overlay instead.
 func (m Model) View() string {
 	if !m.ready {
 		return "Loading..."
 	}
 	if m.width < tui.MinWidth {
 		return "\u25c0 pane too narrow"
+	}
+	if m.helpVisible {
+		return helpView(m.width)
 	}
 	// Sync viewport content with current tree state.
 	m.viewport.SetContent(m.tree.View(m.width))

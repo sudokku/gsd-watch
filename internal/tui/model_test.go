@@ -38,7 +38,7 @@ func TestWindowSizeNormal(t *testing.T) {
 func TestWindowSizeTiny(t *testing.T) {
 	m := newTestModel()
 	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 3})
-	// 3 - 3 - 2 = -2; clamped to 0
+	// 3 - 3 - 3 = -3; clamped to 0
 	got := m.ViewportHeight()
 	if got != 0 {
 		t.Errorf("expected viewport height 0 for tiny window, got %d", got)
@@ -55,19 +55,67 @@ func TestWindowSizeNarrow(t *testing.T) {
 	}
 }
 
-func TestQuitQ(t *testing.T) {
+// TestQuit_DoubleQ: single q does not quit; second q does.
+func TestQuit_DoubleQ(t *testing.T) {
 	m := newTestModel()
+	// First q: no quit
+	m, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd != nil {
+		t.Fatal("expected nil cmd on first q, got non-nil")
+	}
+	// Second q: quits
+	_, cmd = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd == nil {
+		t.Fatal("expected quit command on second q, got nil")
+	}
+	msg := cmd()
+	if _, ok := msg.(tea.QuitMsg); !ok {
+		t.Errorf("expected tea.QuitMsg, got %T", msg)
+	}
+}
+
+// TestQuit_DoubleEsc: single Esc does not quit; second Esc does.
+func TestQuit_DoubleEsc(t *testing.T) {
+	m := newTestModel()
+	m, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyEscape})
+	if cmd != nil {
+		t.Fatal("expected nil cmd on first Esc, got non-nil")
+	}
+	_, cmd = updateModel(m, tea.KeyMsg{Type: tea.KeyEscape})
+	if cmd == nil {
+		t.Fatal("expected quit command on second Esc, got nil")
+	}
+	msg := cmd()
+	if _, ok := msg.(tea.QuitMsg); !ok {
+		t.Errorf("expected tea.QuitMsg, got %T", msg)
+	}
+}
+
+// TestQuit_QResetByOtherKey: q then j resets quitPending, so next q does not quit.
+func TestQuit_QResetByOtherKey(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
 	_, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd != nil {
+		t.Fatal("expected nil cmd after reset by 'j', got non-nil (quitPending should have been cleared)")
+	}
+}
+
+// TestQuit_CtrlCAlwaysQuits: Ctrl+C quits immediately without double-press.
+func TestQuit_CtrlCAlwaysQuits(t *testing.T) {
+	m := newTestModel()
+	_, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyCtrlC})
 	if cmd == nil {
 		t.Fatal("expected quit command, got nil")
 	}
-	// tea.Quit returns a special QuitMsg; verify by executing the cmd and checking the result.
 	msg := cmd()
 	if _, ok := msg.(tea.QuitMsg); !ok {
 		t.Errorf("expected cmd() to return tea.QuitMsg, got %T", msg)
 	}
 }
 
+// TestQuitCtrlC kept for backward compat (same as TestQuit_CtrlCAlwaysQuits).
 func TestQuitCtrlC(t *testing.T) {
 	m := newTestModel()
 	_, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyCtrlC})
@@ -77,6 +125,86 @@ func TestQuitCtrlC(t *testing.T) {
 	msg := cmd()
 	if _, ok := msg.(tea.QuitMsg); !ok {
 		t.Errorf("expected cmd() to return tea.QuitMsg, got %T", msg)
+	}
+}
+
+// TestHelpOverlay_OpenClose: '?' opens overlay; 'q' dismisses without quitting.
+func TestHelpOverlay_OpenClose(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
+	// Open help
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	view := m.View()
+	if !strings.Contains(view, "gsd-watch help") {
+		t.Error("expected help overlay to contain 'gsd-watch help'")
+	}
+	// Close with q (single q closes overlay, does NOT quit)
+	m, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd != nil {
+		t.Error("expected nil cmd when closing help overlay with q")
+	}
+	view = m.View()
+	if strings.Contains(view, "gsd-watch help") {
+		t.Error("expected help overlay to be dismissed after q")
+	}
+}
+
+// TestHelpOverlay_CtrlCQuits: Ctrl+C quits even when help overlay is open.
+func TestHelpOverlay_CtrlCQuits(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	_, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyCtrlC})
+	if cmd == nil {
+		t.Fatal("expected quit command from Ctrl+C with overlay open, got nil")
+	}
+	msg := cmd()
+	if _, ok := msg.(tea.QuitMsg); !ok {
+		t.Errorf("expected tea.QuitMsg, got %T", msg)
+	}
+}
+
+// TestHelpOverlay_EscCloses: Esc closes overlay without quitting.
+func TestHelpOverlay_EscCloses(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	m, cmd := updateModel(m, tea.KeyMsg{Type: tea.KeyEscape})
+	if cmd != nil {
+		t.Error("expected nil cmd when closing overlay with Esc")
+	}
+	view := m.View()
+	if strings.Contains(view, "gsd-watch help") {
+		t.Error("expected help overlay to be dismissed after Esc")
+	}
+}
+
+// TestExpandAllKey: pressing 'e' expands all phases revealing plan titles.
+func TestExpandAllKey(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tui.ParsedMsg{Project: mock.MockProject()})
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 40})
+	// Press 'e' to expand all
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	// Check View contains plan titles that would only appear when expanded
+	view := m.View()
+	if !strings.Contains(view, "Foundation") {
+		t.Error("expected expanded tree to contain plan title 'Foundation'")
+	}
+}
+
+// TestCollapseAllKey: pressing 'w' collapses all phases hiding plan titles.
+func TestCollapseAllKey(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tui.ParsedMsg{Project: mock.MockProject()})
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 40})
+	// Expand first, then collapse
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+	// Plan titles should no longer appear
+	view := m.View()
+	if strings.Contains(view, "Foundation") {
+		t.Error("expected collapsed tree to NOT contain plan title 'Foundation'")
 	}
 }
 
