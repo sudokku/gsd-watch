@@ -120,3 +120,13 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 3. File Watching | 3/3 | Complete   | 2026-03-20 |
 | 4. Plugin & Delivery | 2/2 | Complete   | 2026-03-21 |
 | 5. TUI Polish | 3/3 | Complete   | 2026-03-21 |
+
+### Phase 6: Onboarding, documentation, and UX improvements
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 6 to break down)

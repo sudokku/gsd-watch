@@ -123,6 +123,10 @@ Recent decisions affecting current work:
 - [Phase 05-03]: [05-03] quitPending reset on every non-quit key — simpler than a timeout, matches expected UX for CLI tools
 - [Phase 05-03]: [05-03] Help overlay captures all keys except Ctrl+C — q single-press closes overlay without entering double-quit flow
 
+### Roadmap Evolution
+
+- Phase 6 added: Onboarding, documentation, and UX improvements
+
 ### Pending Todos
 
 None yet.
