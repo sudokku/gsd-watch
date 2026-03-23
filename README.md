@@ -128,6 +128,8 @@ make clean    # remove build/
 
 Static binary, no CGO, no runtime dependencies except tmux. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
+> **macOS Sequoia note:** binaries must be signed or macOS will kill them at launch. `make build` handles this automatically via `codesign --sign -` (ad-hoc signature). Binaries downloaded from GitHub releases are pre-signed.
+
 ---
 
 ## Contributing
