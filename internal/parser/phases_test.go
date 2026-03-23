@@ -11,14 +11,20 @@ const testdataPhasesDir = "testdata/phases"
 
 func TestParsePhases_ValidStructure(t *testing.T) {
 	phases := parsePhases(testdataPhasesDir, map[int]string{}, 0, 0)
-	if len(phases) != 2 {
-		t.Fatalf("expected 2 phases, got %d", len(phases))
+	if len(phases) != 3 {
+		t.Fatalf("expected 3 phases, got %d", len(phases))
 	}
 	if phases[0].DirName != "01-core-tui-scaffold" {
 		t.Errorf("expected first phase DirName=01-core-tui-scaffold, got %q", phases[0].DirName)
 	}
 	if phases[1].DirName != "02-live-data-layer" {
 		t.Errorf("expected second phase DirName=02-live-data-layer, got %q", phases[1].DirName)
+	}
+	if phases[2].DirName == "" || phases[2].DirName != "09-roadmap-absent" {
+		t.Errorf("expected third phase DirName=09-roadmap-absent, got %q", phases[2].DirName)
+	}
+	if phases[2].Name != "Phase 9: roadmap absent" {
+		t.Errorf("expected third phase Name=%q, got %q", "Phase 9: roadmap absent", phases[2].Name)
 	}
 }
 
@@ -221,6 +227,32 @@ func TestParsePhases_PlanTitle(t *testing.T) {
 	// If title extracted, use it; otherwise filename stem
 	if plan01.Title == "" {
 		t.Errorf("expected non-empty Title for 01-01-PLAN.md")
+	}
+}
+
+func TestParsePhases_RoadmapAbsentSorting(t *testing.T) {
+	// Provide phaseNames for 1 and 2 but NOT 9 — phase 9 must still sort correctly
+	phaseNames := map[int]string{1: "Core TUI Scaffold", 2: "Live Data Layer"}
+	phases := parsePhases(testdataPhasesDir, phaseNames, 0, 0)
+
+	if len(phases) != 3 {
+		t.Fatalf("expected 3 phases, got %d", len(phases))
+	}
+
+	// Phase 9 should be at index 2 (sorted after 1 and 2)
+	if phases[2].DirName != "09-roadmap-absent" {
+		t.Errorf("expected phases[2].DirName=09-roadmap-absent, got %q", phases[2].DirName)
+	}
+	if phases[2].Name != "Phase 9: roadmap absent" {
+		t.Errorf("expected phases[2].Name=%q, got %q", "Phase 9: roadmap absent", phases[2].Name)
+	}
+
+	// Verify strictly ascending sort order
+	n0 := extractPhaseNum(phases[0].Name)
+	n1 := extractPhaseNum(phases[1].Name)
+	n2 := extractPhaseNum(phases[2].Name)
+	if !(n0 < n1 && n1 < n2) {
+		t.Errorf("phases not in ascending order: %d, %d, %d", n0, n1, n2)
 	}
 }
 

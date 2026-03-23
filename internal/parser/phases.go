@@ -73,10 +73,14 @@ func parsePhases(phasesDir string, phaseNames map[int]string, activePhase, activ
 			}
 		}
 
-		// Phase name from ROADMAP.md, fallback to directory name.
-		name := entry.Name()
+		// Phase name from ROADMAP.md, fallback to slug derived from directory name.
+		var name string
 		if rname, ok := phaseNames[phaseNum]; ok {
 			name = fmt.Sprintf("Phase %d: %s", phaseNum, rname)
+		} else {
+			slug := phaseDirRe.ReplaceAllString(entry.Name(), "")
+			slug = strings.ReplaceAll(slug, "-", " ")
+			name = fmt.Sprintf("Phase %d: %s", phaseNum, slug)
 		}
 
 		// Derive phase status from plan statuses.
