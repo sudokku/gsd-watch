@@ -47,6 +47,14 @@ Make sure `~/.local/bin` is on your `$PATH`. Add this to your shell profile if n
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
+Then install the `/gsd-watch` slash command into Claude Code:
+
+```bash
+mkdir -p ~/.claude/commands
+curl -L https://raw.githubusercontent.com/sudokku/gsd-watch/main/commands/gsd-watch.md \
+  -o ~/.claude/commands/gsd-watch.md
+```
+
 **Option B — Build from source:**
 
 ```bash
@@ -106,7 +114,7 @@ Badges appear under each phase when the corresponding GSD lifecycle file exists 
 
 ## How it works
 
-gsd-watch watches `.planning/` with fsnotify (recursive, debounced at 300ms) and re-renders on any file change. Claude Code's `Stop` hook signals the sidebar via a Unix socket for an immediate refresh at the end of each agent turn — so the tree is always current without polling.
+gsd-watch watches `.planning/` with fsnotify (recursive, debounced at 300ms) and re-renders on any file change — so the tree is always current without polling.
 
 ---
 

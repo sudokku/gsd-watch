@@ -136,6 +136,12 @@ Recent decisions affecting current work:
 
 None yet.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260323-re2 | Fix gsd-watch sidebar closing immediately after opening | 2026-03-23 | cd8d9d5 | Verified | [260323-re2-fix-gsd-watch-sidebar-closing-immediatel](./quick/260323-re2-fix-gsd-watch-sidebar-closing-immediatel/) |
+
 ### Blockers/Concerns
 
 - STATE.md regex patterns for current-action field must be derived from actual file format during Phase 2
@@ -144,6 +150,7 @@ None yet.
 
 ## Session Continuity
 
+Last activity: 2026-03-23 - Completed quick task 260323-re2: Fix gsd-watch sidebar closing immediately after opening
 Last session: 2026-03-21T11:58:51.216Z
 Stopped at: Completed 06-01-PLAN.md
 Resume file: None
