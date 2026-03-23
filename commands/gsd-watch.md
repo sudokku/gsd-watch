@@ -9,7 +9,7 @@ Open a gsd-watch sidebar in a tmux pane. Follow these steps exactly using the Ba
 
 **Step 1 — Check if gsd-watch binary is available:**
 
-Run: `which gsd-watch`
+Run: `GSD_BIN=$(which gsd-watch)`
 
 If the command exits with a non-zero exit code (binary not found), print exactly:
 
@@ -29,9 +29,9 @@ Then stop. Do not continue to step 3.
 
 **Step 3 — Check for duplicate instance:**
 
-Run: `tmux list-panes -s -F '#{pane_current_command}'` to list the current command of all panes in the current session.
+Run: `tmux list-panes -s -F '#{pane_title}'` to list the title of all panes in the current session.
 
-If any line from the output is exactly `gsd-watch`, print exactly:
+If any line from the output starts with `gsd-watch:`, print exactly:
 
 `gsd-watch is already running in this session. Use Ctrl+C in that pane to stop it first.`
 
@@ -39,7 +39,7 @@ Then stop. Do not continue to step 4.
 
 **Step 4 — Spawn gsd-watch in a new right-side pane:**
 
-Run: `tmux split-window -h -p 35 -d "cd \"$PWD\" && gsd-watch"`
+Run: `tmux split-window -h -p 35 -d "cd \"$PWD\" && $GSD_BIN"`
 
 The `-h` flag creates a right-side vertical split. The `-p 35` sets the new pane to 35% of the current pane width. The `-d` flag keeps focus on the original pane. The `cd "$PWD"` ensures the binary runs from the correct project directory.
 
