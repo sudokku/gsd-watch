@@ -12,9 +12,9 @@ const testdataProjectDir = "testdata/project"
 func TestParseProject_FullFixture(t *testing.T) {
 	data := ParseProject(testdataProjectDir)
 
-	// From STATE.md: milestone_name: milestone
-	if data.Name != "milestone" {
-		t.Errorf("expected Name=%q, got %q", "milestone", data.Name)
+	// From testdata/PROJECT.md: # Test Project
+	if data.Name != "Test Project" {
+		t.Errorf("expected Name=%q from PROJECT.md H1, got %q", "Test Project", data.Name)
 	}
 
 	// From config.json: model_profile: balanced
@@ -68,11 +68,11 @@ func TestParseProject_FullFixture(t *testing.T) {
 }
 
 func TestParseProject_MissingRoot(t *testing.T) {
-	// Should not panic; should return "unknown" defaults.
+	// Should not panic; name falls back to project directory basename.
 	data := ParseProject("/nonexistent/path/to/.planning")
 
-	if data.Name != "unknown" {
-		t.Errorf("expected Name=%q for missing root, got %q", "unknown", data.Name)
+	if data.Name != "to" {
+		t.Errorf("expected Name=%q (dir basename fallback) for missing root, got %q", "to", data.Name)
 	}
 	if data.ModelProfile != "unknown" {
 		t.Errorf("expected ModelProfile=%q for missing root, got %q", "unknown", data.ModelProfile)
@@ -88,24 +88,25 @@ func TestParseProject_MissingRoot(t *testing.T) {
 	}
 }
 
-func TestParseProject_ProjectMDFallback(t *testing.T) {
+func TestParseProject_ProjectMDH1(t *testing.T) {
 	// Fixture layout mirrors real usage: PROJECT.md at project root, STATE.md inside .planning/
 	data := ParseProject("testdata/project-fallback/.planning")
 	if data.Name != "My Test Project" {
-		t.Errorf("expected Name=%q from PROJECT.md H1 fallback, got %q", "My Test Project", data.Name)
+		t.Errorf("expected Name=%q from PROJECT.md H1, got %q", "My Test Project", data.Name)
 	}
 }
 
-func TestParseProject_ProjectMDFallbackMissing(t *testing.T) {
+func TestParseProject_NoProjectMDUsesDir(t *testing.T) {
 	dir := t.TempDir()
-	// STATE.md inside .planning/, no PROJECT.md at project root
+	// .planning/ subdir with STATE.md, no PROJECT.md at project root
 	planningDir := filepath.Join(dir, ".planning")
 	os.MkdirAll(filepath.Join(planningDir, "phases"), 0755)
-	stateContent := "---\nmilestone_name:\n---\n\n# Project State\n\nPhase: 0\nPlan: 0\n"
+	stateContent := "---\nmilestone_name: some-milestone\n---\n\n# Project State\n\nPhase: 0\nPlan: 0\n"
 	os.WriteFile(filepath.Join(planningDir, "STATE.md"), []byte(stateContent), 0644)
 	data := ParseProject(planningDir)
-	if data.Name != "unknown" {
-		t.Errorf("expected Name=%q when PROJECT.md missing, got %q", "unknown", data.Name)
+	// No PROJECT.md → name is the project directory basename (temp dir name)
+	if data.Name != filepath.Base(dir) {
+		t.Errorf("expected Name=%q (dir basename), got %q", filepath.Base(dir), data.Name)
 	}
 }
 
@@ -113,8 +114,9 @@ func TestParseProject_EmptyRoot(t *testing.T) {
 	dir := t.TempDir()
 	data := ParseProject(dir)
 
-	if data.Name != "unknown" {
-		t.Errorf("expected Name=%q for empty root, got %q", "unknown", data.Name)
+	// No PROJECT.md → name is the parent directory basename; just check it's non-empty.
+	if data.Name == "" {
+		t.Errorf("expected non-empty Name for empty root, got %q", data.Name)
 	}
 	if data.ModelProfile != "unknown" {
 		t.Errorf("expected ModelProfile=%q for empty root, got %q", "unknown", data.ModelProfile)

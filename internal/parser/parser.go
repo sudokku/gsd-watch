@@ -13,8 +13,19 @@ import (
 // NEVER returns an error — always returns best-effort ProjectData with "unknown" defaults.
 // root parameter is the path to the .planning/ directory (e.g. "/path/to/project/.planning").
 func ParseProject(root string) ProjectData {
+	// Project name: PROJECT.md H1 at the project root (one level above .planning/),
+	// falling back to the project directory name if PROJECT.md is absent or has no H1.
+	projectRoot := filepath.Dir(root)
+	name := filepath.Base(projectRoot)
+	if projectBytes, err := os.ReadFile(filepath.Join(projectRoot, "PROJECT.md")); err == nil {
+		h1Re := regexp.MustCompile(`(?m)^# (.+)`)
+		if m := h1Re.FindSubmatch(projectBytes); len(m) > 1 {
+			name = strings.TrimSpace(string(m[1]))
+		}
+	}
+
 	data := ProjectData{
-		Name:          "unknown",
+		Name:          name,
 		ModelProfile:  "unknown",
 		Mode:          "unknown",
 		CurrentAction: "unknown",
@@ -29,18 +40,6 @@ func ParseProject(root string) ProjectData {
 
 	// Parse STATE.md.
 	if st, err := parseState(filepath.Join(root, "STATE.md")); err == nil {
-		if st.MilestoneName != "" {
-			data.Name = st.MilestoneName
-		} else {
-			// PARSE-12: fall back to PROJECT.md H1 title when milestone_name is missing.
-			// PROJECT.md lives at the project root, one level above .planning/.
-			if projectBytes, err := os.ReadFile(filepath.Join(filepath.Dir(root), "PROJECT.md")); err == nil {
-				h1Re := regexp.MustCompile(`(?m)^# (.+)`)
-				if m := h1Re.FindSubmatch(projectBytes); len(m) > 1 {
-					data.Name = strings.TrimSpace(string(m[1]))
-				}
-			}
-		}
 		if st.StoppedAt != "" {
 			data.CurrentAction = st.StoppedAt
 		}
