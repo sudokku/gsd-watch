@@ -44,6 +44,8 @@ func parsePlan(path string) (Plan, error) {
 
 // extractFrontmatter splits a file starting with "---\n...\n---" into YAML block and prose body.
 func extractFrontmatter(content string) (string, string) {
+	content = strings.TrimPrefix(content, "\xEF\xBB\xBF")
+	content = strings.TrimLeft(content, " \t\r\n")
 	if !strings.HasPrefix(content, "---") {
 		return "", content
 	}

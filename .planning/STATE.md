@@ -1,12 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: unknown
+milestone: v1.1
+milestone_name: Parser Reliability + Observability + Quick Tasks
+status: Defining requirements
 stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-21T12:01:59.740Z"
+last_updated: "2026-03-23T20:15:24.004Z"
+last_activity: 2026-03-23
 progress:
-  total_phases: 7
+  total_phases: 10
   completed_phases: 6
   total_plans: 17
   completed_plans: 17
@@ -19,12 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 06 — onboarding-docs-ux
+**Current focus:** Milestone v1.1 — Phase 7 next
 
 ## Current Position
 
-Phase: 06
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-23
 
 ## Performance Metrics
 

@@ -3,48 +3,58 @@
 **Defined:** 2026-03-18
 **Core Value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
 
-## v1 Requirements
+> **v1.0 requirements** archived to `.planning/milestones/v1.0-REQUIREMENTS.md` (all 29 complete)
 
-### TUI Core
+## v1.1 Requirements
 
-- [x] **TUI-01**: User sees a collapsible tree of phases and plans with status icons (✓ complete, ▶ in-progress, ○ pending, ✗ failed)
-- [x] **TUI-02**: User can expand/collapse phases with `←`/`→` or `h`/`l` keys; expanded state survives re-parses (path-keyed)
-- [x] **TUI-03**: User can scroll the tree with `↑`/`↓` or `j`/`k` keys via a scrollable viewport
-- [x] **TUI-04**: User can quit the TUI with `q` or `Ctrl+C`
-- [x] **TUI-05**: Header bar shows project name, GSD model profile, and mode (from config.json)
-- [x] **TUI-06**: Header bar shows an overall progress bar (calculated from plan completion ratios)
-- [x] **TUI-07**: Footer bar shows current GSD action (from STATE.md), time since last state change, and keybinding hints
-- [x] **TUI-08**: TUI reflows gracefully on terminal resize without crashing (Lip Gloss width clamped to minimum)
-- [x] **TUI-09**: Currently active plan is marked with a `← now` indicator in the tree
-- [x] **TUI-10**: Phase lifecycle badges displayed under each phase (📝 discussed, 🔬 researched, 📋 verified, 🧪 UAT)
+### Parser Reliability
 
-### Data Parsing
+- [ ] **PARSE-09**: Parser correctly sorts phases with no ROADMAP.md entry by extracting the phase number from the directory name (e.g. `07-foo` → phase 7), not returning 0
+- [ ] **PARSE-10**: Parser handles BOM (`\xEF\xBB\xBF`) and leading whitespace in PLAN.md frontmatter without treating the file as all-prose
+- [ ] **PARSE-11**: ROADMAP.md phase heading detection works for H2 (`##`), H3 (`###`), and H4 (`####`) heading formats — not only H3
+- [ ] **PARSE-12**: App displays project name from PROJECT.md `# Title` when STATE.md `milestone_name` field is missing or empty
 
-- [x] **PARSE-01**: Parser reads PLAN.md YAML frontmatter (phase, plan, title, status, wave, depends_on); missing fields use sensible defaults
-- [x] **PARSE-02**: Parser treats SUMMARY.md presence as the definitive status for a plan (overrides PLAN.md frontmatter status)
-- [x] **PARSE-03**: Parser reads ROADMAP.md to extract phase names and checked/unchecked success criteria
-- [x] **PARSE-04**: Parser extracts STATE.md fields via regex (Milestone, Phase, Status, Plan, Progress, Stopped at) as best-effort; gracefully falls back to "unknown" if field absent
-- [x] **PARSE-05**: Parser reads config.json for model profile and mode
-- [x] **PARSE-06**: Parser infers phase lifecycle badge state from file presence (CONTEXT.md, RESEARCH.md, VERIFICATION.md, UAT.md)
-- [x] **PARSE-07**: Filesystem directory structure is primary source of truth for phase list; STATE.md is supplemental only
-- [x] **PARSE-08**: Any parser failure (missing file, malformed YAML, invalid JSON) is handled gracefully — TUI never crashes, shows "unknown" or skips the item
+### Observability
 
-### File Watching
+- [ ] **OBS-01**: `--debug` flag prints parser decisions to stderr: phase dir detection, plan file matching, frontmatter parse results, badge detection, and cache hit/miss events
 
-- [x] **WATCH-01**: fsnotify watcher monitors `.planning/` recursively — all subdirectories added explicitly on startup via filepath.WalkDir
-- [x] **WATCH-02**: Newly created directories (e.g. new phase dir) are added to the watcher dynamically on fsnotify.Create events
-- [x] **WATCH-03**: File change events are debounced at 300ms — rapid writes during execute-phase produce a single re-parse, not a storm
-- [x] **WATCH-04**: On fsnotify event, only the changed file is re-parsed (incremental cache keyed by path + mtime); full re-parse only on startup
-- [x] **WATCH-05**: TUI displays updated state within 300ms of any `.planning/` file change
+### Test Coverage
 
-### Plugin & Delivery
+- [ ] **TEST-01**: Test fixture corpus covers BOM-prefixed frontmatter, alternate heading formats (H2/H4), and phases missing from ROADMAP.md — all parsed correctly, with existing fixtures still passing
 
-- [x] **PLUGIN-01**: `/gsd-watch` slash command spawns a tmux split pane (35% width, right side) running the gsd-watch binary
-- [x] **PLUGIN-02**: Slash command detects if running inside tmux (`$TMUX`); if not, prints instructions to start tmux manually rather than attempting to wrap the session
-- [x] **PLUGIN-03**: Slash command detects if gsd-watch is already running (socket or pane title check) and avoids spawning a duplicate
-- [x] **PLUGIN-04**: Go binary compiles with `CGO_ENABLED=0` to a static binary under 15MB with no runtime dependencies except tmux
-- [x] **PLUGIN-05**: Makefile provides `build` (darwin/arm64), `install` (→ ~/.local/bin/), `plugin-install` (→ Claude Code commands dir), `all`, and `clean` targets
-- [x] **PLUGIN-06**: Makefile also builds `darwin/amd64` target for Intel Mac friends
+### Quick Tasks
+
+- [ ] **QT-01**: User sees a collapsible "Quick tasks" section in the TUI tree showing tasks parsed from `.planning/quick/`
+- [ ] **QT-02**: Quick task parser detects `YYMMDD-ID-PLAN.md` / `YYMMDD-ID-SUMMARY.md` naming convention; status determined by SUMMARY.md presence (complete) or absence (in-progress/pending)
+
+### Accessibility
+
+- [ ] **A11Y-01**: `--no-emoji` CLI flag switches all TUI status icons and badges to ASCII text equivalents (for SSH and minimal terminal environments)
+
+## v1.2 Requirements
+
+### Archived Milestone Visibility
+
+- [ ] **ARC-01**: Parser detects archived milestone directories and extracts completion metadata (milestone name, phase count, completion date)
+- [ ] **ARC-02**: User sees a collapsed, non-interactive row in the TUI tree for each completed archived milestone (e.g. "▸ v1.0 — 6 phases ✓"), displayed below the active milestone section
+
+## v1.3 Requirements
+
+### Config File
+
+- [ ] **CFG-01**: App reads `~/.config/gsd-watch/config.toml` on startup; a missing or malformed file silently uses defaults and never errors
+- [ ] **CFG-02**: Config `emoji = false` disables emoji in the TUI, superseding the `--no-emoji` flag if both are set
+- [ ] **CFG-03**: Config `theme = "default"` key selects the active color theme
+
+### Themes
+
+- [ ] **THEME-01**: App ships named color presets: `default`, `minimal`, `high-contrast`
+- [ ] **THEME-02**: `minimal` theme renders text-only status icons and muted/dimmed colors throughout
+- [ ] **THEME-03**: `high-contrast` theme renders bold, high-contrast colors for maximum legibility
+
+### Help Discoverability
+
+- [ ] **HELP-01**: The `?` help overlay displays the config file path (e.g. `Config: ~/.config/gsd-watch/config.toml`) so users can discover and edit it
 
 ## v2 Requirements
 
@@ -58,10 +68,8 @@
 
 ### Enhancements
 
-- **ENH-01**: Expand-all / collapse-all keybinding (e.g. `e` / `E`)
-- **ENH-02**: Visual flash or timestamp update when a refresh event is received
-- **ENH-03**: GSD v2 support (`.gsd/` directory structure)
-- **ENH-04**: Linux support (inotify-based fsnotify)
+- **ENH-01**: GSD v2 support (`.gsd/` directory structure)
+- **ENH-02**: Linux support (inotify-based fsnotify)
 
 ## Out of Scope
 
@@ -76,49 +84,52 @@
 | Zellij / WezTerm / iTerm2 splits | tmux only |
 | Cost tracking / token usage | No signal for this in .planning/ files |
 | Plugin marketplace publishing | Manual install only |
-| Color theme configuration | Hardcode sensible defaults using lipgloss.AdaptiveColor |
+| In-TUI settings panel | Config file preferred for v1.3; panel deferred to future milestone |
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+**v1.0 Traceability:** archived to `.planning/milestones/v1.0-REQUIREMENTS.md` (29 requirements, all Complete)
+
+**v1.1 Traceability:**
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TUI-01 | Phase 1 | Complete |
-| TUI-02 | Phase 1 | Complete |
-| TUI-03 | Phase 1 | Complete |
-| TUI-04 | Phase 1 | Complete |
-| TUI-05 | Phase 1 | Complete (01-01) |
-| TUI-06 | Phase 1 | Complete (01-01) |
-| TUI-07 | Phase 1 | Complete (01-01) |
-| TUI-08 | Phase 1 | Complete |
-| TUI-09 | Phase 1 | Complete (01-01) |
-| TUI-10 | Phase 1 | Complete (01-01) |
-| PARSE-01 | Phase 2 | Complete |
-| PARSE-02 | Phase 2 | Complete |
-| PARSE-03 | Phase 2 | Complete |
-| PARSE-04 | Phase 2 | Complete |
-| PARSE-05 | Phase 2 | Complete |
-| PARSE-06 | Phase 2 | Complete |
-| PARSE-07 | Phase 2 | Complete |
-| PARSE-08 | Phase 2 | Complete |
-| WATCH-01 | Phase 3 | Complete |
-| WATCH-02 | Phase 3 | Complete |
-| WATCH-03 | Phase 3 | Complete |
-| WATCH-04 | Phase 3 | Complete |
-| WATCH-05 | Phase 3 | Complete |
-| PLUGIN-01 | Phase 4 | Complete |
-| PLUGIN-02 | Phase 4 | Complete |
-| PLUGIN-03 | Phase 4 | Complete |
-| PLUGIN-04 | Phase 4 | Complete |
-| PLUGIN-05 | Phase 4 | Complete |
-| PLUGIN-06 | Phase 4 | Complete |
+| PARSE-09 | Phase 7 | Pending |
+| PARSE-10 | Phase 7 | Pending |
+| PARSE-11 | Phase 7 | Pending |
+| PARSE-12 | Phase 7 | Pending |
+| TEST-01 | Phase 7 | Pending |
+| OBS-01 | Phase 8 | Pending |
+| QT-01 | Phase 9 | Pending |
+| QT-02 | Phase 9 | Pending |
+| A11Y-01 | Phase 10 | Pending |
+
+**v1.2 Traceability:**
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ARC-01 | Phase 11 | Pending |
+| ARC-02 | Phase 12 | Pending |
+
+**v1.3 Traceability:**
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CFG-01 | Phase 13 | Pending |
+| CFG-02 | Phase 13 | Pending |
+| CFG-03 | Phase 13 | Pending |
+| THEME-01 | Phase 14 | Pending |
+| THEME-02 | Phase 14 | Pending |
+| THEME-03 | Phase 14 | Pending |
+| HELP-01 | Phase 15 | Pending |
 
 **Coverage:**
-- v1 requirements: 29 total
-- Mapped to phases: 29
+- v1.0 requirements: 29 total, all complete (archived)
+- v1.1 requirements: 9 total, 0 complete
+- v1.2 requirements: 2 total, 0 complete
+- v1.3 requirements: 7 total, 0 complete
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-18*
-*Last updated: 2026-03-19 after 01-01 completion*
+*Last updated: 2026-03-23 — v1.0 archived, v1.1/v1.2/v1.3 active*

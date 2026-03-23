@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-var phaseHeadingRe = regexp.MustCompile(`### Phase (\d+): (.+)`)
+var phaseHeadingRe = regexp.MustCompile(`(?m)#{2,4} Phase (\d+): (.+)`)
 
 // parseRoadmap reads ROADMAP.md and extracts phase number → name mapping.
 // Returns empty map on any error (best-effort).
