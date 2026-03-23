@@ -33,7 +33,7 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
 
 ### v1.1 Phases
 
-- [ ] **Phase 7: Parser Reliability + Fixture Corpus** - Fix phase sorting, BOM frontmatter, heading regex, PROJECT.md name fallback; add test fixture corpus
+- [x] **Phase 7: Parser Reliability + Fixture Corpus** - Fix phase sorting, BOM frontmatter, heading regex, PROJECT.md name fallback; add test fixture corpus (completed 2026-03-23)
 - [ ] **Phase 8: Debug Mode** - `--debug` flag that prints parser decisions to stderr
 - [ ] **Phase 9: Quick Tasks TUI Section** - Collapsible quick tasks tree section reading `.planning/quick/`
 - [ ] **Phase 10: Emoji/Text Toggle** - `--no-emoji` flag for ASCII fallback in SSH and minimal terminals
@@ -51,7 +51,7 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
 **Plans**: 2 plans
 Plans:
 - [x] 07-01-PLAN.md — Fix BOM/whitespace, heading regex, phase sorting + unit tests
-- [ ] 07-02-PLAN.md — PROJECT.md name fallback + integration regression
+- [x] 07-02-PLAN.md — PROJECT.md name fallback + integration regression
 
 ### Phase 8: Debug Mode
 **Goal**: A developer running `gsd-watch --debug` can see every parser decision printed to stderr, making silent parse failures diagnosable without adding print statements to the source
@@ -63,7 +63,7 @@ Plans:
   3. Debug output includes enough context to identify which file triggered each event (path is always present in the log line)
 **Plans**: 2 plans
 Plans:
-- [ ] 07-01-PLAN.md — Fix BOM/whitespace, heading regex, phase sorting + unit tests
+- [x] 07-01-PLAN.md — Fix BOM/whitespace, heading regex, phase sorting + unit tests
 - [ ] 07-02-PLAN.md — PROJECT.md name fallback + integration regression
 
 ### Phase 9: Quick Tasks TUI Section
@@ -101,7 +101,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Parser Reliability + Fixture Corpus | 1/2 | In Progress|  |
+| 7. Parser Reliability + Fixture Corpus | 2/2 | Complete   | 2026-03-23 |
 | 8. Debug Mode | 0/? | Not started | - |
 | 9. Quick Tasks TUI Section | 0/? | Not started | - |
 | 10. Emoji/Text Toggle | 0/? | Not started | - |

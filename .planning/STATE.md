@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Parser Reliability + Observability + Quick Tasks
-status: Ready to execute
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-03-23T21:13:55.347Z"
+status: Ready to plan
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-03-23T21:20:10.591Z"
 last_activity: 2026-03-23
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -24,8 +24,8 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Phase: 07 (parser-reliability-fixture-corpus) — EXECUTING
-Plan: 2 of 2
+Phase: 8
+Plan: Not started
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Plan: 2 of 2
 | Phase 06-onboarding-docs-ux P02 | 1 | 1 tasks | 1 files |
 | Phase 06-onboarding-docs-ux P01 | 2 | 2 tasks | 7 files |
 | Phase 07-parser-reliability-fixture-corpus P01 | 12 | 2 tasks | 8 files |
+| Phase 07-parser-reliability-fixture-corpus P02 | 525559 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,7 @@ Recent decisions affecting current work:
 - [Phase 07-01]: extractFrontmatter strips BOM then TrimLeft whitespace — two discrete lines, in that order, before HasPrefix check
 - [Phase 07-01]: phaseHeadingRe uses (?m)#{2,4} to match H2/H3/H4 without multiline flag affecting capture groups
 - [Phase 07-01]: ROADMAP-absent phase name uses phaseDirRe.ReplaceAllString to strip NN- prefix then ReplaceAll - to spaces
+- [Phase 07-02]: PARSE-12: PROJECT.md H1 read skipped when milestone_name present — else-branch ensures no unnecessary disk I/O
 
 ### Roadmap Evolution
 
@@ -156,6 +158,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-23
-Last session: 2026-03-23T21:13:55.344Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-03-23T21:17:19.702Z
+Stopped at: Completed 07-02-PLAN.md
 Resume file: None

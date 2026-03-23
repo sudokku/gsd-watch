@@ -33,7 +33,8 @@ func ParseProject(root string) ProjectData {
 			data.Name = st.MilestoneName
 		} else {
 			// PARSE-12: fall back to PROJECT.md H1 title when milestone_name is missing.
-			if projectBytes, err := os.ReadFile(filepath.Join(root, "PROJECT.md")); err == nil {
+			// PROJECT.md lives at the project root, one level above .planning/.
+			if projectBytes, err := os.ReadFile(filepath.Join(filepath.Dir(root), "PROJECT.md")); err == nil {
 				h1Re := regexp.MustCompile(`(?m)^# (.+)`)
 				if m := h1Re.FindSubmatch(projectBytes); len(m) > 1 {
 					data.Name = strings.TrimSpace(string(m[1]))
