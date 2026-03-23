@@ -9,9 +9,9 @@
 
 ### Parser Reliability
 
-- [ ] **PARSE-09**: Parser correctly sorts phases with no ROADMAP.md entry by extracting the phase number from the directory name (e.g. `07-foo` → phase 7), not returning 0
-- [ ] **PARSE-10**: Parser handles BOM (`\xEF\xBB\xBF`) and leading whitespace in PLAN.md frontmatter without treating the file as all-prose
-- [ ] **PARSE-11**: ROADMAP.md phase heading detection works for H2 (`##`), H3 (`###`), and H4 (`####`) heading formats — not only H3
+- [x] **PARSE-09**: Parser correctly sorts phases with no ROADMAP.md entry by extracting the phase number from the directory name (e.g. `07-foo` → phase 7), not returning 0
+- [x] **PARSE-10**: Parser handles BOM (`\xEF\xBB\xBF`) and leading whitespace in PLAN.md frontmatter without treating the file as all-prose
+- [x] **PARSE-11**: ROADMAP.md phase heading detection works for H2 (`##`), H3 (`###`), and H4 (`####`) heading formats — not only H3
 - [ ] **PARSE-12**: App displays project name from PROJECT.md `# Title` when STATE.md `milestone_name` field is missing or empty
 
 ### Observability
@@ -20,7 +20,7 @@
 
 ### Test Coverage
 
-- [ ] **TEST-01**: Test fixture corpus covers BOM-prefixed frontmatter, alternate heading formats (H2/H4), and phases missing from ROADMAP.md — all parsed correctly, with existing fixtures still passing
+- [x] **TEST-01**: Test fixture corpus covers BOM-prefixed frontmatter, alternate heading formats (H2/H4), and phases missing from ROADMAP.md — all parsed correctly, with existing fixtures still passing
 
 ### Quick Tasks
 
@@ -94,11 +94,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PARSE-09 | Phase 7 | Pending |
-| PARSE-10 | Phase 7 | Pending |
-| PARSE-11 | Phase 7 | Pending |
+| PARSE-09 | Phase 7 | Complete |
+| PARSE-10 | Phase 7 | Complete |
+| PARSE-11 | Phase 7 | Complete |
 | PARSE-12 | Phase 7 | Pending |
-| TEST-01 | Phase 7 | Pending |
+| TEST-01 | Phase 7 | Complete |
 | OBS-01 | Phase 8 | Pending |
 | QT-01 | Phase 9 | Pending |
 | QT-02 | Phase 9 | Pending |

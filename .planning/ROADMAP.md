@@ -50,7 +50,7 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
   5. Running `go test ./...` passes with fixture corpus covering BOM frontmatter, H2/H4 headings, and phases absent from ROADMAP.md; all pre-existing fixtures continue to pass
 **Plans**: 2 plans
 Plans:
-- [ ] 07-01-PLAN.md — Fix BOM/whitespace, heading regex, phase sorting + unit tests
+- [x] 07-01-PLAN.md — Fix BOM/whitespace, heading regex, phase sorting + unit tests
 - [ ] 07-02-PLAN.md — PROJECT.md name fallback + integration regression
 
 ### Phase 8: Debug Mode
@@ -101,7 +101,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Parser Reliability + Fixture Corpus | 0/2 | Not started | - |
+| 7. Parser Reliability + Fixture Corpus | 1/2 | In Progress|  |
 | 8. Debug Mode | 0/? | Not started | - |
 | 9. Quick Tasks TUI Section | 0/? | Not started | - |
 | 10. Emoji/Text Toggle | 0/? | Not started | - |

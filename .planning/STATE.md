@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Parser Reliability + Observability + Quick Tasks
-status: Defining requirements
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-23T20:15:24.004Z"
+status: Ready to execute
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-23T21:13:55.347Z"
 last_activity: 2026-03-23
 progress:
-  total_phases: 10
-  completed_phases: 6
-  total_plans: 17
-  completed_plans: 17
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
@@ -20,14 +20,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Milestone v1.1 — Phase 7 next
+**Current focus:** Phase 07 — parser-reliability-fixture-corpus
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-23
+Phase: 07 (parser-reliability-fixture-corpus) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -67,6 +65,7 @@ Last activity: 2026-03-23
 | Phase 05-tui-polish P03 | 15 | 2 tasks | 2 files |
 | Phase 06-onboarding-docs-ux P02 | 1 | 1 tasks | 1 files |
 | Phase 06-onboarding-docs-ux P01 | 2 | 2 tasks | 7 files |
+| Phase 07-parser-reliability-fixture-corpus P01 | 12 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -130,6 +129,9 @@ Recent decisions affecting current work:
 - [Phase 06-02]: README audience is GSD+Claude Code users — GSD framework not explained
 - [Phase 06-02]: Demo section uses placeholder image tag with vhs/ttyrec comment for future recording
 - [Phase 06-01]: [06-01] Footer hint uses static string '? help' appended to existing hints; help overlay adds Phase stages with badge emojis; phase names word-wrap per-line with independent highlight/dim; --help uses flag stdlib; TMUX check uses os.Getenv
+- [Phase 07-01]: extractFrontmatter strips BOM then TrimLeft whitespace — two discrete lines, in that order, before HasPrefix check
+- [Phase 07-01]: phaseHeadingRe uses (?m)#{2,4} to match H2/H3/H4 without multiline flag affecting capture groups
+- [Phase 07-01]: ROADMAP-absent phase name uses phaseDirRe.ReplaceAllString to strip NN- prefix then ReplaceAll - to spaces
 
 ### Roadmap Evolution
 
@@ -153,7 +155,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-23 - Completed quick task 260323-re2: Fix gsd-watch sidebar closing immediately after opening
-Last session: 2026-03-21T11:58:51.216Z
-Stopped at: Completed 06-01-PLAN.md
+Last activity: 2026-03-23
+Last session: 2026-03-23T21:13:55.344Z
+Stopped at: Completed 07-01-PLAN.md
 Resume file: None

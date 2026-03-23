@@ -2,6 +2,7 @@ package parser
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -84,6 +85,25 @@ func TestParseProject_MissingRoot(t *testing.T) {
 	}
 	if len(data.Phases) != 0 {
 		t.Errorf("expected empty Phases for missing root, got %d phases", len(data.Phases))
+	}
+}
+
+func TestParseProject_ProjectMDFallback(t *testing.T) {
+	data := ParseProject("testdata/project-fallback")
+	if data.Name != "My Test Project" {
+		t.Errorf("expected Name=%q from PROJECT.md H1 fallback, got %q", "My Test Project", data.Name)
+	}
+}
+
+func TestParseProject_ProjectMDFallbackMissing(t *testing.T) {
+	dir := t.TempDir()
+	// STATE.md with empty milestone_name, no PROJECT.md
+	stateContent := "---\nmilestone_name:\n---\n\n# Project State\n\nPhase: 0\nPlan: 0\n"
+	os.WriteFile(filepath.Join(dir, "STATE.md"), []byte(stateContent), 0644)
+	os.MkdirAll(filepath.Join(dir, "phases"), 0755)
+	data := ParseProject(dir)
+	if data.Name != "unknown" {
+		t.Errorf("expected Name=%q when PROJECT.md missing, got %q", "unknown", data.Name)
 	}
 }
 
