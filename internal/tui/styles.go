@@ -30,7 +30,7 @@ func StatusIcon(status string) string {
 	case "complete":
 		return CompleteStyle.Render("✓")
 	case "in_progress":
-		return ActiveStyle.Render("▶")
+		return "▶"
 	case "failed":
 		return FailedStyle.Render("✗")
 	default:
