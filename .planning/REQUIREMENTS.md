@@ -16,7 +16,7 @@
 
 ### Observability
 
-- [ ] **OBS-01**: `--debug` flag prints parser decisions to stderr: phase dir detection, plan file matching, frontmatter parse results, badge detection, and cache hit/miss events
+- [x] **OBS-01**: `--debug` flag prints parser decisions to stderr: phase dir detection, plan file matching, frontmatter parse results, badge detection, and cache hit/miss events
 
 ### Test Coverage
 
@@ -99,7 +99,7 @@
 | PARSE-11 | Phase 7 | Complete |
 | PARSE-12 | Phase 7 | Complete |
 | TEST-01 | Phase 7 | Complete |
-| OBS-01 | Phase 8 | Pending |
+| OBS-01 | Phase 8 | Complete |
 | QT-01 | Phase 9 | Pending |
 | QT-02 | Phase 9 | Pending |
 | A11Y-01 | Phase 10 | Pending |

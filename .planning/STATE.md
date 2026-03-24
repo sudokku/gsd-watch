@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Parser Reliability + Observability + Quick Tasks
-status: Ready to plan
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-03-23T21:20:10.591Z"
-last_activity: 2026-03-23
+status: Ready to execute
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-24T06:13:24.175Z"
+last_activity: 2026-03-24
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -20,12 +20,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 07 — parser-reliability-fixture-corpus
+**Current focus:** Phase 08 — debug-mode
 
 ## Current Position
 
-Phase: 8
-Plan: Not started
+Phase: 08 (debug-mode) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Plan: Not started
 | Phase 06-onboarding-docs-ux P01 | 2 | 2 tasks | 7 files |
 | Phase 07-parser-reliability-fixture-corpus P01 | 12 | 2 tasks | 8 files |
 | Phase 07-parser-reliability-fixture-corpus P02 | 525559 | 2 tasks | 5 files |
+| Phase 08-debug-mode P01 | 2 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,8 @@ Recent decisions affecting current work:
 - [Phase 07-01]: phaseHeadingRe uses (?m)#{2,4} to match H2/H3/H4 without multiline flag affecting capture groups
 - [Phase 07-01]: ROADMAP-absent phase name uses phaseDirRe.ReplaceAllString to strip NN- prefix then ReplaceAll - to spaces
 - [Phase 07-02]: PARSE-12: PROJECT.md H1 read skipped when milestone_name present — else-branch ensures no unnecessary disk I/O
+- [Phase 08-01]: DebugOut is io.Writer not bool — enables bytes.Buffer injection in tests without real stderr
+- [Phase 08-01]: D-04 scope: no debug calls in updateFromState/updateFromConfig (STATE.md/config.json paths) — only phase_dir/plan/plan_error/badge/cache events
 
 ### Roadmap Evolution
 
@@ -157,7 +160,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-23
-Last session: 2026-03-23T21:17:19.702Z
-Stopped at: Completed 07-02-PLAN.md
+Last activity: 2026-03-24
+Last session: 2026-03-24T06:13:24.171Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None

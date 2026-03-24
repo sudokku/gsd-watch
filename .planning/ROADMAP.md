@@ -63,7 +63,7 @@ Plans:
   3. Debug output includes enough context to identify which file triggered each event (path is always present in the log line)
 **Plans**: 2 plans
 Plans:
-- [ ] 08-01-PLAN.md — Parser debug infrastructure (debug.go + emit calls in phases.go/cache.go)
+- [x] 08-01-PLAN.md — Parser debug infrastructure (debug.go + emit calls in phases.go/cache.go)
 - [ ] 08-02-PLAN.md — CLI flag wiring (main.go --debug) + comprehensive debug tests
 
 ### Phase 9: Quick Tasks TUI Section
@@ -102,7 +102,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. Parser Reliability + Fixture Corpus | 2/2 | Complete   | 2026-03-23 |
-| 8. Debug Mode | 0/2 | Not started | - |
+| 8. Debug Mode | 1/2 | In Progress|  |
 | 9. Quick Tasks TUI Section | 0/? | Not started | - |
 | 10. Emoji/Text Toggle | 0/? | Not started | - |
 
