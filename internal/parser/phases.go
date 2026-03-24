@@ -69,6 +69,7 @@ func parsePhases(phasesDir string, phaseNames map[int]string, activePhase, activ
 		for _, bf := range badgeFiles {
 			badgePath := filepath.Join(phaseDir, prefix+"-"+bf.suffix)
 			if _, statErr := os.Stat(badgePath); statErr == nil {
+				debugf("badge", "%s-%s \u2192 %s", prefix, bf.suffix, bf.badge)
 				badges = append(badges, bf.badge)
 			}
 		}
@@ -82,6 +83,7 @@ func parsePhases(phasesDir string, phaseNames map[int]string, activePhase, activ
 			slug = strings.ReplaceAll(slug, "-", " ")
 			name = fmt.Sprintf("Phase %d: %s", phaseNum, slug)
 		}
+		debugf("phase_dir", "%s num=%d name=%q", entry.Name(), phaseNum, name)
 
 		// Derive phase status from plan statuses.
 		status := derivePhaseStatus(plans)
@@ -144,6 +146,7 @@ func parsePlansInDir(phaseDir string, phaseNum, activePhase, activePlan int) []P
 		planPath := filepath.Join(phaseDir, entry.Name())
 		plan, err := parsePlan(planPath)
 		if err != nil {
+			debugf("plan_error", "%s err=%q", entry.Name(), err.Error())
 			continue // skip malformed plans silently (PARSE-08)
 		}
 		plan.Filename = entry.Name()
@@ -153,6 +156,7 @@ func parsePlansInDir(phaseDir string, phaseNum, activePhase, activePlan int) []P
 		if plan.Title == "" {
 			plan.Title = strings.TrimSuffix(entry.Name(), ".md")
 		}
+		debugf("plan", "%s status=%q title=%q wave=%d", entry.Name(), plan.Status, plan.Title, plan.Wave)
 
 		// SUMMARY.md override (PARSE-02): if NN-NN-SUMMARY.md exists, status = complete.
 		summaryName := strings.Replace(entry.Name(), "-PLAN.md", "-SUMMARY.md", 1)

@@ -64,9 +64,11 @@ func (c *ProjectCache) Update(path string) ProjectData {
 	info, err := os.Stat(path)
 	if err == nil {
 		if c.mtimes[path].Equal(info.ModTime()) {
+			debugf("cache", "HIT %s (mtime unchanged)", filepath.Base(path))
 			return c.data
 		}
 		c.mtimes[path] = info.ModTime()
+		debugf("cache", "MISS %s (mtime changed)", filepath.Base(path))
 	}
 	// If os.Stat failed (file deleted), fall through to full re-parse.
 
