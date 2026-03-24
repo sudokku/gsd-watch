@@ -25,12 +25,24 @@ type Row struct {
 	Expanded bool         // true when this phase row is currently expanded
 }
 
+// Options configures optional rendering behaviors for TreeModel.
+type Options struct {
+	NoEmoji bool
+}
+
 // TreeModel manages collapsible tree state: data, expanded map, and cursor.
 type TreeModel struct {
 	data     parser.ProjectData
 	expanded map[string]bool // key: phase.DirName
 	cursor   int
 	keys     tui.KeyMap
+	opts     Options
+}
+
+// SetOptions returns a copy of TreeModel with the given options applied.
+func (t TreeModel) SetOptions(o Options) TreeModel {
+	t.opts = o
+	return t
 }
 
 // New returns a TreeModel initialized with an empty expanded map and cursor 0.
