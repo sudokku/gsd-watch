@@ -34,7 +34,7 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
 ### v1.1 Phases
 
 - [x] **Phase 7: Parser Reliability + Fixture Corpus** - Fix phase sorting, BOM frontmatter, heading regex, PROJECT.md name fallback; add test fixture corpus (completed 2026-03-23)
-- [ ] **Phase 8: Debug Mode** - `--debug` flag that prints parser decisions to stderr
+- [x] **Phase 8: Debug Mode** - `--debug` flag that prints parser decisions to stderr (completed 2026-03-24)
 - [ ] **Phase 9: Quick Tasks TUI Section** - Collapsible quick tasks tree section reading `.planning/quick/`
 - [ ] **Phase 10: Emoji/Text Toggle** - `--no-emoji` flag for ASCII fallback in SSH and minimal terminals
 
@@ -64,7 +64,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 08-01-PLAN.md — Parser debug infrastructure (debug.go + emit calls in phases.go/cache.go)
-- [ ] 08-02-PLAN.md — CLI flag wiring (main.go --debug) + comprehensive debug tests
+- [x] 08-02-PLAN.md — CLI flag wiring (main.go --debug) + comprehensive debug tests
 
 ### Phase 9: Quick Tasks TUI Section
 **Goal**: Users see a collapsible "Quick tasks" section at the bottom of the TUI tree that shows tasks from `.planning/quick/`, with correct status determined by file naming convention
@@ -102,7 +102,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. Parser Reliability + Fixture Corpus | 2/2 | Complete   | 2026-03-23 |
-| 8. Debug Mode | 1/2 | In Progress|  |
+| 8. Debug Mode | 2/2 | Complete   | 2026-03-24 |
 | 9. Quick Tasks TUI Section | 0/? | Not started | - |
 | 10. Emoji/Text Toggle | 0/? | Not started | - |
 

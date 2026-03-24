@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Parser Reliability + Observability + Quick Tasks
-status: Ready to execute
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-24T06:13:24.175Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-03-24T06:18:03.909Z"
 last_activity: 2026-03-24
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -68,6 +68,7 @@ Plan: 2 of 2
 | Phase 07-parser-reliability-fixture-corpus P01 | 12 | 2 tasks | 8 files |
 | Phase 07-parser-reliability-fixture-corpus P02 | 525559 | 2 tasks | 5 files |
 | Phase 08-debug-mode P01 | 2 | 2 tasks | 3 files |
+| Phase 08-debug-mode P02 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,7 @@ Recent decisions affecting current work:
 - [Phase 07-02]: PARSE-12: PROJECT.md H1 read skipped when milestone_name present — else-branch ensures no unnecessary disk I/O
 - [Phase 08-01]: DebugOut is io.Writer not bool — enables bytes.Buffer injection in tests without real stderr
 - [Phase 08-01]: D-04 scope: no debug calls in updateFromState/updateFromConfig (STATE.md/config.json paths) — only phase_dir/plan/plan_error/badge/cache events
+- [Phase 08-02]: debug flag wires parser.DebugOut=os.Stderr when passed
 
 ### Roadmap Evolution
 
@@ -161,6 +163,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-24
-Last session: 2026-03-24T06:13:24.171Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-03-24T06:17:59.871Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None
