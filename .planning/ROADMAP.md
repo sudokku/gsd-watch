@@ -77,8 +77,8 @@ Plans:
   4. New files dropped into `.planning/quick/` appear in the TUI within 300ms via the existing fsnotify watcher (no new watcher config required)
 **Plans**: 2 plans
 Plans:
-- [ ] 07-01-PLAN.md — Fix BOM/whitespace, heading regex, phase sorting + unit tests
-- [ ] 07-02-PLAN.md — PROJECT.md name fallback + integration regression
+- [ ] 09-01-PLAN.md — QuickTask parser (types, quick.go, ParseProject wiring, tests)
+- [ ] 09-02-PLAN.md — TUI tree section (RowKind variants, View, Update, mock, tests)
 
 ### Phase 10: Emoji/Text Toggle
 **Goal**: Users who run gsd-watch in SSH sessions or terminals without emoji support can switch all status icons and lifecycle badges to ASCII equivalents with a single flag
@@ -103,7 +103,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10
 |-------|----------------|--------|-----------|
 | 7. Parser Reliability + Fixture Corpus | 2/2 | Complete   | 2026-03-23 |
 | 8. Debug Mode | 2/2 | Complete   | 2026-03-24 |
-| 9. Quick Tasks TUI Section | 0/? | Not started | - |
+| 9. Quick Tasks TUI Section | 0/2 | Not started | - |
 | 10. Emoji/Text Toggle | 0/? | Not started | - |
 
 ---
