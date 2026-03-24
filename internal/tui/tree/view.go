@@ -42,7 +42,7 @@ func (t TreeModel) View(width int) string {
 			if t.expanded[row.Phase.DirName] {
 				expandIndicator = "▼ "
 			}
-			icon := tui.StatusIcon(row.Phase.Status)
+			icon := tui.StatusIcon(row.Phase.Status, t.opts.NoEmoji)
 			isDimmedPhase := row.Phase.Status == parser.StatusComplete
 
 			// Calculate prefix width and available wrap width for phase name.
@@ -89,7 +89,7 @@ func (t TreeModel) View(width int) string {
 			if len(row.Phase.Badges) > 0 {
 				var badgeParts []string
 				for _, badge := range row.Phase.Badges {
-					b := tui.BadgeString(badge)
+					b := tui.BadgeString(badge, t.opts.NoEmoji)
 					if b != "" {
 						badgeParts = append(badgeParts, b)
 					}
@@ -113,7 +113,7 @@ func (t TreeModel) View(width int) string {
 				connector = "    └── "
 			}
 
-			icon := tui.StatusIcon(row.Plan.Status)
+			icon := tui.StatusIcon(row.Plan.Status, t.opts.NoEmoji)
 			nowMarker := ""
 			if row.Plan.IsActive {
 				nowMarker = " " + tui.NowMarkerStyle.Render("← now")
@@ -203,7 +203,7 @@ func (t TreeModel) View(width int) string {
 			if isLast {
 				connector = "    └── "
 			}
-			icon := tui.StatusIcon(qt.Status)
+			icon := tui.StatusIcon(qt.Status, t.opts.NoEmoji)
 			isDimmed := qt.Status == parser.StatusComplete
 
 			// Calculate wrap width — same pattern as RowPlan
@@ -272,20 +272,20 @@ func (t TreeModel) RenderedCursorLine(width int) int {
 		if i == t.cursor {
 			return line
 		}
-		line += t.renderedRowLines(row, width)
+		line += t.renderedRowLines(row, width, t.opts.NoEmoji)
 	}
 	return line
 }
 
 // renderedRowLines returns the number of output lines a single row occupies.
-func (t TreeModel) renderedRowLines(row Row, width int) int {
+func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 	switch row.Kind {
 	case RowPhase:
 		// Calculate wrapped phase name line count.
 		// expandIndicator ("▶ " or "▼ ") is always 2 chars wide. icon + " " is prefix.
 		// We use a fixed prefix string for width calculation.
 		expandIndicatorWidth := 2 // "▶ " or "▼ " — both 2 display cells
-		icon := tui.StatusIcon(row.Phase.Status)
+		icon := tui.StatusIcon(row.Phase.Status, noEmoji)
 		prefixWidth := expandIndicatorWidth + lipgloss.Width(icon) + 1
 		wrapWidth := width - 1 - prefixWidth
 		if wrapWidth < 1 {
@@ -294,7 +294,7 @@ func (t TreeModel) renderedRowLines(row Row, width int) int {
 		n := len(tui.WordWrap(row.Phase.Name, wrapWidth))
 		if len(row.Phase.Badges) > 0 {
 			for _, b := range row.Phase.Badges {
-				if tui.BadgeString(b) != "" {
+				if tui.BadgeString(b, noEmoji) != "" {
 					n++ // badge line
 					break
 				}
@@ -307,7 +307,7 @@ func (t TreeModel) renderedRowLines(row Row, width int) int {
 		return n
 
 	case RowPlan:
-		icon := tui.StatusIcon(row.Plan.Status)
+		icon := tui.StatusIcon(row.Plan.Status, noEmoji)
 		nowWidth := 0
 		if row.Plan.IsActive {
 			nowWidth = lipgloss.Width(" " + tui.NowMarkerStyle.Render("← now"))
@@ -330,7 +330,7 @@ func (t TreeModel) renderedRowLines(row Row, width int) int {
 		return n
 
 	case RowQuickTask:
-		icon := tui.StatusIcon(row.QuickTask.Status)
+		icon := tui.StatusIcon(row.QuickTask.Status, noEmoji)
 		const connectorWidth = 8
 		prefixWidth := connectorWidth + lipgloss.Width(icon) + 1
 		wrapWidth := width - 1 - prefixWidth

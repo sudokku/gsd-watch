@@ -25,7 +25,20 @@ var (
 )
 
 // StatusIcon returns a styled status icon string for the given status value.
-func StatusIcon(status string) string {
+// When noEmoji is true, ASCII bracket equivalents are returned instead of emoji.
+func StatusIcon(status string, noEmoji bool) string {
+	if noEmoji {
+		switch status {
+		case "complete":
+			return CompleteStyle.Render("[x]")
+		case "in_progress":
+			return "[>]"
+		case "failed":
+			return FailedStyle.Render("[!]")
+		default:
+			return PendingStyle.Render("[ ]")
+		}
+	}
 	switch status {
 	case "complete":
 		return CompleteStyle.Render("✓")
@@ -38,8 +51,29 @@ func StatusIcon(status string) string {
 	}
 }
 
-// BadgeString returns the emoji for a given phase lifecycle badge.
-func BadgeString(badge string) string {
+// BadgeString returns the emoji (or ASCII short code) for a given phase lifecycle badge.
+// When noEmoji is true, bracketed short codes are returned instead of emoji.
+func BadgeString(badge string, noEmoji bool) string {
+	if noEmoji {
+		switch badge {
+		case "discussed":
+			return "[disc]"
+		case "researched":
+			return "[rsrch]"
+		case "ui_spec":
+			return "[ui]"
+		case "planned":
+			return "[plan]"
+		case "executed":
+			return "[exec]"
+		case "verified":
+			return "[vrfy]"
+		case "uat":
+			return "[uat]"
+		default:
+			return ""
+		}
+	}
 	switch badge {
 	case "discussed":
 		return "💬"
