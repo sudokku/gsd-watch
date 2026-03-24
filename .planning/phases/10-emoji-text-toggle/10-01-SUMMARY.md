@@ -110,6 +110,17 @@ _Note: TDD task split into separate RED/GREEN commits_
 - `Options.NoEmoji` infrastructure is in place; Plan 10-02 can wire `--no-emoji` CLI flag to `tree.SetOptions(tree.Options{NoEmoji: noEmoji})`
 - No blockers
 
+## Self-Check: PASSED
+
+- `internal/tui/styles.go` — FOUND, contains `func StatusIcon(status string, noEmoji bool)` and `func BadgeString(badge string, noEmoji bool)`
+- `internal/tui/styles_test.go` — FOUND, contains `TestStatusIcon_NoEmoji` and `TestBadgeString_NoEmoji`
+- `internal/tui/tree/model.go` — FOUND, contains `type Options struct`, `NoEmoji bool`, `SetOptions`, `opts Options`
+- `internal/tui/tree/view.go` — FOUND, contains `t.opts.NoEmoji` (6 occurrences)
+- `10-01-SUMMARY.md` — FOUND
+- Task commits: `484daa9` (test RED), `bd559cb` (feat GREEN), `ebf568e` (feat Task 2) — all confirmed in git log
+- `go build ./...` — PASSED
+- `go test ./internal/tui/... -count=1` — PASSED (55 tests)
+
 ---
 *Phase: 10-emoji-text-toggle*
 *Completed: 2026-03-24*
