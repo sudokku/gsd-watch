@@ -35,7 +35,7 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
 
 - [x] **Phase 7: Parser Reliability + Fixture Corpus** - Fix phase sorting, BOM frontmatter, heading regex, PROJECT.md name fallback; add test fixture corpus (completed 2026-03-23)
 - [x] **Phase 8: Debug Mode** - `--debug` flag that prints parser decisions to stderr (completed 2026-03-24)
-- [ ] **Phase 9: Quick Tasks TUI Section** - Collapsible quick tasks tree section reading `.planning/quick/`
+- [x] **Phase 9: Quick Tasks TUI Section** - Collapsible quick tasks tree section reading `.planning/quick/` (completed 2026-03-24)
 - [ ] **Phase 10: Emoji/Text Toggle** - `--no-emoji` flag for ASCII fallback in SSH and minimal terminals
 
 ### Phase 7: Parser Reliability + Fixture Corpus
@@ -78,7 +78,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 09-01-PLAN.md — QuickTask parser (types, quick.go, ParseProject wiring, tests)
-- [ ] 09-02-PLAN.md — TUI tree section (RowKind variants, View, Update, mock, tests)
+- [x] 09-02-PLAN.md — TUI tree section (RowKind variants, View, Update, mock, tests)
 
 ### Phase 10: Emoji/Text Toggle
 **Goal**: Users who run gsd-watch in SSH sessions or terminals without emoji support can switch all status icons and lifecycle badges to ASCII equivalents with a single flag
@@ -91,8 +91,8 @@ Plans:
   4. The `--help` output lists `--no-emoji` with a description mentioning SSH and minimal terminal use
 **Plans**: 2 plans
 Plans:
-- [ ] 07-01-PLAN.md — Fix BOM/whitespace, heading regex, phase sorting + unit tests
-- [ ] 07-02-PLAN.md — PROJECT.md name fallback + integration regression
+- [x] 10-01-PLAN.md — ASCII StatusIcon/BadgeString + Options struct + view.go wiring
+- [ ] 10-02-PLAN.md — CLI --no-emoji flag wiring + help overlay ASCII + integration tests
 
 ### v1.1 Progress
 
@@ -103,8 +103,8 @@ Phases execute in numeric order: 7 → 8 → 9 → 10
 |-------|----------------|--------|-----------|
 | 7. Parser Reliability + Fixture Corpus | 2/2 | Complete   | 2026-03-23 |
 | 8. Debug Mode | 2/2 | Complete   | 2026-03-24 |
-| 9. Quick Tasks TUI Section | 1/2 | In Progress|  |
-| 10. Emoji/Text Toggle | 0/? | Not started | - |
+| 9. Quick Tasks TUI Section | 2/2 | Complete   | 2026-03-24 |
+| 10. Emoji/Text Toggle | 1/2 | In Progress|  |
 
 ---
 

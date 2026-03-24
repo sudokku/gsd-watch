@@ -24,12 +24,12 @@
 
 ### Quick Tasks
 
-- [ ] **QT-01**: User sees a collapsible "Quick tasks" section in the TUI tree showing tasks parsed from `.planning/quick/`
+- [x] **QT-01**: User sees a collapsible "Quick tasks" section in the TUI tree showing tasks parsed from `.planning/quick/`
 - [x] **QT-02**: Quick task parser detects `YYMMDD-ID-PLAN.md` / `YYMMDD-ID-SUMMARY.md` naming convention; status determined by SUMMARY.md presence (complete) or absence (in-progress/pending)
 
 ### Accessibility
 
-- [ ] **A11Y-01**: `--no-emoji` CLI flag switches all TUI status icons and badges to ASCII text equivalents (for SSH and minimal terminal environments)
+- [x] **A11Y-01**: `--no-emoji` CLI flag switches all TUI status icons and badges to ASCII text equivalents (for SSH and minimal terminal environments)
 
 ## v1.2 Requirements
 
@@ -100,9 +100,9 @@
 | PARSE-12 | Phase 7 | Complete |
 | TEST-01 | Phase 7 | Complete |
 | OBS-01 | Phase 8 | Complete |
-| QT-01 | Phase 9 | Pending |
+| QT-01 | Phase 9 | Complete |
 | QT-02 | Phase 9 | Complete |
-| A11Y-01 | Phase 10 | Pending |
+| A11Y-01 | Phase 10 | Complete |
 
 **v1.2 Traceability:**
 
