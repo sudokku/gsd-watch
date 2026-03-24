@@ -7,22 +7,29 @@ import (
 	tui "github.com/radu/gsd-watch/internal/tui"
 )
 
-// RowKind identifies whether a Row represents a phase or a plan.
+// RowKind identifies whether a Row represents a phase, a plan, or a quick task.
 type RowKind int
 
 const (
-	RowPhase RowKind = iota
+	RowPhase        RowKind = iota
 	RowPlan
+	RowQuickSection // "Quick tasks" collapsible header
+	RowQuickTask    // individual quick task row
 )
+
+// quickSectionKey is the fixed expanded-map key for the Quick Tasks section header.
+const quickSectionKey = "__quick_tasks__"
 
 // Row is a single renderable line in the tree.
 type Row struct {
-	Key      string       // phase DirName for RowPhase; plan Filename for RowPlan
-	Kind     RowKind
-	Phase    parser.Phase // populated for RowPhase rows
-	Plan     parser.Plan  // populated for RowPlan rows
-	PhaseIdx int          // index into data.Phases (for both row types)
-	Expanded bool         // true when this phase row is currently expanded
+	Key          string            // phase DirName for RowPhase; plan Filename for RowPlan; quickSectionKey or DirName for quick rows
+	Kind         RowKind
+	Phase        parser.Phase      // populated for RowPhase rows
+	Plan         parser.Plan       // populated for RowPlan rows
+	QuickTask    parser.QuickTask  // populated for RowQuickTask rows
+	QuickTaskIdx int               // index into data.QuickTasks (for RowQuickTask rows)
+	PhaseIdx     int               // index into data.Phases (for both RowPhase and RowPlan rows)
+	Expanded     bool              // true when this phase/section row is currently expanded
 }
 
 // TreeModel manages collapsible tree state: data, expanded map, and cursor.
@@ -73,14 +80,34 @@ func (t TreeModel) visibleRows() []Row {
 			}
 		}
 	}
+
+	// Quick Tasks section — always present below phases
+	quickExpanded := t.expanded[quickSectionKey]
+	rows = append(rows, Row{
+		Key:      quickSectionKey,
+		Kind:     RowQuickSection,
+		Expanded: quickExpanded,
+	})
+	if quickExpanded {
+		for i, qt := range t.data.QuickTasks {
+			rows = append(rows, Row{
+				Key:          qt.DirName,
+				Kind:         RowQuickTask,
+				QuickTask:    qt,
+				QuickTaskIdx: i,
+			})
+		}
+	}
+
 	return rows
 }
 
-// ExpandAll returns a TreeModel with all phases expanded.
+// ExpandAll returns a TreeModel with all phases and quick tasks section expanded.
 func (t TreeModel) ExpandAll() TreeModel {
 	for _, phase := range t.data.Phases {
 		t.expanded[phase.DirName] = true
 	}
+	t.expanded[quickSectionKey] = true
 	return t
 }
 
@@ -122,10 +149,13 @@ func (t TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 
 	case key.Matches(keyMsg, t.keys.Expand):
 		row := rows[t.cursor]
-		if row.Kind == RowPhase {
+		switch row.Kind {
+		case RowPhase:
 			t.expanded[row.Phase.DirName] = true
+		case RowQuickSection:
+			t.expanded[quickSectionKey] = true
 		}
-		// no-op for RowPlan
+		// no-op for RowPlan, RowQuickTask
 
 	case key.Matches(keyMsg, t.keys.ExpandAll):
 		return t.ExpandAll(), nil
@@ -157,6 +187,22 @@ func (t TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
 				}
 			}
 			t.cursor = clamp(phaseRowIdx, 0, len(newRows)-1)
+
+		case RowQuickSection:
+			t.expanded[quickSectionKey] = false
+			newRows := t.visibleRows()
+			t.cursor = clamp(t.cursor, 0, len(newRows)-1)
+
+		case RowQuickTask:
+			// collapse parent section and jump cursor to section header
+			t.expanded[quickSectionKey] = false
+			newRows := t.visibleRows()
+			for i, r := range newRows {
+				if r.Kind == RowQuickSection {
+					t.cursor = i
+					break
+				}
+			}
 		}
 	}
 
