@@ -7,12 +7,14 @@ import (
 	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/radu/gsd-watch/internal/parser"
 	"github.com/radu/gsd-watch/internal/tui/app"
 )
 
 func main() {
-	// --help flag: print usage and exit.
+	// --help and --debug flags.
 	showHelp := flag.Bool("help", false, "Show usage information")
+	debugMode := flag.Bool("debug", false, "Print parser decisions to stderr")
 	flag.Parse()
 	if *showHelp {
 		fmt.Println(`gsd-watch — live GSD project status sidebar for tmux
@@ -25,8 +27,16 @@ Keybindings:
   e      expand all      w      collapse all
   ?      help overlay    qq     quit
 
+Flags:
+  --help     Show this help
+  --debug    Print parser decisions to stderr
+
 https://github.com/radu/gsd-watch`)
 		os.Exit(0)
+	}
+
+	if *debugMode {
+		parser.DebugOut = os.Stderr
 	}
 
 	// Outside-tmux detection: require tmux session.
