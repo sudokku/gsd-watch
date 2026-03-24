@@ -58,7 +58,11 @@ func (t TreeModel) SetData(d parser.ProjectData) TreeModel {
 }
 
 // visibleRows returns the ordered list of rows currently visible in the tree.
+// Returns empty slice when no project data is loaded (no phases).
 func (t TreeModel) visibleRows() []Row {
+	if len(t.data.Phases) == 0 {
+		return nil
+	}
 	var rows []Row
 	for i, phase := range t.data.Phases {
 		expanded := t.expanded[phase.DirName]

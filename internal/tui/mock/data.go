@@ -78,5 +78,9 @@ func MockProject() parser.ProjectData {
 				Plans:   nil,
 			},
 		},
+		QuickTasks: []parser.QuickTask{
+			{DirName: "260323-re2-fix-gsd-watch-sidebar-closing-immediatel", DisplayName: "fix gsd watch sidebar closing immediatel", Date: "260323", Status: "complete"},
+			{DirName: "260323-lte-fix-parser-to-handle-real-world-gsd-file", DisplayName: "fix parser to handle real world gsd file", Date: "260323", Status: "in_progress"},
+		},
 	}
 }

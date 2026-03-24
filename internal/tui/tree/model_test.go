@@ -43,14 +43,17 @@ func TestSetDataAllCollapsed(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
 	rows := m.VisibleRows()
-	// 6 phases, all collapsed -> 6 rows
-	if len(rows) != 6 {
-		t.Errorf("expected 6 rows (all phases collapsed), got %d", len(rows))
+	// 6 phases, all collapsed + 1 quick section header -> 7 rows
+	if len(rows) != 7 {
+		t.Errorf("expected 7 rows (all phases collapsed + quick section header), got %d", len(rows))
 	}
-	for i, row := range rows {
+	for i, row := range rows[:6] {
 		if row.Kind != tree.RowPhase {
 			t.Errorf("row %d: expected RowPhase, got %v", i, row.Kind)
 		}
+	}
+	if rows[6].Kind != tree.RowQuickSection {
+		t.Errorf("row 6: expected RowQuickSection, got %v", rows[6].Kind)
 	}
 }
 
@@ -61,9 +64,9 @@ func TestExpandPhase(t *testing.T) {
 	// cursor is at row 0 (Phase 1); expand it
 	m = pressKey(t, m, "l")
 	rows := m.VisibleRows()
-	// Phase 1 has 4 plans -> 6 phases + 4 plans = 10 rows
-	if len(rows) != 10 {
-		t.Errorf("expected 10 rows after expanding phase 1, got %d", len(rows))
+	// Phase 1 has 4 plans -> 6 phases + 4 plans + 1 quick section = 11 rows
+	if len(rows) != 11 {
+		t.Errorf("expected 11 rows after expanding phase 1, got %d", len(rows))
 	}
 }
 
@@ -75,8 +78,8 @@ func TestCollapsePhase(t *testing.T) {
 	m = pressKey(t, m, "l")
 	m = pressKey(t, m, "h")
 	rows := m.VisibleRows()
-	if len(rows) != 6 {
-		t.Errorf("expected 6 rows after collapsing phase 1, got %d", len(rows))
+	if len(rows) != 7 {
+		t.Errorf("expected 7 rows after collapsing phase 1, got %d", len(rows))
 	}
 }
 
@@ -90,9 +93,9 @@ func TestExpandCollapsePreservesKeyedState(t *testing.T) {
 	// call SetData again with same data (simulates a refresh)
 	m = m.SetData(data)
 	rows := m.VisibleRows()
-	// Phase 1 should still be expanded -> 6 phases + 4 plans = 10 rows
-	if len(rows) != 10 {
-		t.Errorf("expected 10 rows (expanded state preserved), got %d", len(rows))
+	// Phase 1 should still be expanded -> 6 phases + 4 plans + 1 quick section = 11 rows
+	if len(rows) != 11 {
+		t.Errorf("expected 11 rows (expanded state preserved), got %d", len(rows))
 	}
 }
 
@@ -114,15 +117,16 @@ func TestCursorDownUp(t *testing.T) {
 	if m.Cursor() != 0 {
 		t.Errorf("expected cursor clamped at 0, got %d", m.Cursor())
 	}
-	// go to bottom (5) and try to go further
+	// go to bottom (6) and try to go further (7 rows: 0-6, quick section is last)
 	m = pressKey(t, m, "j")
 	m = pressKey(t, m, "j")
 	m = pressKey(t, m, "j")
 	m = pressKey(t, m, "j")
 	m = pressKey(t, m, "j")
-	m = pressKey(t, m, "j") // clamp at 5
-	if m.Cursor() != 5 {
-		t.Errorf("expected cursor clamped at 5, got %d", m.Cursor())
+	m = pressKey(t, m, "j")
+	m = pressKey(t, m, "j") // clamp at 6
+	if m.Cursor() != 6 {
+		t.Errorf("expected cursor clamped at 6, got %d", m.Cursor())
 	}
 }
 
@@ -145,8 +149,8 @@ func TestCursorJumpOnCollapse(t *testing.T) {
 		t.Errorf("expected cursor to jump to phase row 0, got %d", m.Cursor())
 	}
 	rows := m.VisibleRows()
-	if len(rows) != 6 {
-		t.Errorf("expected 6 rows after collapse, got %d", len(rows))
+	if len(rows) != 7 {
+		t.Errorf("expected 7 rows after collapse, got %d", len(rows))
 	}
 }
 
@@ -181,8 +185,8 @@ func TestExpandAlreadyExpanded(t *testing.T) {
 	m = pressKey(t, m, "l") // expand
 	m = pressKey(t, m, "l") // expand again (no-op)
 	rows := m.VisibleRows()
-	if len(rows) != 10 {
-		t.Errorf("expected 10 rows (double expand is no-op), got %d", len(rows))
+	if len(rows) != 11 {
+		t.Errorf("expected 11 rows (double expand is no-op), got %d", len(rows))
 	}
 }
 
@@ -200,18 +204,18 @@ func TestExpandOnPlanRow(t *testing.T) {
 	}
 }
 
-// TestVisibleRowsWith4Collapsed verifies exactly 6 rows with all phases collapsed.
+// TestVisibleRowsWith4Collapsed verifies exactly 7 rows with all phases collapsed.
 func TestVisibleRowsWith4Collapsed(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
 	rows := m.VisibleRows()
-	if len(rows) != 6 {
-		t.Errorf("expected 6 rows (6 phases collapsed), got %d", len(rows))
+	if len(rows) != 7 {
+		t.Errorf("expected 7 rows (6 phases collapsed + quick section header), got %d", len(rows))
 	}
 }
 
-// TestVisibleRowsWithPhase1Expanded verifies 9 rows when phase 2 (3 plans) is expanded.
-// Mock phase 2 has 3 plans; 6 phases + 3 plans = 9 rows.
+// TestVisibleRowsWithPhase1Expanded verifies 10 rows when phase 2 (3 plans) is expanded.
+// Mock phase 2 has 3 plans; 6 phases + 3 plans + 1 quick section = 10 rows.
 func TestVisibleRowsWithPhase1Expanded(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
@@ -219,9 +223,9 @@ func TestVisibleRowsWithPhase1Expanded(t *testing.T) {
 	m = pressKey(t, m, "j") // cursor at row 1 (Phase 2)
 	m = pressKey(t, m, "l") // expand Phase 2
 	rows := m.VisibleRows()
-	// 6 phases + 3 plans from phase 2 = 9 rows
-	if len(rows) != 9 {
-		t.Errorf("expected 9 rows (6 phases + 3 plans from phase 2), got %d", len(rows))
+	// 6 phases + 3 plans from phase 2 + 1 quick section = 10 rows
+	if len(rows) != 10 {
+		t.Errorf("expected 10 rows (6 phases + 3 plans from phase 2 + quick section), got %d", len(rows))
 	}
 }
 
@@ -377,16 +381,16 @@ func TestView_CompletedPhaseDimmed(t *testing.T) {
 	}
 }
 
-// TestExpandAll verifies that ExpandAll() expands all phases.
+// TestExpandAll verifies that ExpandAll() expands all phases and quick tasks section.
 func TestExpandAll(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
 	m = m.ExpandAll()
 	rows := m.VisibleRows()
-	// 6 phases + 4+3+2+2+2+0 plans = 6 + 13 = 19 rows
+	// 6 phases + 4+3+2+2+2+0 plans + 1 quick section + 2 quick tasks = 22 rows
 	// Phase 1: 4, Phase 2: 3, Phase 3: 2, Phase 4: 2, Phase 5: 2, Phase 6: 0
 	expectedPlans := 4 + 3 + 2 + 2 + 2 + 0
-	expectedRows := 6 + expectedPlans
+	expectedRows := 6 + expectedPlans + 1 + 2 // +1 quick section, +2 quick tasks
 	if len(rows) != expectedRows {
 		t.Errorf("expected %d rows after ExpandAll, got %d", expectedRows, len(rows))
 	}
@@ -400,8 +404,8 @@ func TestCollapseAll(t *testing.T) {
 	m = pressKey(t, m, "j") // move cursor to non-zero position
 	m = m.CollapseAll()
 	rows := m.VisibleRows()
-	if len(rows) != 6 {
-		t.Errorf("expected 6 rows after CollapseAll, got %d", len(rows))
+	if len(rows) != 7 {
+		t.Errorf("expected 7 rows after CollapseAll, got %d", len(rows))
 	}
 	if m.Cursor() != 0 {
 		t.Errorf("expected cursor 0 after CollapseAll, got %d", m.Cursor())
@@ -439,5 +443,107 @@ func TestView_Padding(t *testing.T) {
 		if checked >= 3 {
 			break
 		}
+	}
+}
+
+// --- Quick Tasks section tests ---
+
+func TestQuickTasksSectionPresent(t *testing.T) {
+	// All collapsed: last visible row should be RowQuickSection
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	rows := m.VisibleRows()
+	lastRow := rows[len(rows)-1]
+	if lastRow.Kind != tree.RowQuickSection {
+		t.Errorf("expected last row to be RowQuickSection, got %v", lastRow.Kind)
+	}
+}
+
+func TestExpandQuickTasksSection(t *testing.T) {
+	// Navigate to quick section header, expand, verify task rows appear
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	// Navigate to last row (quick section header = row 6)
+	for i := 0; i < 6; i++ {
+		m = pressKey(t, m, "j")
+	}
+	m = pressKey(t, m, "l") // expand
+	rows := m.VisibleRows()
+	// 7 (collapsed) + 2 quick tasks = 9
+	if len(rows) != 9 {
+		t.Errorf("expected 9 rows after expanding quick section, got %d", len(rows))
+	}
+	// Verify task row kinds
+	if rows[7].Kind != tree.RowQuickTask {
+		t.Errorf("row 7 should be RowQuickTask, got %v", rows[7].Kind)
+	}
+	if rows[8].Kind != tree.RowQuickTask {
+		t.Errorf("row 8 should be RowQuickTask, got %v", rows[8].Kind)
+	}
+}
+
+func TestCollapseQuickTasksSection(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	for i := 0; i < 6; i++ {
+		m = pressKey(t, m, "j")
+	}
+	m = pressKey(t, m, "l") // expand
+	m = pressKey(t, m, "h") // collapse
+	rows := m.VisibleRows()
+	if len(rows) != 7 {
+		t.Errorf("expected 7 rows after collapsing quick section, got %d", len(rows))
+	}
+}
+
+func TestCollapseFromQuickTask(t *testing.T) {
+	// Collapsing from a RowQuickTask should jump cursor to section header
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	for i := 0; i < 6; i++ {
+		m = pressKey(t, m, "j")
+	}
+	m = pressKey(t, m, "l") // expand quick section
+	m = pressKey(t, m, "j") // cursor on first quick task (row 7)
+	if m.Cursor() != 7 {
+		t.Fatalf("expected cursor at 7, got %d", m.Cursor())
+	}
+	m = pressKey(t, m, "h") // collapse from task row
+	if m.Cursor() != 6 {
+		t.Errorf("expected cursor to jump to quick section header (row 6), got %d", m.Cursor())
+	}
+}
+
+func TestQuickTasksEmptySection(t *testing.T) {
+	// ProjectData with no QuickTasks: section header present, shows placeholder
+	data := mock.MockProject()
+	data.QuickTasks = nil
+	m := tree.New().SetData(data)
+	// Navigate to quick section header and expand
+	for i := 0; i < 6; i++ {
+		m = pressKey(t, m, "j")
+	}
+	m = pressKey(t, m, "l") // expand
+	out := m.View(80)
+	if !strings.Contains(out, "(no quick tasks)") {
+		t.Errorf("expected '(no quick tasks)' placeholder\nOutput:\n%s", out)
+	}
+}
+
+func TestQuickTasksViewIcons(t *testing.T) {
+	// Verify status icons render for quick tasks
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	for i := 0; i < 6; i++ {
+		m = pressKey(t, m, "j")
+	}
+	m = pressKey(t, m, "l") // expand
+	out := m.View(80)
+	// complete task shows check icon, in_progress shows arrow
+	if !strings.Contains(out, "fix gsd watch sidebar closing") {
+		t.Errorf("expected quick task display name in output\nOutput:\n%s", out)
+	}
+	if !strings.Contains(out, "Quick tasks") {
+		t.Errorf("expected 'Quick tasks' section header\nOutput:\n%s", out)
 	}
 }

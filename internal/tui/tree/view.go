@@ -179,6 +179,78 @@ func (t TreeModel) View(width int) string {
 				itemLines = append(itemLines, l)
 			}
 			lines = append(lines, strings.Join(itemLines, "\n"))
+
+		case RowQuickSection:
+			indicator := "▶ "
+			if t.expanded[quickSectionKey] {
+				indicator = "▼ "
+			}
+			label := "Quick tasks"
+			if i == t.cursor {
+				lines = append(lines, highlightStyle.Render(indicator)+highlightStyle.Render(label))
+			} else {
+				lines = append(lines, indicator+label)
+			}
+			// D-02: empty state placeholder when expanded with no quick tasks
+			if t.expanded[quickSectionKey] && len(t.data.QuickTasks) == 0 {
+				lines = append(lines, "    "+tui.PendingStyle.Render("(no quick tasks)"))
+			}
+
+		case RowQuickTask:
+			qt := row.QuickTask
+			isLast := row.QuickTaskIdx == len(t.data.QuickTasks)-1
+			connector := "    ├── "
+			if isLast {
+				connector = "    └── "
+			}
+			icon := tui.StatusIcon(qt.Status)
+			isDimmed := qt.Status == parser.StatusComplete
+
+			// Calculate wrap width — same pattern as RowPlan
+			prefixWidth := lipgloss.Width(connector) + lipgloss.Width(icon) + 1
+			wrapWidth := width - 1 - prefixWidth
+			if wrapWidth < 1 {
+				wrapWidth = 1
+			}
+			nameParts := tui.WordWrap(qt.DisplayName, wrapWidth)
+
+			var continuation string
+			if isLast {
+				continuation = strings.Repeat(" ", prefixWidth)
+			} else {
+				continuation = "    │" + strings.Repeat(" ", prefixWidth-5)
+			}
+
+			var itemLines []string
+			for j, part := range nameParts {
+				rawText := part
+				var text string
+				switch {
+				case i == t.cursor:
+					text = highlightStyle.Render(rawText)
+				case isDimmed:
+					text = tui.PendingStyle.Render(rawText)
+				default:
+					text = rawText
+				}
+
+				var l string
+				if j == 0 {
+					c := connector
+					if isDimmed {
+						c = tui.PendingStyle.Render(connector)
+					}
+					l = c + icon + " " + text
+				} else {
+					cont := continuation
+					if isDimmed {
+						cont = tui.PendingStyle.Render(continuation)
+					}
+					l = cont + text
+				}
+				itemLines = append(itemLines, l)
+			}
+			lines = append(lines, strings.Join(itemLines, "\n"))
 		}
 	}
 
@@ -200,13 +272,13 @@ func (t TreeModel) RenderedCursorLine(width int) int {
 		if i == t.cursor {
 			return line
 		}
-		line += renderedRowLines(row, width)
+		line += t.renderedRowLines(row, width)
 	}
 	return line
 }
 
 // renderedRowLines returns the number of output lines a single row occupies.
-func renderedRowLines(row Row, width int) int {
+func (t TreeModel) renderedRowLines(row Row, width int) int {
 	switch row.Kind {
 	case RowPhase:
 		// Calculate wrapped phase name line count.
@@ -249,6 +321,23 @@ func renderedRowLines(row Row, width int) int {
 		}
 		parts := tui.WordWrap(row.Plan.Title, wrapWidth)
 		return len(parts)
+
+	case RowQuickSection:
+		n := 1 // the header line
+		if row.Expanded && len(t.data.QuickTasks) == 0 {
+			n++ // "(no quick tasks)" placeholder
+		}
+		return n
+
+	case RowQuickTask:
+		icon := tui.StatusIcon(row.QuickTask.Status)
+		const connectorWidth = 8
+		prefixWidth := connectorWidth + lipgloss.Width(icon) + 1
+		wrapWidth := width - 1 - prefixWidth
+		if wrapWidth < 1 {
+			wrapWidth = 1
+		}
+		return len(tui.WordWrap(row.QuickTask.DisplayName, wrapWidth))
 	}
 	return 1
 }
