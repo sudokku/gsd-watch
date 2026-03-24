@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Parser Reliability + Observability + Quick Tasks
-status: Ready to plan
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-03-24T06:21:59.640Z"
+status: Ready to execute
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-24T21:14:38.230Z"
 last_activity: 2026-03-24
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -20,12 +20,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 08 — debug-mode
+**Current focus:** Phase 09 — quick-tasks-tui-section
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
+Phase: 09 (quick-tasks-tui-section) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Plan: Not started
 | Phase 07-parser-reliability-fixture-corpus P02 | 525559 | 2 tasks | 5 files |
 | Phase 08-debug-mode P01 | 2 | 2 tasks | 3 files |
 | Phase 08-debug-mode P02 | 2 | 2 tasks | 2 files |
+| Phase 09-quick-tasks-tui-section P01 | 2 | 1 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,9 @@ Recent decisions affecting current work:
 - [Phase 08-01]: DebugOut is io.Writer not bool — enables bytes.Buffer injection in tests without real stderr
 - [Phase 08-01]: D-04 scope: no debug calls in updateFromState/updateFromConfig (STATE.md/config.json paths) — only phase_dir/plan/plan_error/badge/cache events
 - [Phase 08-02]: debug flag wires parser.DebugOut=os.Stderr when passed
+- [Phase 09-01]: quickTaskDirRe requires 6-digit date, alphanumeric ID, slug; non-matching dirs silently skipped
+- [Phase 09-01]: parseQuickTasks returns nil for missing/empty dirs consistent with parsePhases nil-return behavior
+- [Phase 09-01]: Tests placed in package parser (not parser_test) to access unexported parseQuickTasks directly
 
 ### Roadmap Evolution
 
@@ -163,6 +167,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-24
-Last session: 2026-03-24T06:17:59.871Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-03-24T21:14:38.226Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None

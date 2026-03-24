@@ -25,7 +25,7 @@
 ### Quick Tasks
 
 - [ ] **QT-01**: User sees a collapsible "Quick tasks" section in the TUI tree showing tasks parsed from `.planning/quick/`
-- [ ] **QT-02**: Quick task parser detects `YYMMDD-ID-PLAN.md` / `YYMMDD-ID-SUMMARY.md` naming convention; status determined by SUMMARY.md presence (complete) or absence (in-progress/pending)
+- [x] **QT-02**: Quick task parser detects `YYMMDD-ID-PLAN.md` / `YYMMDD-ID-SUMMARY.md` naming convention; status determined by SUMMARY.md presence (complete) or absence (in-progress/pending)
 
 ### Accessibility
 
@@ -101,7 +101,7 @@
 | TEST-01 | Phase 7 | Complete |
 | OBS-01 | Phase 8 | Complete |
 | QT-01 | Phase 9 | Pending |
-| QT-02 | Phase 9 | Pending |
+| QT-02 | Phase 9 | Complete |
 | A11Y-01 | Phase 10 | Pending |
 
 **v1.2 Traceability:**

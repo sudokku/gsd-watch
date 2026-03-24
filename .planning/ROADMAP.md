@@ -77,7 +77,7 @@ Plans:
   4. New files dropped into `.planning/quick/` appear in the TUI within 300ms via the existing fsnotify watcher (no new watcher config required)
 **Plans**: 2 plans
 Plans:
-- [ ] 09-01-PLAN.md — QuickTask parser (types, quick.go, ParseProject wiring, tests)
+- [x] 09-01-PLAN.md — QuickTask parser (types, quick.go, ParseProject wiring, tests)
 - [ ] 09-02-PLAN.md — TUI tree section (RowKind variants, View, Update, mock, tests)
 
 ### Phase 10: Emoji/Text Toggle
@@ -103,7 +103,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10
 |-------|----------------|--------|-----------|
 | 7. Parser Reliability + Fixture Corpus | 2/2 | Complete   | 2026-03-23 |
 | 8. Debug Mode | 2/2 | Complete   | 2026-03-24 |
-| 9. Quick Tasks TUI Section | 0/2 | Not started | - |
+| 9. Quick Tasks TUI Section | 1/2 | In Progress|  |
 | 10. Emoji/Text Toggle | 0/? | Not started | - |
 
 ---
