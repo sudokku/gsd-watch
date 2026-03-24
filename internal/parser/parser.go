@@ -71,5 +71,7 @@ func ParseProject(root string) ProjectData {
 		data.ProgressPercent = float64(done) / float64(len(data.Phases))
 	}
 
+	data.QuickTasks = parseQuickTasks(filepath.Join(root, "quick"))
+
 	return data
 }

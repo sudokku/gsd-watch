@@ -39,12 +39,21 @@ type Phase struct {
 	Plans   []Plan
 }
 
+// QuickTask represents a quick task from .planning/quick/.
+type QuickTask struct {
+	DirName     string // e.g. "260323-re2-fix-gsd-watch-sidebar-closing-immediatel"
+	DisplayName string // humanized: "fix gsd watch sidebar closing immediatel"
+	Date        string // "260323" — YYMMDD for sort
+	Status      string // StatusComplete / StatusInProgress / StatusPending
+}
+
 // ProjectData is the root data model for the entire project view.
 type ProjectData struct {
 	Name            string
 	ModelProfile    string
 	Mode            string
 	Phases          []Phase
+	QuickTasks      []QuickTask
 	CurrentAction   string
 	LastUpdated     time.Time
 	ProgressPercent float64 // 0.0 to 1.0, from STATE.md progress.percent
