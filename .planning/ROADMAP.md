@@ -55,7 +55,7 @@ Full phase details: `.planning/milestones/v1.1-ROADMAP.md`
   5. No archive directory present returns empty list with no error
 **Plans**: 2 plans
 Plans:
-- [ ] 11-01-PLAN.md — TDD: ArchivedMilestone struct, test fixtures, parseArchivedMilestones implementation
+- [x] 11-01-PLAN.md — TDD: ArchivedMilestone struct, test fixtures, parseArchivedMilestones implementation
 - [ ] 11-02-PLAN.md — Wire parseArchivedMilestones into ParseProject + integration tests
 
 ### Phase 12: Archive Display
@@ -77,7 +77,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 11. Archive Detection | 0/2 | Planned | - |
+| 11. Archive Detection | 1/2 | In Progress|  |
 | 12. Archive Display | 0/? | Not started | - |
 
 ---

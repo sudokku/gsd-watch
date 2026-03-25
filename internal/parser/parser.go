@@ -73,5 +73,10 @@ func ParseProject(root string) ProjectData {
 
 	data.QuickTasks = parseQuickTasks(filepath.Join(root, "quick"))
 
+	data.ArchivedMilestones = parseArchivedMilestones(
+		filepath.Join(root, "milestones"),
+		filepath.Join(root, "MILESTONES.md"),
+	)
+
 	return data
 }

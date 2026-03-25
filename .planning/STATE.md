@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Archived Milestone Visibility
-status: v1.1 milestone complete
-stopped_at: Phase 11 context gathered
-last_updated: "2026-03-25T01:32:50.125Z"
+status: Ready to execute
+stopped_at: Completed 11-archive-detection-01-PLAN.md
+last_updated: "2026-03-25T02:24:18.315Z"
 last_activity: 2026-03-25
 progress:
-  total_phases: 5
+  total_phases: 2
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
@@ -20,12 +20,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 10 — emoji-text-toggle
+**Current focus:** Phase 11 — archive-detection
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
+Phase: 11 (archive-detection) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -73,6 +73,7 @@ Plan: Not started
 | Phase 09 P02 | 9 | 2 tasks | 4 files |
 | Phase 10-emoji-text-toggle P01 | 3 | 2 tasks | 4 files |
 | Phase 10-emoji-text-toggle P02 | 10 | 2 tasks | 3 files |
+| Phase 11-archive-detection P01 | 5 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -154,6 +155,9 @@ Recent decisions affecting current work:
 - [Quick 260325-398]: IsPhaseActive exported (not unexported) — tree_test package needs to call it directly; phaseActive computed once per RowPhase row for name/prefix/badge — single source of truth
 - [Phase 10-emoji-text-toggle]: [10-02] helpView accepts noEmoji bool param — keeps View() clean and avoids storing render-only state in struct
 - [Phase 10-emoji-text-toggle]: [10-02] newTestModel() passes false; newTestModelNoEmoji() is a separate helper — avoids changing existing test signatures and makes intent explicit
+- [Phase 11-archive-detection]: archiveDirRe captures version from vX.Y-phases pattern; non-matching dirs silently skipped with debugf
+- [Phase 11-archive-detection]: lookupCompletionDate uses regexp.QuoteMeta(version) to safely escape dot in version strings like v1.0
+- [Phase 11-archive-detection]: MILESTONES.md pre-read once per parseArchivedMilestones call, nil data means empty CompletionDate for all
 
 ### Roadmap Evolution
 
@@ -179,6 +183,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-25
-Last session: 2026-03-25T01:32:50.115Z
-Stopped at: Phase 11 context gathered
-Resume file: .planning/phases/11-archive-detection/11-CONTEXT.md
+Last session: 2026-03-25T02:24:18.312Z
+Stopped at: Completed 11-archive-detection-01-PLAN.md
+Resume file: None
