@@ -10,6 +10,26 @@ import (
 
 var highlightStyle = lipgloss.NewStyle().Bold(true)
 
+// IsPhaseActive returns true if the cursor is on the phase row at phaseRowIdx,
+// or on any of its consecutive child RowPlan rows immediately after it.
+func (t TreeModel) IsPhaseActive(rows []Row, phaseRowIdx int) bool {
+	if t.cursor == phaseRowIdx {
+		return true
+	}
+	// Check if cursor is on a child plan row of this phase
+	if t.cursor > phaseRowIdx {
+		for ci := phaseRowIdx + 1; ci < len(rows); ci++ {
+			if rows[ci].Kind != RowPlan {
+				break
+			}
+			if ci == t.cursor {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // View renders the tree as a string for the given terminal width.
 // If width < tui.MinWidth, it returns a "too narrow" placeholder.
 func (t TreeModel) View(width int) string {
@@ -44,6 +64,7 @@ func (t TreeModel) View(width int) string {
 			}
 			icon := tui.StatusIcon(row.Phase.Status, t.opts.NoEmoji)
 			isDimmedPhase := row.Phase.Status == parser.StatusComplete
+			phaseActive := t.IsPhaseActive(rows, i)
 
 			// Calculate prefix width and available wrap width for phase name.
 			prefixStr := expandIndicator + icon + " "
@@ -60,7 +81,7 @@ func (t TreeModel) View(width int) string {
 			for j, part := range nameParts {
 				var text string
 				switch {
-				case i == t.cursor:
+				case phaseActive:
 					text = highlightStyle.Render(part)
 				case isDimmedPhase:
 					text = tui.PendingStyle.Render(part)
@@ -70,14 +91,18 @@ func (t TreeModel) View(width int) string {
 
 				var phaseLine string
 				if j == 0 {
-					if isDimmedPhase {
+					if phaseActive {
+						phaseLine = highlightStyle.Render(prefixStr) + text
+					} else if isDimmedPhase {
 						phaseLine = tui.PendingStyle.Render(prefixStr) + text
 					} else {
 						phaseLine = prefixStr + text
 					}
 				} else {
 					cont := continuation
-					if isDimmedPhase {
+					if phaseActive {
+						cont = highlightStyle.Render(continuation)
+					} else if isDimmedPhase {
 						cont = tui.PendingStyle.Render(continuation)
 					}
 					phaseLine = cont + text
@@ -95,7 +120,15 @@ func (t TreeModel) View(width int) string {
 					}
 				}
 				if len(badgeParts) > 0 {
-					lines = append(lines, "    "+strings.Join(badgeParts, " "))
+					badgeLine := "    " + strings.Join(badgeParts, " ")
+					switch {
+					case phaseActive:
+						lines = append(lines, highlightStyle.Render(badgeLine))
+					case isDimmedPhase:
+						lines = append(lines, tui.PendingStyle.Render(badgeLine))
+					default:
+						lines = append(lines, badgeLine)
+					}
 				}
 			}
 
