@@ -266,6 +266,73 @@ func TestHelpOverlay_ContainsPhaseStages(t *testing.T) {
 	}
 }
 
+// TestNoEmoji_TreeRenders_ASCIIIcons: noEmoji=true renders [x] instead of checkmark emoji.
+func TestNoEmoji_TreeRenders_ASCIIIcons(t *testing.T) {
+	m := newTestModelNoEmoji()
+	m, _ = updateModel(m, tui.ParsedMsg{Project: mock.MockProject()})
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 40})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	view := m.View()
+	if !strings.Contains(view, "[x]") {
+		t.Error("expected noEmoji tree to contain '[x]' for complete status")
+	}
+	// checkmark emoji should not appear
+	if strings.Contains(view, "✓") {
+		t.Error("expected noEmoji tree to NOT contain checkmark '✓'")
+	}
+}
+
+// TestNoEmoji_TreeRenders_ASCIIBadges: noEmoji=true renders [disc]/[plan]/etc. instead of emoji badges.
+func TestNoEmoji_TreeRenders_ASCIIBadges(t *testing.T) {
+	m := newTestModelNoEmoji()
+	m, _ = updateModel(m, tui.ParsedMsg{Project: mock.MockProject()})
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 40})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	view := m.View()
+	hasBadge := strings.Contains(view, "[disc]") ||
+		strings.Contains(view, "[plan]") ||
+		strings.Contains(view, "[exec]") ||
+		strings.Contains(view, "[vrfy]")
+	if !hasBadge {
+		t.Error("expected noEmoji tree to contain ASCII badge like [disc], [plan], [exec], or [vrfy]")
+	}
+	// clipboard emoji (📋 planned badge) should not appear
+	if strings.Contains(view, "📋") {
+		t.Error("expected noEmoji tree to NOT contain clipboard emoji '📋'")
+	}
+}
+
+// TestNoEmoji_HelpOverlay_ASCIIBadges: noEmoji=true shows ASCII brackets in help overlay.
+func TestNoEmoji_HelpOverlay_ASCIIBadges(t *testing.T) {
+	m := newTestModelNoEmoji()
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 40})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	view := m.View()
+	if !strings.Contains(view, "[disc]") {
+		t.Error("expected noEmoji help overlay to contain '[disc]'")
+	}
+	if !strings.Contains(view, "[uat]") {
+		t.Error("expected noEmoji help overlay to contain '[uat]'")
+	}
+	// speech balloon emoji should not appear
+	if strings.Contains(view, "💬") {
+		t.Error("expected noEmoji help overlay to NOT contain speech balloon '💬'")
+	}
+}
+
+// TestNoEmoji_False_RendersEmoji: default model (noEmoji=false) renders emoji icons not ASCII.
+func TestNoEmoji_False_RendersEmoji(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tui.ParsedMsg{Project: mock.MockProject()})
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 40})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	view := m.View()
+	// Should NOT contain ASCII "[x]" for complete status; should use "✓"
+	if strings.Contains(view, "[x]") {
+		t.Error("expected default (emoji) tree to NOT contain '[x]'; should use emoji checkmark")
+	}
+}
+
 func TestViewContainsHeaderAndFooter(t *testing.T) {
 	m := newTestModel()
 	// Inject project data via ParsedMsg (new live-data path) so header has project name.
