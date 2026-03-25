@@ -151,6 +151,7 @@ Recent decisions affecting current work:
 - [Phase 10-emoji-text-toggle]: renderedRowLines takes noEmoji bool param (not a method) — package-level function called from RenderedCursorLine which has t.opts access
 - [Phase 10-emoji-text-toggle]: ASCII icons use same lipgloss styles as emoji counterparts: CompleteStyle([x]), PendingStyle([ ]), FailedStyle([!]); BadgeString ASCII codes are plain text with no styling
 - [Phase 10-emoji-text-toggle]: Options struct on TreeModel with SetOptions method for clean flag propagation; dual-mode render function pattern (noEmoji bool param) established for styles.go
+- [Quick 260325-398]: IsPhaseActive exported (not unexported) — tree_test package needs to call it directly; phaseActive computed once per RowPhase row for name/prefix/badge — single source of truth
 - [Phase 10-emoji-text-toggle]: [10-02] helpView accepts noEmoji bool param — keeps View() clean and avoids storing render-only state in struct
 - [Phase 10-emoji-text-toggle]: [10-02] newTestModel() passes false; newTestModelNoEmoji() is a separate helper — avoids changing existing test signatures and makes intent explicit
 
@@ -167,6 +168,7 @@ None yet.
 | # | Description | Date | Commit | Status | Directory |
 |---|-------------|------|--------|--------|-----------|
 | 260323-re2 | Fix gsd-watch sidebar closing immediately after opening | 2026-03-23 | cd8d9d5 | Verified | [260323-re2-fix-gsd-watch-sidebar-closing-immediatel](./quick/260323-re2-fix-gsd-watch-sidebar-closing-immediatel/) |
+| 260325-398 | Phase title stays white+bold when navigating to child plan rows | 2026-03-25 | cdc2517 | Complete | [260325-398-phase-title-stays-white-bold-when-naviga](./quick/260325-398-phase-title-stays-white-bold-when-naviga/) |
 
 ### Blockers/Concerns
 
