@@ -15,6 +15,7 @@ func main() {
 	// --help and --debug flags.
 	showHelp := flag.Bool("help", false, "Show usage information")
 	debugMode := flag.Bool("debug", false, "Print parser decisions to stderr")
+	noEmoji := flag.Bool("no-emoji", false, "Use ASCII status icons and badges (for SSH and minimal terminals)")
 	flag.Parse()
 	if *showHelp {
 		fmt.Println(`gsd-watch — live GSD project status sidebar for tmux
@@ -30,6 +31,7 @@ Keybindings:
 Flags:
   --help     Show this help
   --debug    Print parser decisions to stderr
+  --no-emoji  Use ASCII status icons and badges (for SSH and minimal terminals)
 
 https://github.com/radu/gsd-watch`)
 		os.Exit(0)
@@ -56,7 +58,7 @@ Then start a session: tmux new-session`)
 
 	events := make(chan tea.Msg, 10)
 	p := tea.NewProgram(
-		app.New(events),
+		app.New(events, *noEmoji),
 		tea.WithAltScreen(),
 	)
 	if _, err := p.Run(); err != nil {

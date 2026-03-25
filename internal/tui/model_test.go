@@ -21,8 +21,14 @@ func updateModel(m app.Model, msg tea.Msg) (app.Model, tea.Cmd) {
 
 // newTestModel creates a Model with a buffered events channel for testing.
 // Tests never send to the channel, so it just needs to be non-nil.
+// noEmoji=false preserves existing emoji rendering behavior.
 func newTestModel() app.Model {
-	return app.New(make(chan tea.Msg, 10))
+	return app.New(make(chan tea.Msg, 10), false)
+}
+
+// newTestModelNoEmoji creates a Model with noEmoji=true for ASCII rendering tests.
+func newTestModelNoEmoji() app.Model {
+	return app.New(make(chan tea.Msg, 10), true)
 }
 
 func TestWindowSizeNormal(t *testing.T) {

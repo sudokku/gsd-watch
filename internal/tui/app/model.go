@@ -35,16 +35,19 @@ type Model struct {
 	cache        *parser.ProjectCache // incremental cache backed by .planning/
 	events       chan tea.Msg          // watcher event channel
 	planningRoot string               // path to .planning/ dir
+	noEmoji      bool                 // true when --no-emoji flag was passed
 }
 
 // New returns a Model initialized with empty project data. Data arrives via
 // ParsedMsg dispatched from Init(). The events channel is created in main()
 // and passed here so the watcher goroutine and Bubble Tea runtime share it.
-func New(events chan tea.Msg) Model {
+// noEmoji controls whether ASCII icons/badges are used instead of emoji.
+func New(events chan tea.Msg, noEmoji bool) Model {
 	root, _ := os.Getwd()
 	planningRoot := filepath.Join(root, ".planning")
 	keys := tui.DefaultKeyMap()
 	t := tree.New()
+	t = t.SetOptions(tree.Options{NoEmoji: noEmoji})
 	h := header.New(parser.ProjectData{})
 	f := footer.New(parser.ProjectData{}, keys)
 	vp := viewport.New(0, 0)
@@ -58,6 +61,7 @@ func New(events chan tea.Msg) Model {
 		events:       events,
 		planningRoot: planningRoot,
 		cache:        parser.NewCache(planningRoot),
+		noEmoji:      noEmoji,
 	}
 }
 
@@ -218,9 +222,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // helpView renders the full-pane help overlay.
-func helpView(width int) string {
+// When noEmoji is true, ASCII bracket codes replace emoji in the Phase stages section.
+func helpView(width int, noEmoji bool) string {
 	if width < tui.MinWidth {
 		return "\u25c0 too narrow"
+	}
+
+	var phaseStages string
+	if noEmoji {
+		phaseStages = `Phase stages
+[disc]   discussed
+[rsrch]  researched
+[ui]     ui spec
+[plan]   planned
+[exec]   executed
+[vrfy]   verified
+[uat]    UAT`
+	} else {
+		phaseStages = `Phase stages
+💬  discussed
+🔎  researched
+🎨  ui spec
+📋  planned
+🚀  executed
+✅  verified
+🧪  UAT`
 	}
 
 	helpText := `gsd-watch help
@@ -240,14 +266,7 @@ Quit
 qq   quit gsd-watch
 esc  quit gsd-watch
 
-Phase stages
-💬  discussed
-🔎  researched
-🎨  ui spec
-📋  planned
-🚀  executed
-✅  verified
-🧪  UAT
+` + phaseStages + `
 
 press q or esc to close`
 
@@ -276,7 +295,7 @@ func (m Model) View() string {
 		return "\u25c0 pane too narrow"
 	}
 	if m.helpVisible {
-		return helpView(m.width)
+		return helpView(m.width, m.noEmoji)
 	}
 	// Sync viewport content with current tree state.
 	m.viewport.SetContent(m.tree.View(m.width))
