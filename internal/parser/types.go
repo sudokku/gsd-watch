@@ -47,16 +47,24 @@ type QuickTask struct {
 	Status      string // StatusComplete / StatusInProgress / StatusPending
 }
 
+// ArchivedMilestone represents a completed milestone archived in .planning/milestones/.
+type ArchivedMilestone struct {
+	Name           string // version string e.g. "v1.0" (per D-04)
+	PhaseCount     int    // count of subdirectories inside vX.Y-phases/ (per D-05)
+	CompletionDate string // ISO date e.g. "2026-03-23" or empty string (per D-06)
+}
+
 // ProjectData is the root data model for the entire project view.
 type ProjectData struct {
-	Name            string
-	ModelProfile    string
-	Mode            string
-	Phases          []Phase
-	QuickTasks      []QuickTask
-	CurrentAction   string
-	LastUpdated     time.Time
-	ProgressPercent float64 // 0.0 to 1.0, from STATE.md progress.percent
+	Name               string
+	ModelProfile       string
+	Mode               string
+	Phases             []Phase
+	QuickTasks         []QuickTask
+	ArchivedMilestones []ArchivedMilestone
+	CurrentAction      string
+	LastUpdated        time.Time
+	ProgressPercent    float64 // 0.0 to 1.0, from STATE.md progress.percent
 }
 
 // CompletionPercent returns the fraction of plans with status "complete"
