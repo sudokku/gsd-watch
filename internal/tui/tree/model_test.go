@@ -547,3 +547,115 @@ func TestQuickTasksViewIcons(t *testing.T) {
 		t.Errorf("expected 'Quick tasks' section header\nOutput:\n%s", out)
 	}
 }
+
+// TestView_PhaseActiveWhenCursorOnChildPlan verifies that when the cursor moves to
+// a child plan row, the parent phase row still renders as "active" (highlighted).
+// Since lipgloss strips ANSI in test (no TTY), we verify structural behavior:
+// - cursor is on a RowPlan row
+// - isPhaseActive returns true for the parent phase row index
+// - badge text for phase 1 appears in the output (badges rendered via any style are present)
+func TestView_PhaseActiveWhenCursorOnChildPlan(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data).SetOptions(tree.Options{NoEmoji: true})
+	// expand phase 1, cursor at row 0 (phase row)
+	m = pressKey(t, m, "l")
+	// move cursor down to first plan (row 1)
+	m = pressKey(t, m, "j")
+
+	rows := m.VisibleRows()
+	if m.Cursor() != 1 {
+		t.Fatalf("expected cursor at 1 (first plan of phase 1), got %d", m.Cursor())
+	}
+	if rows[1].Kind != tree.RowPlan {
+		t.Fatalf("expected row 1 to be RowPlan, got %v", rows[1].Kind)
+	}
+
+	// Phase row is at index 0; cursor is at index 1 (child plan) -> phase should be active
+	if !m.IsPhaseActive(rows, 0) {
+		t.Errorf("expected IsPhaseActive(rows, 0) to be true when cursor is on child plan at index 1")
+	}
+
+	out := m.View(80)
+	// Phase 1 badges ([disc] [rsrch]) should appear in the output regardless of style
+	if !strings.Contains(out, "[disc]") {
+		t.Errorf("expected badge '[disc]' in output when cursor on child plan\nOutput:\n%s", out)
+	}
+	if !strings.Contains(out, "[rsrch]") {
+		t.Errorf("expected badge '[rsrch]' in output when cursor on child plan\nOutput:\n%s", out)
+	}
+	// Phase name should still appear in output
+	if !strings.Contains(out, "Phase 1: Core TUI Scaffold") {
+		t.Errorf("expected phase name in output\nOutput:\n%s", out)
+	}
+}
+
+// TestView_BadgeInheritsDimForCompletedPhase verifies that completed phase badges
+// appear in the output, rendered via PendingStyle when not active.
+func TestView_BadgeInheritsDimForCompletedPhase(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data).SetOptions(tree.Options{NoEmoji: true})
+	// Navigate to phase 5 (index 4) and expand it
+	for i := 0; i < 4; i++ {
+		m = pressKey(t, m, "j")
+	}
+	m = pressKey(t, m, "l") // expand phase 5
+
+	// cursor is on phase 5 (active) — badges should appear
+	out := m.View(80)
+	if !strings.Contains(out, "[disc]") {
+		t.Errorf("expected badge '[disc]' for phase 5 (active cursor)\nOutput:\n%s", out)
+	}
+	if !strings.Contains(out, "[vrfy]") {
+		t.Errorf("expected badge '[vrfy]' for phase 5 (active cursor)\nOutput:\n%s", out)
+	}
+
+	// Move cursor away to phase 6 (cursor at phase 5 row index + 2 plans + 1 = phase 6 row)
+	m = pressKey(t, m, "j") // plan 1
+	m = pressKey(t, m, "j") // plan 2
+	m = pressKey(t, m, "j") // phase 6
+
+	rows := m.VisibleRows()
+	// Find phase 5 row index
+	phase5RowIdx := -1
+	for i, r := range rows {
+		if r.Kind == tree.RowPhase && r.Phase.DirName == "05-tui-polish" {
+			phase5RowIdx = i
+			break
+		}
+	}
+	if phase5RowIdx == -1 {
+		t.Fatal("could not find phase 5 row")
+	}
+	// Phase 5 should NOT be active (cursor is on phase 6)
+	if m.IsPhaseActive(rows, phase5RowIdx) {
+		t.Errorf("expected IsPhaseActive(rows, %d) to be false when cursor is on phase 6", phase5RowIdx)
+	}
+
+	// Badges should still appear (dimmed via PendingStyle but present as text)
+	out2 := m.View(80)
+	if !strings.Contains(out2, "[disc]") {
+		t.Errorf("expected badge '[disc]' for phase 5 (dimmed, cursor elsewhere)\nOutput:\n%s", out2)
+	}
+}
+
+// TestView_BadgeUnstyledForNonCompleteNonActivePhase verifies that phase 2 badges
+// (non-complete, non-active) render unstyled (just plain text, no PendingStyle).
+// Phase 2 has no badges in mock, so we use phase 1 (in_progress) with cursor on phase 2.
+func TestView_BadgeUnstyledForNonCompleteNonActivePhase(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data).SetOptions(tree.Options{NoEmoji: true})
+	// cursor starts at phase 1 (index 0); move to phase 2 (index 1)
+	m = pressKey(t, m, "j")
+
+	rows := m.VisibleRows()
+	// Phase 1 is at index 0; cursor is at index 1 (phase 2) -> phase 1 not active
+	if m.IsPhaseActive(rows, 0) {
+		t.Errorf("expected IsPhaseActive(rows, 0) to be false when cursor is on phase 2")
+	}
+
+	out := m.View(80)
+	// Phase 1 badges should still appear as plain text
+	if !strings.Contains(out, "[disc]") {
+		t.Errorf("expected '[disc]' badge to appear even when phase 1 not active\nOutput:\n%s", out)
+	}
+}
