@@ -36,7 +36,7 @@ Full phase details: `.planning/milestones/v1.0-ROADMAP.md`
 - [x] **Phase 7: Parser Reliability + Fixture Corpus** - Fix phase sorting, BOM frontmatter, heading regex, PROJECT.md name fallback; add test fixture corpus (completed 2026-03-23)
 - [x] **Phase 8: Debug Mode** - `--debug` flag that prints parser decisions to stderr (completed 2026-03-24)
 - [x] **Phase 9: Quick Tasks TUI Section** - Collapsible quick tasks tree section reading `.planning/quick/` (completed 2026-03-24)
-- [ ] **Phase 10: Emoji/Text Toggle** - `--no-emoji` flag for ASCII fallback in SSH and minimal terminals
+- [x] **Phase 10: Emoji/Text Toggle** - `--no-emoji` flag for ASCII fallback in SSH and minimal terminals (completed 2026-03-25)
 
 ### Phase 7: Parser Reliability + Fixture Corpus
 **Goal**: The parser correctly handles every known real-world edge case — out-of-ROADMAP phase dirs, BOM-prefixed frontmatter, non-H3 phase headings, missing STATE.md milestone name — and a test fixture corpus confirms all cases pass
@@ -92,7 +92,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 10-01-PLAN.md — ASCII StatusIcon/BadgeString + Options struct + view.go wiring
-- [ ] 10-02-PLAN.md — CLI --no-emoji flag wiring + help overlay ASCII + integration tests
+- [x] 10-02-PLAN.md — CLI --no-emoji flag wiring + help overlay ASCII + integration tests
 
 ### v1.1 Progress
 
@@ -104,7 +104,7 @@ Phases execute in numeric order: 7 → 8 → 9 → 10
 | 7. Parser Reliability + Fixture Corpus | 2/2 | Complete   | 2026-03-23 |
 | 8. Debug Mode | 2/2 | Complete   | 2026-03-24 |
 | 9. Quick Tasks TUI Section | 2/2 | Complete   | 2026-03-24 |
-| 10. Emoji/Text Toggle | 1/2 | In Progress|  |
+| 10. Emoji/Text Toggle | 2/2 | Complete   | 2026-03-25 |
 
 ---
 
