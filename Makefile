@@ -1,7 +1,7 @@
 .PHONY: build install all clean plugin-install-global plugin-install-local
 
-BINARY_ARM64 := build/gsd-watch-arm64
-BINARY_AMD64 := build/gsd-watch-amd64
+BINARY_ARM64 := build/gsd-watch-darwin-arm64
+BINARY_AMD64 := build/gsd-watch-darwin-amd64
 INSTALL_DIR  := $(HOME)/.local/bin
 LDFLAGS      := -ldflags="-s -w"
 CMD_SRC      := ./cmd/gsd-watch/

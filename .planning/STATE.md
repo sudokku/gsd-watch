@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Parser Reliability + Observability + Quick Tasks
+milestone: v1.2
+milestone_name: Archived Milestone Visibility
 status: v1.1 milestone complete
-stopped_at: Completed quick task 260325-398
-last_updated: "2026-03-25T00:59:55.385Z"
+stopped_at: Phase 11 context gathered
+last_updated: "2026-03-25T01:32:50.125Z"
 last_activity: 2026-03-25
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -179,6 +179,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-25
-Last session: 2026-03-25T00:02:45.226Z
-Stopped at: Completed quick task 260325-398
-Resume file: None
+Last session: 2026-03-25T01:32:50.115Z
+Stopped at: Phase 11 context gathered
+Resume file: .planning/phases/11-archive-detection/11-CONTEXT.md
