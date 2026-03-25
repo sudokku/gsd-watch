@@ -110,6 +110,59 @@ func TestParseProject_NoProjectMDUsesDir(t *testing.T) {
 	}
 }
 
+func TestParseProject_ArchivedMilestones(t *testing.T) {
+	// Build a minimal .planning/ tree in a temp dir
+	tmp := t.TempDir()
+	// .planning/ root is tmp itself
+
+	// Create milestones/v1.0-phases/ with 2 phase subdirs
+	os.MkdirAll(filepath.Join(tmp, "milestones", "v1.0-phases", "01-core"), 0o755)
+	os.MkdirAll(filepath.Join(tmp, "milestones", "v1.0-phases", "02-data"), 0o755)
+
+	// Create MILESTONES.md
+	os.WriteFile(filepath.Join(tmp, "MILESTONES.md"), []byte(
+		"# Milestones\n\n## v1.0 MVP (Shipped: 2026-03-23)\n\nDetails.\n",
+	), 0o644)
+
+	// Create minimal STATE.md so ParseProject doesn't skip phases parsing
+	os.WriteFile(filepath.Join(tmp, "STATE.md"), []byte(
+		"---\nmilestone_name: test\nstopped_at: testing\n---\n",
+	), 0o644)
+
+	data := ParseProject(tmp)
+
+	if len(data.ArchivedMilestones) != 1 {
+		t.Fatalf("expected 1 archived milestone, got %d", len(data.ArchivedMilestones))
+	}
+	am := data.ArchivedMilestones[0]
+	if am.Name != "v1.0" {
+		t.Errorf("Name = %q, want %q", am.Name, "v1.0")
+	}
+	if am.PhaseCount != 2 {
+		t.Errorf("PhaseCount = %d, want 2", am.PhaseCount)
+	}
+	if am.CompletionDate != "2026-03-23" {
+		t.Errorf("CompletionDate = %q, want %q", am.CompletionDate, "2026-03-23")
+	}
+}
+
+func TestParseProject_ArchivedMilestones_NoDir(t *testing.T) {
+	tmp := t.TempDir()
+	// No milestones dir at all
+	os.WriteFile(filepath.Join(tmp, "STATE.md"), []byte(
+		"---\nmilestone_name: test\nstopped_at: testing\n---\n",
+	), 0o644)
+
+	data := ParseProject(tmp)
+
+	if data.ArchivedMilestones == nil {
+		t.Fatal("ArchivedMilestones should be empty slice, not nil")
+	}
+	if len(data.ArchivedMilestones) != 0 {
+		t.Fatalf("expected 0 archived milestones, got %d", len(data.ArchivedMilestones))
+	}
+}
+
 func TestParseProject_EmptyRoot(t *testing.T) {
 	dir := t.TempDir()
 	data := ParseProject(dir)
