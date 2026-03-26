@@ -361,33 +361,33 @@ func (t TreeModel) View(width, height int) string {
 		padded = append(padded, " "+line)
 	}
 
-	// Two-pass render: scrollable zone + pinned archive zone (D-01, D-02).
-	archiveContent := RenderArchiveZone(t.data.ArchivedMilestones, width, t.opts.NoEmoji)
-	if archiveContent == "" {
-		// No archives — return scrollable content as-is, no height capping needed.
-		return strings.Join(padded, "\n")
-	}
+	// View() renders only the scrollable zone (phases + quick tasks).
+	// The archive zone is rendered separately via ArchiveZone() and
+	// pinned outside the viewport by the app model.
+	return strings.Join(padded, "\n")
+}
 
-	// D-02: pinnedH = len(archives) + 1 (separator + archive rows).
-	pinnedH := len(t.data.ArchivedMilestones) + 1
-	scrollH := height - pinnedH
-	if scrollH < 0 {
-		scrollH = 0
+// ArchiveZoneHeight returns the number of lines the pinned archive zone occupies.
+// Returns 0 when no archived milestones exist.
+func (t TreeModel) ArchiveZoneHeight() int {
+	if len(t.data.ArchivedMilestones) == 0 {
+		return 0
 	}
+	return len(t.data.ArchivedMilestones) + 1 // separator + rows
+}
 
-	// Cap scrollable content to scrollH lines.
-	if len(padded) > scrollH {
-		padded = padded[:scrollH]
+// ArchiveZone renders the pinned archive zone with D-10 left-padding applied.
+// Returns empty string when no archives exist.
+func (t TreeModel) ArchiveZone(width int) string {
+	content := RenderArchiveZone(t.data.ArchivedMilestones, width, t.opts.NoEmoji)
+	if content == "" {
+		return ""
 	}
-
-	// Apply D-10 left-padding to archive zone lines.
-	var archivePadded []string
-	for _, line := range strings.Split(archiveContent, "\n") {
-		archivePadded = append(archivePadded, " "+line)
+	var padded []string
+	for _, line := range strings.Split(content, "\n") {
+		padded = append(padded, " "+line)
 	}
-
-	// Join scrollable + pinned zones.
-	return strings.Join(padded, "\n") + "\n" + strings.Join(archivePadded, "\n")
+	return strings.Join(padded, "\n")
 }
 
 // RenderedCursorLine returns the line index (0-based) of the cursor row's
