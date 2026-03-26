@@ -1,12 +1,78 @@
 package tree
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/radu/gsd-watch/internal/parser"
 	tui "github.com/radu/gsd-watch/internal/tui"
 )
+
+// FormatArchiveDate converts an ISO date string ("2006-01-02") to "Jan 2006" format.
+// Returns empty string for empty input or invalid dates.
+func FormatArchiveDate(iso string) string {
+	if iso == "" {
+		return ""
+	}
+	t, err := time.Parse("2006-01-02", iso)
+	if err != nil {
+		return ""
+	}
+	return t.Format("Jan 2006")
+}
+
+// RenderArchiveRow renders a single archived milestone row in emoji or noEmoji mode.
+// Archive rows are styled with PendingStyle (ColorGray) — non-interactive and dimmed.
+func RenderArchiveRow(am parser.ArchivedMilestone, noEmoji bool) string {
+	indicator := "▸ "
+	checkmark := "✓"
+	if noEmoji {
+		indicator = "> "
+		checkmark = "[done]"
+	}
+	dateStr := FormatArchiveDate(am.CompletionDate)
+	var row string
+	if dateStr != "" {
+		row = fmt.Sprintf("%s%s — %d phases %s  %s", indicator, am.Name, am.PhaseCount, checkmark, dateStr)
+	} else {
+		row = fmt.Sprintf("%s%s — %d phases %s", indicator, am.Name, am.PhaseCount, checkmark)
+	}
+	return tui.PendingStyle.Render(row)
+}
+
+// RenderArchiveSeparator renders the "- - Archived Milestones - - -..." separator line
+// padded to innerWidth = width-1 (compensating for D-10 left-padding).
+func RenderArchiveSeparator(width int) string {
+	innerWidth := width - 1
+	label := " Archived Milestones "
+	prefix := "- -"
+	body := prefix + label
+	remaining := innerWidth - len(body)
+	if remaining < 0 {
+		remaining = 0
+	}
+	dashes := strings.Repeat(" -", (remaining/2)+1)
+	result := body + dashes
+	if len(result) > innerWidth {
+		result = result[:innerWidth]
+	}
+	return tui.PendingStyle.Render(result)
+}
+
+// RenderArchiveZone renders the full pinned archive zone: separator + one row per milestone.
+// Returns empty string when archives is nil or empty (D-04).
+func RenderArchiveZone(archives []parser.ArchivedMilestone, width int, noEmoji bool) string {
+	if len(archives) == 0 {
+		return ""
+	}
+	lines := []string{RenderArchiveSeparator(width)}
+	for _, am := range archives {
+		lines = append(lines, RenderArchiveRow(am, noEmoji))
+	}
+	return strings.Join(lines, "\n")
+}
 
 var highlightStyle = lipgloss.NewStyle().Bold(true)
 
