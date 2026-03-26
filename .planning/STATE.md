@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Archived Milestone Visibility
-status: Ready to execute
-stopped_at: Completed 11-archive-detection-01-PLAN.md
-last_updated: "2026-03-25T02:24:18.315Z"
-last_activity: 2026-03-25
+status: Phase complete — ready for verification
+stopped_at: Completed 12-archive-display 12-02-PLAN.md
+last_updated: "2026-03-26T01:31:28.561Z"
+last_activity: 2026-03-26
 progress:
   total_phases: 2
-  completed_phases: 0
-  total_plans: 2
-  completed_plans: 1
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -74,6 +74,7 @@ Plan: 2 of 2
 | Phase 10-emoji-text-toggle P01 | 3 | 2 tasks | 4 files |
 | Phase 10-emoji-text-toggle P02 | 10 | 2 tasks | 3 files |
 | Phase 11-archive-detection P01 | 5 | 2 tasks | 7 files |
+| Phase 12-archive-display P02 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -158,6 +159,7 @@ Recent decisions affecting current work:
 - [Phase 11-archive-detection]: archiveDirRe captures version from vX.Y-phases pattern; non-matching dirs silently skipped with debugf
 - [Phase 11-archive-detection]: lookupCompletionDate uses regexp.QuoteMeta(version) to safely escape dot in version strings like v1.0
 - [Phase 11-archive-detection]: MILESTONES.md pre-read once per parseArchivedMilestones call, nil data means empty CompletionDate for all
+- [Phase 12-archive-display]: app/model.go tree.View call sites already updated by Plan 01 deviation (Rule 3) — Plan 02 is a verification-only plan confirming ARC-02 complete
 
 ### Roadmap Evolution
 
@@ -182,7 +184,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-25
-Last session: 2026-03-25T02:24:18.312Z
-Stopped at: Completed 11-archive-detection-01-PLAN.md
+Last activity: 2026-03-26
+Last session: 2026-03-26T01:31:28.559Z
+Stopped at: Completed 12-archive-display 12-02-PLAN.md
 Resume file: None

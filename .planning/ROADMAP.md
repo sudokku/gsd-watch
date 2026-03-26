@@ -70,15 +70,15 @@ Plans:
   5. New archive dir triggers a TUI update within 300ms via the existing fsnotify watcher
 **Plans**: 2 plans
 Plans:
-- [ ] 12-01-PLAN.md
-- [ ] 12-02-PLAN.md
+- [x] 12-01-PLAN.md
+- [x] 12-02-PLAN.md
 
 ### v1.2 Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 11. Archive Detection | 1/2 | In Progress|  |
-| 12. Archive Display | 0/? | Not started | - |
+| 12. Archive Display | 2/2 | Complete   | 2026-03-26 |
 
 ---
 
