@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Settings
 status: Ready to plan
-stopped_at: Completed 13-02-PLAN.md
-last_updated: "2026-03-26T11:54:33.350Z"
-last_activity: 2026-03-26
+stopped_at: Quick task 260326-svs complete
+last_updated: "2026-03-26T18:51:10.384Z"
+last_activity: "2026-03-26 - Completed quick task 260326-qai: fix TUI trailing column visual debris on resize"
 progress:
   total_phases: 3
   completed_phases: 1
@@ -183,6 +183,7 @@ None yet.
 | 260325-398 | Phase title stays white+bold when navigating to child plan rows | 2026-03-25 | cdc2517 | Complete | [260325-398-phase-title-stays-white-bold-when-naviga](./quick/260325-398-phase-title-stays-white-bold-when-naviga/) |
 | 260326-5f1 | Pin archived milestones zone to bottom of pane (outside viewport) | 2026-03-26 | a7ea4fe | Needs Review | [260326-5f1-pin-archived-milestones-zone-to-bottom-o](./quick/260326-5f1-pin-archived-milestones-zone-to-bottom-o/) |
 | 260326-qai | Fix TUI trailing column visual debris on terminal resize | 2026-03-26 | 3d00bb7 | Complete | [260326-qai-fix-tui-trailing-column-visual-debris-on](./quick/260326-qai-fix-tui-trailing-column-visual-debris-on/) |
+| 260326-svs | Fix no-project placeholder shown when archived milestones present | 2026-03-26 | fedb015 | Complete | [260326-svs-fix-no-project-placeholder-shown-when-on](./quick/260326-svs-fix-no-project-placeholder-shown-when-on/) |
 
 ### Blockers/Concerns
 
@@ -193,6 +194,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-26 - Completed quick task 260326-qai: fix TUI trailing column visual debris on resize
-Last session: 2026-03-26T11:49:31.216Z
-Stopped at: Quick task 260326-qai complete
+Last session: 2026-03-26T18:51:10.379Z
+Stopped at: Quick task 260326-svs complete
 Resume file: None
