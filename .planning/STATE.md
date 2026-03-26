@@ -169,6 +169,7 @@ None yet.
 |---|-------------|------|--------|--------|-----------|
 | 260323-re2 | Fix gsd-watch sidebar closing immediately after opening | 2026-03-23 | cd8d9d5 | Verified | [260323-re2-fix-gsd-watch-sidebar-closing-immediatel](./quick/260323-re2-fix-gsd-watch-sidebar-closing-immediatel/) |
 | 260325-398 | Phase title stays white+bold when navigating to child plan rows | 2026-03-25 | cdc2517 | Complete | [260325-398-phase-title-stays-white-bold-when-naviga](./quick/260325-398-phase-title-stays-white-bold-when-naviga/) |
+| 260326-qai | Fix TUI trailing column visual debris on terminal resize | 2026-03-26 | 3d00bb7 | Complete | [260326-qai-fix-tui-trailing-column-visual-debris-on](./quick/260326-qai-fix-tui-trailing-column-visual-debris-on/) |
 
 ### Blockers/Concerns
 
@@ -178,7 +179,6 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-25
-Last session: 2026-03-25T01:32:50.115Z
-Stopped at: Phase 11 context gathered
-Resume file: .planning/phases/11-archive-detection/11-CONTEXT.md
+Last activity: 2026-03-26
+Last session: 2026-03-26T00:00:00Z
+Stopped at: Quick task 260326-qai complete
