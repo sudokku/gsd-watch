@@ -182,6 +182,7 @@ None yet.
 | 260323-re2 | Fix gsd-watch sidebar closing immediately after opening | 2026-03-23 | cd8d9d5 | Verified | [260323-re2-fix-gsd-watch-sidebar-closing-immediatel](./quick/260323-re2-fix-gsd-watch-sidebar-closing-immediatel/) |
 | 260325-398 | Phase title stays white+bold when navigating to child plan rows | 2026-03-25 | cdc2517 | Complete | [260325-398-phase-title-stays-white-bold-when-naviga](./quick/260325-398-phase-title-stays-white-bold-when-naviga/) |
 | 260326-5f1 | Pin archived milestones zone to bottom of pane (outside viewport) | 2026-03-26 | a7ea4fe | Needs Review | [260326-5f1-pin-archived-milestones-zone-to-bottom-o](./quick/260326-5f1-pin-archived-milestones-zone-to-bottom-o/) |
+| 260326-qai | Fix TUI trailing column visual debris on terminal resize | 2026-03-26 | 3d00bb7 | Complete | [260326-qai-fix-tui-trailing-column-visual-debris-on](./quick/260326-qai-fix-tui-trailing-column-visual-debris-on/) |
 
 ### Blockers/Concerns
 
@@ -191,7 +192,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-26
+Last activity: 2026-03-26 - Completed quick task 260326-qai: fix TUI trailing column visual debris on resize
 Last session: 2026-03-26T11:49:31.216Z
-Stopped at: Completed 13-02-PLAN.md
+Stopped at: Quick task 260326-qai complete
 Resume file: None

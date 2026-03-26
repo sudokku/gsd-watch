@@ -137,8 +137,8 @@ func (t TreeModel) View(width, height int) string {
 			// Calculate prefix width and available wrap width for phase name.
 			prefixStr := expandIndicator + icon + " "
 			prefixWidth := lipgloss.Width(prefixStr)
-			// -1 mirrors D-10 left-padding added at bottom of View().
-			wrapWidth := width - 1 - prefixWidth
+			// -2 mirrors D-10 left-padding (1 char) + implicit right-padding (1 char).
+			wrapWidth := width - 2 - prefixWidth
 			if wrapWidth < 1 {
 				wrapWidth = 1
 			}
@@ -220,16 +220,16 @@ func (t TreeModel) View(width, height int) string {
 				nowMarker = " " + tui.NowMarkerStyle.Render("← now")
 			}
 
-			// Bug-2 fix: subtract 1 for the D-10 left-padding so the assembled line
-			// is exactly `width` cells wide after the pad is prepended.
+			// Bug-2 fix: subtract 2 for D-10 left-padding (1) + implicit right-padding (1)
+			// so content never reaches the terminal's rightmost column.
 			prefixWidth := lipgloss.Width(connector) + lipgloss.Width(icon) + 1
 			nowWidth := lipgloss.Width(nowMarker)
-			wrapWidth := width - 1 - prefixWidth - nowWidth
+			wrapWidth := width - 2 - prefixWidth - nowWidth
 			if wrapWidth < 1 {
 				wrapWidth = 1
 			}
 			// Bug-1 fix: use │ (U+2502) which aligns with ├/└ on the right cell edge.
-			// Bug-2 fix: same -1 adjustment so continuation column matches wrapWidth.
+			// Bug-2 fix: same -2 adjustment so continuation column matches wrapWidth.
 			var continuation string
 			if isLast {
 				continuation = strings.Repeat(" ", prefixWidth)
@@ -309,7 +309,7 @@ func (t TreeModel) View(width, height int) string {
 
 			// Calculate wrap width — same pattern as RowPlan
 			prefixWidth := lipgloss.Width(connector) + lipgloss.Width(icon) + 1
-			wrapWidth := width - 1 - prefixWidth
+			wrapWidth := width - 2 - prefixWidth
 			if wrapWidth < 1 {
 				wrapWidth = 1
 			}
@@ -356,6 +356,8 @@ func (t TreeModel) View(width, height int) string {
 	}
 
 	// D-10: add 1-char left padding to every line.
+	// Right padding is achieved by reducing wrapWidth by 2 (left + right)
+	// so content never reaches the terminal's rightmost column.
 	var padded []string
 	for _, line := range strings.Split(strings.Join(lines, "\n"), "\n") {
 		padded = append(padded, " "+line)
@@ -415,7 +417,7 @@ func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 		expandIndicatorWidth := 2 // "▶ " or "▼ " — both 2 display cells
 		icon := tui.StatusIcon(row.Phase.Status, noEmoji)
 		prefixWidth := expandIndicatorWidth + lipgloss.Width(icon) + 1
-		wrapWidth := width - 1 - prefixWidth
+		wrapWidth := width - 2 - prefixWidth
 		if wrapWidth < 1 {
 			wrapWidth = 1
 		}
@@ -442,8 +444,8 @@ func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 		}
 		const connectorWidth = 8 // "    ├── " or "    └── " = 8 cells
 		prefixWidth := connectorWidth + lipgloss.Width(icon) + 1
-		// -1 mirrors the D-10 left-padding adjustment in View() so line counts match.
-		wrapWidth := width - 1 - prefixWidth - nowWidth
+		// -2 mirrors D-10 left-padding (1) + implicit right-padding (1) in View().
+		wrapWidth := width - 2 - prefixWidth - nowWidth
 		if wrapWidth < 1 {
 			wrapWidth = 1
 		}
@@ -461,7 +463,7 @@ func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 		icon := tui.StatusIcon(row.QuickTask.Status, noEmoji)
 		const connectorWidth = 8
 		prefixWidth := connectorWidth + lipgloss.Width(icon) + 1
-		wrapWidth := width - 1 - prefixWidth
+		wrapWidth := width - 2 - prefixWidth
 		if wrapWidth < 1 {
 			wrapWidth = 1
 		}
