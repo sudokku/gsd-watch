@@ -1,7 +1,7 @@
 # Stack Research
 
 **Domain:** Go terminal TUI with filesystem watching and Claude Code plugin integration
-**Researched:** 2026-03-18
+**Researched:** 2026-03-26
 **Confidence:** HIGH (all versions verified against pkg.go.dev and official docs)
 
 ---
@@ -12,12 +12,13 @@
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| Go | 1.22+ | Language runtime | Loop variable fix (each `for` iteration gets its own variable — eliminates a classic goroutine closure bug in TUI event handlers). Required minimum per PROJECT.md. |
+| Go | 1.26.1 (module minimum 1.22+) | Language runtime | Loop variable fix (each `for` iteration gets its own variable — eliminates a classic goroutine closure bug in TUI event handlers). go.mod currently declares `go 1.26.1`. |
 | Bubble Tea | v1.3.10 | TUI event loop, Model/Update/View lifecycle | The standard Go TUI framework. v1.x is stable and widely adopted. v2.x exists at `github.com/charmbracelet/bubbletea/v2` but is a different import path and requires the Cursed Renderer — stick with v1.x per PROJECT.md constraint. |
 | Lip Gloss | v1.1.0 | Terminal styling and layout | Pairs directly with Bubble Tea v1.x. Provides `JoinVertical`, `JoinHorizontal`, `Place`, border styles, and styled string composition. v1.x avoids the I/O control changes introduced in v2. |
 | Bubbles | v1.0.0 | Reusable TUI components (viewport, key, spinner) | The charmbracelet component library for Bubble Tea. v1.0.0 released 2026-02-09 is the stable release for Bubble Tea v1.x projects. Provides `viewport` (scrollable content), `key` (rebindable keybindings with auto-generated help), and `progress` (animated progress bar). |
 | fsnotify | v1.9.0 | Filesystem event watching | The canonical Go filesystem watcher. v1.9.0 is the latest (Apr 2025). Does NOT support recursive watching on any platform including macOS/kqueue — requires explicit per-directory `Add()` calls. |
 | gopkg.in/yaml.v3 | v3.0.1 | YAML frontmatter parsing for `*-PLAN.md` files | Standard Go YAML library. Used to decode the `---` frontmatter block in GSD PLAN.md files. Supports struct tags and inline embedding. |
+| BurntSushi/toml | v1.6.0 | Config file parsing (`~/.config/gsd-watch/config.toml`) | See "v1.3 additions" section below for rationale. NOT yet in go.mod — must be added via `go get`. |
 
 ### Supporting Libraries
 
@@ -38,6 +39,193 @@
 | `make` | Build, install, plugin-install targets | Makefile with `CGO_ENABLED=0 GOOS=darwin GOARCH=arm64/amd64` for static binary |
 | `go build` | Produces static binary | Use `-ldflags="-s -w"` to strip debug info and keep binary under 15MB |
 | `goreleaser` (optional) | Cross-compile darwin/arm64 + darwin/amd64 into universal binary | Only needed if distributing; manual `lipo` merge works for personal use |
+
+---
+
+## v1.3 Additions: TOML Config + Theme System
+
+### What's NEW vs existing go.mod
+
+The current `go.mod` (verified 2026-03-26) does NOT include `github.com/BurntSushi/toml`. All other dependencies listed in go.mod are already present. The only new dependency for v1.3 is:
+
+```bash
+go get github.com/BurntSushi/toml@v1.6.0
+```
+
+Everything else (XDG path, theme system, help overlay path) uses stdlib or the existing lipgloss dependency.
+
+---
+
+### TOML Parsing: BurntSushi/toml v1.6.0
+
+**Recommendation: Add `github.com/BurntSushi/toml@v1.6.0` as a new dependency.**
+
+**Why BurntSushi/toml over pelletier/go-toml v2:**
+
+The config file has exactly 2 keys (`emoji` and `theme`). pelletier/go-toml v2's performance advantage (2–5x faster) is irrelevant when the file is parsed once at startup. BurntSushi/toml is:
+- Simpler API — `toml.DecodeFile(path, &cfg)` in one call
+- Widely adopted (37,875 importers vs ~1,742 for go-toml v2 at time of research)
+- Actively maintained — v1.6.0 released December 18, 2025 (verified on pkg.go.dev)
+- Familiar `encoding/json`-compatible struct tags
+
+**Why NOT yaml.v3 for TOML:** yaml.v3 cannot parse TOML — these are different formats. yaml.v3 is only for YAML.
+
+```go
+type Config struct {
+    Emoji string `toml:"emoji"` // "on" | "off" | "" (empty = defer to flag)
+    Theme string `toml:"theme"` // "default" | "minimal" | "high-contrast"
+}
+
+func LoadConfig(path string) (Config, error) {
+    var cfg Config
+    if _, err := toml.DecodeFile(path, &cfg); err != nil {
+        return cfg, err
+    }
+    return cfg, nil
+}
+```
+
+**Missing file is NOT an error** — `os.IsNotExist(err)` check in the caller; return zero-value Config and nil error. The PROJECT.md requirement is "missing file uses defaults silently."
+
+**Why NOT pelletier/go-toml v2:** Same API complexity for no benefit at this scale. Its v2.3.0 release (March 24, 2026) is very recent — less battle-tested at this patch level. BurntSushi/toml has 10x the adoption.
+
+---
+
+### XDG Config Directory: stdlib only, manual XDG pattern
+
+**Do NOT use `os.UserConfigDir()` for this project.**
+
+`os.UserConfigDir()` on macOS/Darwin returns `$HOME/Library/Application Support` — this is documented behavior, not a bug. The project spec requires `~/.config/gsd-watch/config.toml`. On macOS, `~/.config` follows the XDG Base Directory Specification, which is the convention for CLI/TUI tools (as opposed to GUI apps that use `Library/Preferences`).
+
+**No new dependency needed.** `os.UserHomeDir()` (stdlib) is sufficient:
+
+```go
+// configDir returns ~/.config (XDG_CONFIG_HOME if set, else $HOME/.config).
+// Intentionally bypasses os.UserConfigDir() which returns
+// $HOME/Library/Application Support on macOS — wrong for CLI tools.
+func configDir() (string, error) {
+    if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" && filepath.IsAbs(xdg) {
+        return xdg, nil
+    }
+    home, err := os.UserHomeDir()
+    if err != nil {
+        return "", err
+    }
+    return filepath.Join(home, ".config"), nil
+}
+
+// ConfigFilePath returns ~/.config/gsd-watch/config.toml
+func ConfigFilePath() (string, error) {
+    base, err := configDir()
+    if err != nil {
+        return "", err
+    }
+    return filepath.Join(base, "gsd-watch", "config.toml"), nil
+}
+```
+
+The `XDG_CONFIG_HOME` check mirrors Go stdlib's own `os.UserConfigDir` source for Linux and respects the spec. `filepath.IsAbs()` prevents accepting relative paths in the env var.
+
+**Why not a third-party XDG library (adrg/xdg, kyoh86/xdg):** The project constraint is "no new external dependencies if possible." The 4-line pattern above handles the only case needed: macOS with optional `XDG_CONFIG_HOME` override.
+
+---
+
+### Theme System: lipgloss.AdaptiveColor, no new dependencies
+
+**No new dependency needed.** The existing `lipgloss.AdaptiveColor` pattern already in `internal/tui/styles.go` is the correct foundation.
+
+**Current state of styles.go (verified 2026-03-26):**
+
+`internal/tui/styles.go` currently defines four package-level `var` color values:
+- `ColorGreen`, `ColorAmber`, `ColorRed`, `ColorGray` (all `lipgloss.AdaptiveColor`)
+
+Plus derived styles: `CompleteStyle`, `ActiveStyle`, `PendingStyle`, `FailedStyle`, `NowMarkerStyle`, `RefreshFlashStyle`, `QuitPendingStyle`.
+
+**Current state of tree.Options (verified 2026-03-26):**
+
+`internal/tui/tree/model.go` defines:
+```go
+type Options struct {
+    NoEmoji bool
+}
+```
+
+`SetOptions(o Options)` is available to apply options to a `TreeModel` copy.
+
+**Design: Palette struct + named presets, injected via Options**
+
+Add a `Palette` type to `internal/tui/` (same package as `styles.go`) and extend `Options` to carry it:
+
+```go
+// Palette defines the adaptive color values for a named theme.
+type Palette struct {
+    Green  lipgloss.AdaptiveColor
+    Amber  lipgloss.AdaptiveColor
+    Red    lipgloss.AdaptiveColor
+    Gray   lipgloss.AdaptiveColor
+}
+
+var (
+    ThemeDefault = Palette{
+        Green: lipgloss.AdaptiveColor{Light: "2", Dark: "2"},
+        Amber: lipgloss.AdaptiveColor{Light: "3", Dark: "3"},
+        Red:   lipgloss.AdaptiveColor{Light: "1", Dark: "1"},
+        Gray:  lipgloss.AdaptiveColor{Light: "8", Dark: "8"},
+    }
+
+    ThemeMinimal = Palette{
+        Green: lipgloss.AdaptiveColor{Light: "8", Dark: "7"},
+        Amber: lipgloss.AdaptiveColor{Light: "8", Dark: "7"},
+        Red:   lipgloss.AdaptiveColor{Light: "8", Dark: "7"},
+        Gray:  lipgloss.AdaptiveColor{Light: "8", Dark: "240"},
+    }
+
+    ThemeHighContrast = Palette{
+        Green: lipgloss.AdaptiveColor{Light: "10", Dark: "10"}, // bright green
+        Amber: lipgloss.AdaptiveColor{Light: "11", Dark: "11"}, // bright yellow
+        Red:   lipgloss.AdaptiveColor{Light: "9", Dark: "9"},   // bright red
+        Gray:  lipgloss.AdaptiveColor{Light: "15", Dark: "15"}, // bright white
+    }
+)
+
+func ThemeByName(name string) Palette {
+    switch name {
+    case "minimal":
+        return ThemeMinimal
+    case "high-contrast":
+        return ThemeHighContrast
+    default:
+        return ThemeDefault
+    }
+}
+```
+
+**Integration path — extend existing Options:**
+
+```go
+// In tree/model.go:
+type Options struct {
+    NoEmoji bool
+    Theme   tui.Palette  // zero value falls back to ThemeDefault
+}
+```
+
+Sub-models receive `Palette` through `Options`, matching the existing `NoEmoji` threading pattern. Components call `opts.Theme.Green` etc. instead of the package-level color vars.
+
+**Flag / config precedence (implement in main.go):**
+1. `--no-emoji` flag wins over `config.emoji = "off"` (flag is explicit user action)
+2. If no `--no-emoji` flag AND `config.emoji = "off"`, activate no-emoji mode
+3. `config.theme` sets the palette; no flag override is needed for v1.3 scope
+4. Unknown theme names fall back to `default` silently — never error
+
+---
+
+### Help Overlay: no new dependencies
+
+The `?` key help overlay showing the config file path requires:
+- `ConfigFilePath()` (stdlib, see above) — call at startup to resolve the path
+- Pass the resolved path string into the relevant model via `Options` or a dedicated field
+- Render using existing lipgloss styles — no new library needed
 
 ---
 
@@ -89,8 +277,6 @@ case RefreshMsg:
     return m, nil
 ```
 
-The `Send()` call blocks until the program starts, then becomes asynchronous. Calling it after program exit is a no-op — safe to call without lifecycle checks.
-
 ### WindowSizeMsg — handle terminal resize
 
 ```go
@@ -99,24 +285,6 @@ case tea.WindowSizeMsg:
     m.height = msg.Height
     m.viewport.Width = msg.Width
     m.viewport.Height = msg.Height - headerHeight - footerHeight
-```
-
-Sent automatically on startup and on every terminal resize.
-
-### Cmd patterns for async work
-
-```go
-// Wrap blocking work as a Cmd
-func loadFilesCmd(path string) tea.Cmd {
-    return func() tea.Msg {
-        result, err := walkPlanning(path)
-        if err != nil { return ErrorMsg{err} }
-        return FilesLoadedMsg{result}
-    }
-}
-
-// Return from Init() or Update()
-return m, loadFilesCmd(m.planningDir)
 ```
 
 ### v1 vs v0 critical differences
@@ -163,26 +331,11 @@ var (
 )
 ```
 
-### Progress bar (header)
-
-Use `bubbles/progress` for animated transitions. For a static bar, Lip Gloss Width is sufficient:
-
-```go
-// Static progress bar via Lip Gloss:
-filled := int(float64(m.width-2) * m.progressPct)
-bar := lipgloss.NewStyle().
-    Foreground(lipgloss.Color("62")).
-    Render(strings.Repeat("█", filled)) +
-    lipgloss.NewStyle().
-    Foreground(lipgloss.Color("240")).
-    Render(strings.Repeat("░", m.width-2-filled))
-```
-
 ---
 
 ## fsnotify v1.9 on macOS: Recursive Watching Pattern
 
-**Critical:** fsnotify does NOT support recursive watching on macOS/kqueue (or any platform). Each directory must be added explicitly. This is a known limitation tracked in issue [#18](https://github.com/fsnotify/fsnotify/issues/18).
+**Critical:** fsnotify does NOT support recursive watching on macOS/kqueue (or any platform). Each directory must be added explicitly.
 
 ### Required pattern for `.planning/` watching
 
@@ -191,7 +344,7 @@ bar := lipgloss.NewStyle().
 err := filepath.WalkDir(planningDir, func(path string, d fs.DirEntry, err error) error {
     if err != nil { return nil }  // skip unreadable dirs
     if d.IsDir() {
-        return watcher.Add(path)  // add every directory individually
+        return watcher.Add(path)
     }
     return nil
 })
@@ -206,10 +359,7 @@ case event.Has(fsnotify.Create):
 
 ### Debouncing (required — 300ms per PROJECT.md)
 
-GSD writes multiple files during a phase execution. Without debouncing, a single `execute-phase` run triggers 10-50 events within milliseconds.
-
 ```go
-// Canonical debounce pattern with time.AfterFunc:
 var debounce *time.Timer
 for event := range watcher.Events {
     if debounce != nil {
@@ -221,223 +371,20 @@ for event := range watcher.Events {
 }
 ```
 
-### Events channel and error handling
-
-```go
-go func() {
-    for {
-        select {
-        case event, ok := <-watcher.Events:
-            if !ok { return }
-            handleEvent(event)
-        case err, ok := <-watcher.Errors:
-            if !ok { return }
-            // log but don't crash — PROJECT.md: never crash on errors
-            log.Printf("watcher error: %v", err)
-        }
-    }
-}()
-```
-
----
-
-## Unix Socket IPC Pattern
-
-### Socket path convention (from PROJECT.md)
-
-```go
-// Hash project dir path for unique socket per project
-import "crypto/sha256"
-import "fmt"
-
-func socketPath(projectDir string) string {
-    h := sha256.Sum256([]byte(projectDir))
-    return fmt.Sprintf("/tmp/gsd-watch-%x.sock", h[:4])
-}
-```
-
-### Stale socket handling (required — SIGKILL won't clean up)
-
-```go
-func listenOnSocket(path string) (net.Listener, error) {
-    // Try to connect; if connection refused, socket is stale
-    if conn, err := net.Dial("unix", path); err == nil {
-        conn.Close()
-        return nil, fmt.Errorf("gsd-watch already running at %s", path)
-    }
-    // Remove stale socket file
-    os.Remove(path)
-    return net.Listen("unix", path)
-}
-```
-
-### Cleanup on exit
-
-```go
-// Deferred cleanup — also register os.Signal handler for SIGTERM/SIGINT
-defer os.Remove(socketPath)
-```
-
----
-
-## YAML Frontmatter Parsing (PLAN.md files)
-
-GSD `*-PLAN.md` files have YAML frontmatter between `---` delimiters:
-
-```go
-type PlanFrontmatter struct {
-    Title    string `yaml:"title"`
-    Status   string `yaml:"status"`    // "pending" | "in_progress" | "complete"
-    Phase    string `yaml:"phase"`
-    Priority int    `yaml:"priority"`
-}
-
-func parseFrontmatter(content []byte) (PlanFrontmatter, error) {
-    var fm PlanFrontmatter
-    // Split on "---\n" — first part is empty, second is YAML, third is body
-    parts := bytes.SplitN(content, []byte("---\n"), 3)
-    if len(parts) < 3 {
-        return fm, nil  // no frontmatter — not an error per PROJECT.md
-    }
-    err := yaml.Unmarshal(parts[1], &fm)
-    return fm, err
-}
-```
-
-**Important:** Treat parse failures as non-fatal — PROJECT.md requires graceful handling of missing/malformed files.
-
----
-
-## Claude Code Plugin Integration
-
-### Plugin structure
-
-This project ships as a standalone configuration (not a marketplace plugin), installed at project scope:
-
-```
-gsd-watch/
-├── .claude-plugin/
-│   └── plugin.json          # plugin manifest
-├── commands/
-│   └── gsd-watch.md         # /gsd-watch slash command
-├── hooks/
-│   └── hooks.json           # Stop and SubagentStop hooks
-└── scripts/
-    └── gsd-watch-signal.sh  # signal script invoked by hooks
-```
-
-### plugin.json manifest
-
-```json
-{
-  "name": "gsd-watch",
-  "version": "1.0.0",
-  "description": "GSD project status sidebar for Claude Code",
-  "author": {
-    "name": "radu"
-  }
-}
-```
-
-Minimal manifest — `name` is the only required field. Skills are invoked as `/gsd-watch:gsd-watch` but PROJECT.md specifies `/gsd-watch` which requires standalone (non-plugin) installation in `.claude/commands/gsd-watch.md`. See "Stack Patterns by Variant" below.
-
-### commands/gsd-watch.md (slash command)
-
-```markdown
----
-description: Open GSD watch sidebar in a tmux split pane
----
-
-Check if $ARGUMENTS contains "stop". If so, run: gsd-watch --stop
-Otherwise, if not in a tmux session, tell the user to run gsd-watch manually
-in a tmux split pane with: gsd-watch $CLAUDE_PROJECT_DIR
-If in tmux: run `tmux split-window -h -l 40 gsd-watch "$CLAUDE_PROJECT_DIR"`
-```
-
-### hooks/hooks.json — Stop and SubagentStop
-
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/gsd-watch-signal.sh",
-            "async": true
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/gsd-watch-signal.sh",
-            "async": true
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-**Use `"async": true`** — the signal script must NOT block Claude Code from completing. The script writes to the Unix socket and exits immediately.
-
-### scripts/gsd-watch-signal.sh
-
-```bash
-#!/bin/bash
-# Signals gsd-watch to refresh its view.
-# Called by Claude Code Stop and SubagentStop hooks.
-# Reads CWD from stdin JSON.
-INPUT=$(cat)
-CWD=$(echo "$INPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('cwd',''))" 2>/dev/null || echo "$PWD")
-
-# Derive socket path (must match Go implementation)
-HASH=$(echo -n "$CWD" | sha256sum | cut -c1-8)
-SOCK="/tmp/gsd-watch-${HASH}.sock"
-
-# Send refresh signal — ignore errors if gsd-watch isn't running
-echo "refresh" | nc -U "$SOCK" -w 1 2>/dev/null || true
-```
-
-### Hook input payload (Stop event)
-
-```json
-{
-  "session_id": "abc123",
-  "transcript_path": "/path/to/transcript.jsonl",
-  "cwd": "/Users/radu/Developer/my-project",
-  "hook_event_name": "Stop",
-  "stop_hook_active": false,
-  "last_assistant_message": "..."
-}
-```
-
-The script receives this on stdin. Only `cwd` is needed to derive the socket path.
-
 ---
 
 ## Installation
 
 ```bash
-# go.mod setup
-go mod init github.com/radu/gsd-watch
+# v1.3: Only new dependency — TOML config file support
+go get github.com/BurntSushi/toml@v1.6.0
 
-# Core TUI stack
-go get github.com/charmbracelet/bubbletea@v1.3.10
-go get github.com/charmbracelet/lipgloss@v1.1.0
-go get github.com/charmbracelet/bubbles@v1.0.0
-
-# File watching
-go get github.com/fsnotify/fsnotify@v1.9.0
-
-# YAML frontmatter
-go get gopkg.in/yaml.v3@v3.0.1
+# Already present in go.mod (no action needed):
+# github.com/charmbracelet/bubbletea@v1.3.10
+# github.com/charmbracelet/lipgloss@v1.1.0
+# github.com/charmbracelet/bubbles@v1.0.0
+# github.com/fsnotify/fsnotify@v1.9.0
+# gopkg.in/yaml.v3@v3.0.1
 
 # Static binary build (in Makefile)
 # CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/gsd-watch-arm64 .
@@ -451,14 +398,15 @@ go get gopkg.in/yaml.v3@v3.0.1
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
+| BurntSushi/toml v1.6.0 | pelletier/go-toml v2.3.0 | If parsing very large TOML files at high frequency — pelletier/go-toml v2 is 2–5x faster. For a 2-key config file read once at startup, this difference is immeasurable. |
+| BurntSushi/toml v1.6.0 | stdlib only (hand-rolled TOML parser) | Never — TOML has enough edge cases (multiline strings, inline tables, datetime types) that hand-rolling is error-prone. |
+| Manual XDG pattern (stdlib only) | adrg/xdg or kyoh86/xdg | If cross-platform XDG support becomes needed (Linux, Windows). Current project is macOS-only — a third-party XDG library is unnecessary surface area. |
+| `os.UserHomeDir()` + manual XDG | `os.UserConfigDir()` | Use `os.UserConfigDir()` only if targeting `$HOME/Library/Application Support` (macOS GUI app convention). For a CLI/TUI tool targeting `~/.config`, bypass it entirely. |
 | Bubble Tea v1.3.10 | Bubble Tea v2 (`/v2`) | If you need progressive keyboard enhancement (shift+enter, ctrl+m detection) or are building a Wish-based SSH TUI server. Not needed here. |
 | Bubble Tea v1.3.10 | tview / tcell | If you need a widget-based immediate-mode UI (like a form builder). Bubble Tea's Elm-architecture is better for reactive read-only displays. |
 | Lip Gloss v1.1.0 | termenv directly | Only if you need raw terminal capability detection without layout primitives. Lip Gloss wraps termenv — no reason to use it directly. |
 | Bubbles v1.0.0 | Custom viewport | Only if viewport's scroll model doesn't fit (e.g., need horizontal scroll). Bubbles viewport handles all the edge cases around terminal resize. |
 | fsnotify v1.9.0 | `inotify` / `kqueue` directly | Never — cross-platform abstraction is valuable even for macOS-only apps. fsnotify's kqueue backend is production-grade. |
-| gopkg.in/yaml.v3 | `github.com/ghodss/yaml` | Only if consuming JSON-compatible YAML (converts to JSON first). GSD frontmatter is pure YAML — v3 is the correct choice. |
-| Unix sockets | Named pipes (FIFO) | If targeting systems without Unix socket support. Named pipes are messier on macOS — Unix sockets are simpler and well-supported. |
-| Unix sockets | `net/http` webhook | If you want HTTP semantics or need to call from remote hosts. Overkill for same-machine IPC. |
 
 ---
 
@@ -466,32 +414,31 @@ go get gopkg.in/yaml.v3@v3.0.1
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
+| `os.UserConfigDir()` for `~/.config` on macOS | Returns `$HOME/Library/Application Support` on Darwin — documented stdlib behavior, not a bug. Wrong path for CLI tools following XDG convention. | `os.UserHomeDir()` + `filepath.Join(home, ".config")` with `XDG_CONFIG_HOME` override |
+| `pelletier/go-toml/v2` | Heavier dependency for no benefit at this scale; very recent v2.3.0 release (March 2026) less battle-tested | `github.com/BurntSushi/toml@v1.6.0` |
+| `gopkg.in/yaml.v3` for TOML | yaml.v3 cannot parse TOML — these are different formats. yaml.v3 stays for YAML frontmatter only. | `github.com/BurntSushi/toml@v1.6.0` |
 | `github.com/charmbracelet/bubbletea/v2` | Different import path, `View()` returns `tea.View` (not string), `KeyMsg` split into `KeyPressMsg`/`KeyReleaseMsg` — incompatible with v1 Bubbles and Lip Gloss v1 | `github.com/charmbracelet/bubbletea@v1.3.10` |
-| `github.com/charmbracelet/bubbles/v2` | Requires Bubble Tea v2, uses functional option constructors and getter/setter methods — API not compatible with v1 program | `github.com/charmbracelet/bubbles@v1.0.0` |
 | `github.com/charmbracelet/lipgloss/v2` | Requires explicit `HasDarkBackground()` calls; `Color` returns `color.Color` not `TerminalColor` — needs v2-specific wiring | `github.com/charmbracelet/lipgloss@v1.1.0` |
 | `fsnotify.AddWith(..., WithBufferSize(...))` | `WithBufferSize` is Windows-only — no-op on macOS/kqueue | `watcher.Add(path)` (plain Add) |
 | CGO or C bindings | Violates static binary requirement; breaks cross-compilation | Pure Go packages only |
-| `gopkg.in/yaml.v2` | Older API; v3 adds better error messages, `Node` type for complex parsing, and `inline` struct embedding | `gopkg.in/yaml.v3` |
 
 ---
 
 ## Stack Patterns by Variant
 
-**If distributing as a plugin (namespaced slash commands):**
-- Plugin structure with `.claude-plugin/plugin.json` at root
-- Slash command becomes `/gsd-watch:gsd-watch`
-- Install via: `claude plugin install --scope project ./gsd-watch-plugin/`
-
 **If distributing as standalone (short slash command `/gsd-watch`):**
 - Place `gsd-watch.md` in `.claude/commands/gsd-watch.md` directly
 - Hooks go in `.claude/settings.local.json` under `"hooks"` key
-- Simpler setup, not shareable as a plugin
-- **This is the approach PROJECT.md implies** (manual install, no marketplace)
+- This is the approach PROJECT.md implies (manual install, no marketplace)
 
 **If building for macOS universal binary:**
 - Compile arm64 and amd64 separately then `lipo -create` to merge
 - Both targets work with CGO_ENABLED=0 (pure Go)
-- Test on both architectures before distributing
+
+**If theme selection via flag is added (`--theme`) in a future phase:**
+- Parse `--theme` before config file load
+- Flag value wins over config `theme` key
+- Unknown theme names fall back to `default` silently — never error
 
 ---
 
@@ -503,26 +450,26 @@ go get gopkg.in/yaml.v3@v3.0.1
 | bubbletea@v1.3.10 | bubbles@v1.0.0 | Bubbles v1 targets Bubble Tea v1.x explicitly |
 | bubbletea@v1.3.10 | fsnotify@v1.9.0 | No shared interface — used in separate goroutines |
 | lipgloss@v1.1.0 | bubbles@v1.0.0 | Bubbles components return strings compatible with Lip Gloss styling |
-| Go 1.22+ | all above | Loop variable semantics fix required; all charmbracelet libs support 1.22+ |
+| BurntSushi/toml@v1.6.0 | Go 1.22+ | Pure Go, no CGO — compatible with static binary build |
 | bubbletea@v1.x | bubbletea@v2 | NOT compatible — different import paths, different View() return type |
 
 ---
 
 ## Sources
 
-- `pkg.go.dev/github.com/charmbracelet/bubbletea?tab=versions` — verified v1.3.10 as latest v1.x (Sep 2025)
-- `pkg.go.dev/github.com/charmbracelet/lipgloss?tab=versions` — verified v1.1.0 as latest v1.x (Mar 2025)
-- `pkg.go.dev/github.com/charmbracelet/bubbles?tab=versions` — verified v1.0.0 as latest stable (Feb 2026)
-- `pkg.go.dev/github.com/fsnotify/fsnotify?tab=versions` — verified v1.9.0 (Apr 2025), confirmed no recursive support
-- `pkg.go.dev/gopkg.in/yaml.v3` — verified v3.0.1
-- `pkg.go.dev/github.com/charmbracelet/bubbletea` — Program type, Send(), WindowSizeMsg, ProgramOption patterns — HIGH confidence
-- `pkg.go.dev/github.com/charmbracelet/lipgloss@v1.1.0` — JoinVertical, JoinHorizontal, Place, borders — HIGH confidence
-- `code.claude.com/docs/en/plugins` — plugin.json manifest schema, commands/ vs skills/, hooks.json in plugin — HIGH confidence
-- `code.claude.com/docs/en/hooks` — Stop/SubagentStop hook input payload, async field, shell script invocation — HIGH confidence
-- `code.claude.com/docs/en/plugins-reference` — complete manifest schema, directory structure, env vars — HIGH confidence
-- `go.dev/doc/go1.22` — loop variable semantics, range over integers — HIGH confidence
+- `pkg.go.dev/github.com/BurntSushi/toml?tab=versions` — verified v1.6.0 as latest stable (Dec 18, 2025) — HIGH confidence
+- `pkg.go.dev/github.com/pelletier/go-toml/v2?tab=versions` — verified v2.3.0 as latest (Mar 24, 2026); considered and rejected — HIGH confidence
+- `pkg.go.dev/github.com/charmbracelet/bubbletea?tab=versions` — verified v1.3.10 as latest v1.x — HIGH confidence
+- `pkg.go.dev/github.com/charmbracelet/lipgloss?tab=versions` — verified v1.1.0 as latest v1.x (Mar 2025) — HIGH confidence
+- `pkg.go.dev/github.com/charmbracelet/bubbles?tab=versions` — verified v1.0.0 as latest stable (Feb 2026) — HIGH confidence
+- `pkg.go.dev/github.com/fsnotify/fsnotify?tab=versions` — verified v1.9.0 (Apr 2025), confirmed no recursive support — HIGH confidence
+- `go.mod` (project file, read directly) — verified actual Go module version is 1.26.1; confirmed BurntSushi/toml NOT yet present — HIGH confidence
+- `internal/tui/styles.go` (read directly) — confirmed 4 package-level AdaptiveColor vars; theme integration surface identified — HIGH confidence
+- `internal/tui/tree/model.go` (read directly) — confirmed `Options{NoEmoji bool}` is the extension point for `Theme Palette` — HIGH confidence
+- `go doc os.UserConfigDir` (documented behavior) — confirmed Darwin returns `$HOME/Library/Application Support`, NOT `~/.config` — HIGH confidence
+- `golang.org/x/proposal #29960` — os.UserConfigDir addition rationale, confirmed Darwin behavior — HIGH confidence
 
 ---
 
-*Stack research for: Go terminal TUI sidebar with fsnotify and Claude Code plugin integration*
-*Researched: 2026-03-18*
+*Stack research for: Go terminal TUI sidebar — v1.3 config file and theme system additions*
+*Researched: 2026-03-26*

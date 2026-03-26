@@ -1,26 +1,26 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Archived Milestone Visibility
-status: Milestone complete
-stopped_at: Completed 12-archive-display 12-02-PLAN.md
-last_updated: "2026-03-26T01:34:22.123Z"
+milestone: v1.3
+milestone_name: Settings
+status: Planning next milestone
+stopped_at: v1.2 archived — ready for /gsd:new-milestone
+last_updated: "2026-03-26T00:00:00.000Z"
 last_activity: 2026-03-26
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-18)
+See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 11 — archive-detection
+**Current focus:** v1.3 Settings — run /gsd:new-milestone to begin
 
 ## Current Position
 
@@ -175,7 +175,7 @@ None yet.
 |---|-------------|------|--------|--------|-----------|
 | 260323-re2 | Fix gsd-watch sidebar closing immediately after opening | 2026-03-23 | cd8d9d5 | Verified | [260323-re2-fix-gsd-watch-sidebar-closing-immediatel](./quick/260323-re2-fix-gsd-watch-sidebar-closing-immediatel/) |
 | 260325-398 | Phase title stays white+bold when navigating to child plan rows | 2026-03-25 | cdc2517 | Complete | [260325-398-phase-title-stays-white-bold-when-naviga](./quick/260325-398-phase-title-stays-white-bold-when-naviga/) |
-| 260326-5f1 | Pin archived milestones zone to bottom of pane (outside viewport) | 2026-03-26 | a7ea4fe | Complete | [260326-5f1-pin-archived-milestones-zone-to-bottom-o](./quick/260326-5f1-pin-archived-milestones-zone-to-bottom-o/) |
+| 260326-5f1 | Pin archived milestones zone to bottom of pane (outside viewport) | 2026-03-26 | a7ea4fe | Needs Review | [260326-5f1-pin-archived-milestones-zone-to-bottom-o](./quick/260326-5f1-pin-archived-milestones-zone-to-bottom-o/) |
 
 ### Blockers/Concerns
 
@@ -187,5 +187,5 @@ None yet.
 
 Last activity: 2026-03-26
 Last session: 2026-03-26T01:31:28.559Z
-Stopped at: Completed 12-archive-display 12-02-PLAN.md
+Stopped at: Completed quick task 260326-5f1 (needs visual confirmation in live TUI)
 Resume file: None

@@ -1,532 +1,504 @@
 # Architecture Research
 
-**Domain:** Go Terminal TUI with Bubble Tea Elm Architecture, fsnotify file watcher, Unix socket IPC
-**Researched:** 2026-03-18
-**Confidence:** HIGH
+**Domain:** Config + theme integration into existing Go Bubble Tea TUI (gsd-watch v1.3)
+**Researched:** 2026-03-26
+**Confidence:** HIGH (direct analysis of actual codebase — no speculation)
 
-## Standard Architecture
+---
 
-### System Overview
+## Context: What Already Exists (v1.2 baseline)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        External Event Sources                        │
-│                                                                      │
-│  ┌───────────────────┐        ┌──────────────────────────────────┐  │
-│  │  fsnotify.Watcher  │        │    Unix Socket Listener          │  │
-│  │  (goroutine loop)  │        │    /tmp/gsd-watch-<hash>.sock   │  │
-│  └────────┬──────────┘        └──────────────┬───────────────────┘  │
-│           │ debounced 300ms                   │ on connect           │
-│           │ FileChangedMsg                    │ RefreshMsg           │
-└───────────┼───────────────────────────────────┼─────────────────────┘
-            │ p.Send(msg)                        │ p.Send(msg)
-            ▼                                   ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     tea.Program Event Loop                           │
-│                                                                      │
-│  msgs channel (unbuffered) ← keyboard input, window resize,         │
-│                               FileChangedMsg, RefreshMsg             │
-│                                                                      │
-│  Update(msg tea.Msg) → (Model, tea.Cmd)   [serial, never blocked]   │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-            ┌──────────────────┼──────────────────┐
-            ▼                  ▼                   ▼
-┌───────────────────┐  ┌──────────────┐  ┌─────────────────────────┐
-│   parser package  │  │  tree model  │  │   header / footer        │
-│                   │  │  (collapsible│  │   sub-models (lipgloss)  │
-│  parse.Project()  │  │   state)     │  │                          │
-│  parse.State()    │  │              │  │  ProjectName, Progress   │
-│  parse.Phase()    │  │  cursor int  │  │  LastUpdated, Action     │
-│  parse.Plan()     │  │  expanded    │  │  KeyBindings             │
-└────────┬──────────┘  │  map[int]bool│  └─────────────────────────┘
-         │             └──────────────┘
-         │ ProjectData struct
-         ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Root Model                                    │
-│                                                                      │
-│  project   ProjectData      ← parsed .planning/ snapshot             │
-│  tree      TreeModel        ← collapsible tree state                 │
-│  header    HeaderModel      ← top bar render                         │
-│  footer    FooterModel      ← bottom bar render                      │
-│  viewport  bubbles.Viewport ← scrollable middle region               │
-│  loading   bool             ← initial parse in progress              │
-│  err       error            ← graceful error display                 │
-└──────────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     View() → string                                  │
-│  lipgloss.JoinVertical(                                              │
-│    header.View(),                                                    │
-│    tree.View(),    ← rendered with status icons, badges, indents     │
-│    footer.View(),                                                    │
-│  )                                                                   │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### Component Responsibilities
-
-| Component | Responsibility | Package / Location |
-|-----------|---------------|-------------------|
-| `watcher` | Wrap fsnotify, walk `.planning/` dirs on start, debounce events via timer, call `p.Send(FileChangedMsg{path})` | `internal/watcher/` |
-| `socket` | Listen on Unix socket, accept connections, call `p.Send(RefreshMsg{})` on signal, handle stale socket cleanup on startup | `internal/socket/` |
-| `parser` | Parse `STATE.md`, `ROADMAP.md`, `config.json`, `*-PLAN.md` YAML frontmatter into typed structs; treat STATE.md as best-effort | `internal/parser/` |
-| `tree` | Hold collapsible state, cursor position, render tree rows with icons and badges | `internal/tui/tree/` |
-| `header` | Render project name, model profile, mode, progress bar | `internal/tui/header/` |
-| `footer` | Render current GSD action, time-since-last-update, keybindings | `internal/tui/footer/` |
-| Root `Model` | Own all sub-models, route messages, orchestrate re-parse on events | `internal/tui/model.go` |
-| `main` | Wire up `tea.Program`, start watcher and socket goroutines, pass `*tea.Program` reference to both | `cmd/gsd-watch/main.go` |
-| Plugin | Claude Code plugin: slash command, Stop/SubagentStop hooks, signal script | `.claude-plugin/` + `hooks/` + `commands/` |
-
-## Recommended Project Structure
+Source of truth is the live codebase, read 2026-03-26.
 
 ```
-gsd-watch/
-├── cmd/
-│   └── gsd-watch/
-│       └── main.go              # Program entry point: wire, start, run
-├── internal/
-│   ├── watcher/
-│   │   └── watcher.go           # fsnotify wrapper with debounce and dir-walk
-│   ├── socket/
-│   │   └── socket.go            # Unix socket listener and stale socket cleanup
-│   ├── parser/
-│   │   ├── parser.go            # Orchestrates full and incremental parse
-│   │   ├── roadmap.go           # Parse ROADMAP.md → []Phase
-│   │   ├── plan.go              # Parse *-PLAN.md YAML frontmatter → Plan
-│   │   ├── state.go             # Parse STATE.md → StateInfo (best-effort regex)
-│   │   ├── config.go            # Parse config.json → Config
-│   │   └── types.go             # ProjectData, Phase, Plan, StateInfo structs
-│   └── tui/
-│       ├── model.go             # Root Model: Init, Update, View
-│       ├── messages.go          # All custom tea.Msg types
-│       ├── keys.go              # Global key bindings
-│       ├── tree/
-│       │   ├── model.go         # TreeModel: collapsible state, cursor
-│       │   ├── view.go          # Tree rendering: icons, badges, indents
-│       │   └── keys.go          # Tree-specific key bindings
-│       ├── header/
-│       │   └── model.go         # HeaderModel: project name, progress bar
-│       └── footer/
-│           └── model.go         # FooterModel: action, last-updated, keys
-├── .claude-plugin/
-│   └── plugin.json              # Plugin manifest (name, version, hooks path)
-├── commands/
-│   └── gsd-watch.md             # /gsd-watch slash command definition
-├── hooks/
-│   └── hooks.json               # Stop and SubagentStop hook config
-├── scripts/
-│   └── gsd-watch-signal.sh      # Shell script: send refresh via socat/nc
-├── Makefile                     # build, install, plugin-install, all, clean
-└── go.mod
+cmd/gsd-watch/main.go
+  flag parse (--no-emoji bool, --debug bool)
+  app.New(events chan tea.Msg, noEmoji bool)    ← bare bool
+  tea.NewProgram(model, tea.WithAltScreen()).Run()
+
+internal/tui/app/model.go         root Bubble Tea model
+  Model.noEmoji bool               sole config field on root model
+  tree.SetOptions(Options{NoEmoji: noEmoji})
+  helpView(width int, noEmoji bool)    standalone function, no config path
+
+internal/tui/styles.go            package-level vars + two helper functions
+  var ColorGreen  = lipgloss.AdaptiveColor{Light: "2", Dark: "2"}
+  var ColorAmber  = lipgloss.AdaptiveColor{Light: "3", Dark: "3"}
+  var ColorRed    = lipgloss.AdaptiveColor{Light: "1", Dark: "1"}
+  var ColorGray   = lipgloss.AdaptiveColor{Light: "8", Dark: "8"}
+  var CompleteStyle     = lipgloss.NewStyle().Foreground(ColorGreen)
+  var ActiveStyle       = lipgloss.NewStyle().Foreground(ColorGreen)
+  var PendingStyle      = lipgloss.NewStyle().Foreground(ColorGray)
+  var FailedStyle       = lipgloss.NewStyle().Foreground(ColorRed)
+  var NowMarkerStyle    = lipgloss.NewStyle().Foreground(ColorAmber)
+  var RefreshFlashStyle = lipgloss.NewStyle().Bold(true).Foreground(ColorGreen)
+  var QuitPendingStyle  = lipgloss.NewStyle().Bold(true).Foreground(ColorAmber)
+  func StatusIcon(status string, noEmoji bool) string  ← calls package vars directly
+  func BadgeString(badge string, noEmoji bool) string  ← no style calls, string only
+
+internal/tui/tree/model.go
+  type Options struct { NoEmoji bool }   only field — no Theme
+  func (t TreeModel) SetOptions(o Options) TreeModel
+
+internal/tui/tree/view.go
+  imports tui; calls tui.PendingStyle.Render() in multiple places:
+    - RowPhase: tui.PendingStyle.Render(part/prefixStr/continuation/badgeLine/"(no plans yet)")
+    - RowPlan:  tui.PendingStyle.Render(connector/continuation/rawText)
+    - RowQuickTask: same pattern as RowPlan
+    - RenderArchiveRow: tui.PendingStyle.Render(row)       ← exported; takes noEmoji bool
+    - RenderArchiveSeparator: tui.PendingStyle.Render(result)
+    - Empty state: lipgloss.NewStyle().Foreground(tui.ColorGray)
+    - highlightStyle: package-level var (lipgloss.NewStyle().Bold(true)) — no theme needed
+  func tui.StatusIcon(...) called via opts.NoEmoji (already threaded correctly)
+  func tui.BadgeString(...) called via opts.NoEmoji (already threaded correctly)
+
+internal/tui/header/model.go
+  uses tui.ColorGray (separator), tui.ColorGreen + tui.ColorGray (progress bar) directly
+
+internal/tui/footer/model.go
+  uses tui.ColorGray directly (grayStyle local var)
+  uses tui.RefreshFlashStyle, tui.QuitPendingStyle directly
+
+go.mod: NO TOML library present (BurntSushi/toml not in dependencies)
 ```
 
-### Structure Rationale
+---
 
-- **`internal/`:** Prevents accidental import as a library; all non-main packages here.
-- **`internal/watcher/` and `internal/socket/`:** Isolated packages with no knowledge of Bubble Tea model — they hold only a `*tea.Program` reference and call `p.Send()`. This keeps the event source decoupled from the model.
-- **`internal/parser/`:** Pure functions — no goroutines, no state. Input is the `.planning/` path, output is `ProjectData`. Safe to call from any goroutine or `tea.Cmd`.
-- **`internal/tui/`:** All Bubble Tea concerns. Sub-packages (`tree/`, `header/`, `footer/`) each implement the `Model/Update/View` triad and are composed by the root model.
-- **`internal/tui/messages.go`:** Single file listing every custom `tea.Msg` type. Makes message flow auditable at a glance.
-- **`scripts/`:** Lives outside the plugin to be available in `$PATH` after `make install`. Referenced by hooks via `${CLAUDE_PLUGIN_ROOT}/../scripts/`.
-
-## Architectural Patterns
-
-### Pattern 1: External Goroutine → tea.Program.Send()
-
-**What:** External goroutines (watcher, socket) hold a `*tea.Program` reference obtained before `p.Run()` is called. They call `p.Send(msg)` to inject typed messages into the event loop. The event loop processes them serially in `Update()`.
-
-**When to use:** Any persistent background goroutine that produces events asynchronously — file watchers, socket listeners, timers not expressible as `tea.Cmd`.
-
-**Trade-offs:** Simple and safe. `p.Send()` is non-blocking on shutdown (uses `select` with context), so goroutines do not need to check if the program is still running. The one risk is that `p.Send()` blocks while the event loop is busy — this is intentional backpressure and acceptable for low-frequency events like file changes.
-
-**Example:**
-```go
-// internal/watcher/watcher.go
-type Watcher struct {
-    program *tea.Program
-    fw      *fsnotify.Watcher
-    timer   *time.Timer
-}
-
-func (w *Watcher) loop() {
-    for {
-        select {
-        case event, ok := <-w.fw.Events:
-            if !ok { return }
-            // Reset debounce timer on every event
-            if w.timer != nil {
-                w.timer.Stop()
-            }
-            path := event.Name
-            w.timer = time.AfterFunc(300*time.Millisecond, func() {
-                w.program.Send(msgs.FileChangedMsg{Path: path})
-            })
-        case err, ok := <-w.fw.Errors:
-            if !ok { return }
-            w.program.Send(msgs.WatcherErrorMsg{Err: err})
-        }
-    }
-}
-```
-
-### Pattern 2: tea.Cmd for One-Shot Async Work (Parse)
-
-**What:** When `Update()` receives a `FileChangedMsg` or `RefreshMsg`, it returns a `tea.Cmd` that runs the parser in a goroutine, then returns a `ParsedMsg` with the result. The model applies `ParsedMsg` to update its `project` field.
-
-**When to use:** Work that needs to run once in response to a message — I/O-bound operations like file parsing that should not block the event loop.
-
-**Trade-offs:** Clean separation — the model never calls I/O directly. Multiple in-flight parse commands can exist if events arrive quickly; the incremental cache in the parser mitigates redundant work. Accept last-wins semantics: whichever `ParsedMsg` arrives last wins.
-
-**Example:**
-```go
-// internal/tui/model.go
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-    switch msg := msg.(type) {
-    case msgs.FileChangedMsg:
-        return m, parseCmd(m.planningDir, msg.Path) // tea.Cmd
-    case msgs.ParsedMsg:
-        m.project = msg.Project
-        m.tree = m.tree.SetData(msg.Project)
-        return m, nil
-    }
-    // ...
-}
-
-func parseCmd(dir, changedPath string) tea.Cmd {
-    return func() tea.Msg {
-        project, err := parser.ParseIncremental(dir, changedPath)
-        if err != nil {
-            return msgs.ParseErrorMsg{Err: err}
-        }
-        return msgs.ParsedMsg{Project: project}
-    }
-}
-```
-
-### Pattern 3: Collapsible Tree State in Model
-
-**What:** The `TreeModel` holds an `expanded map[int]bool` keyed by a stable node index (computed from phase/plan path, not position, to survive re-parses). Keyboard messages (`KeyLeft`/`h`, `KeyRight`/`l`) toggle expansion. The `cursor` is a flat index over currently-visible rows.
-
-**When to use:** Any hierarchical data structure with stable node identities that needs to survive data refreshes without collapsing everything.
-
-**Trade-offs:** Using a path-based key (e.g., `"milestone-1/phase-2"`) for `expanded` means re-parses do not reset user's expand/collapse state. Using a flat cursor over visible rows simplifies scroll math but requires recomputing visible rows on every data update.
-
-**Example:**
-```go
-// internal/tui/tree/model.go
-type TreeModel struct {
-    data     parser.ProjectData
-    expanded map[string]bool  // key: "phase/<id>" or "milestone/<id>"
-    cursor   int              // index into visibleRows()
-}
-
-func (t TreeModel) visibleRows() []Row {
-    // Flatten tree: include children only if parent is expanded
-}
-
-func (t TreeModel) Update(msg tea.Msg) (TreeModel, tea.Cmd) {
-    switch msg := msg.(type) {
-    case tea.KeyMsg:
-        switch msg.String() {
-        case "left", "h":
-            row := t.visibleRows()[t.cursor]
-            t.expanded[row.Key] = false
-        case "right", "l":
-            row := t.visibleRows()[t.cursor]
-            t.expanded[row.Key] = true
-        case "up", "k":
-            if t.cursor > 0 { t.cursor-- }
-        case "down", "j":
-            rows := t.visibleRows()
-            if t.cursor < len(rows)-1 { t.cursor++ }
-        }
-    }
-    return t, nil
-}
-```
-
-### Pattern 4: Debounce via time.AfterFunc (Outside Tea)
-
-**What:** Debouncing is implemented in the watcher goroutine using `time.AfterFunc`, not inside Bubble Tea's event loop. Each fsnotify event resets the timer. Only after 300ms of inactivity does `p.Send(FileChangedMsg{})` fire.
-
-**When to use:** High-frequency external events that must be coalesced before entering the event loop. Doing this outside the event loop prevents the model's `Update` from being called dozens of times per second during a multi-file write.
-
-**Trade-offs:** `time.AfterFunc` runs its callback in a new goroutine, so the `p.Send()` call is already goroutine-safe. The downside is only the last-changed path is passed; if multiple files changed during the 300ms window, the incremental parser receives only one path and must detect other changes itself — or use a full re-parse on socket-triggered refresh.
-
-## Data Flow
-
-### File System → Rendered View
+## System Overview: Target State (v1.3)
 
 ```
-.planning/ directory on disk
-    │
-    ▼ (startup: full parse)
-parser.Parse(dir) → ProjectData
-    │
-    ▼
-Root Model receives ParsedMsg → m.project = ProjectData
-    │
-    ▼
-TreeModel.SetData(project) → recomputes visibleRows(), preserves expanded state
-    │
-    ▼
-View() → header.View() + tree.View() + footer.View() → rendered string
-    │
-    ▼ (lipgloss styles applied inline)
-Terminal output (alt screen)
-```
+cmd/gsd-watch/main.go
+  flag parse (--no-emoji, --debug)
+  config.Load()                        NEW — reads ~/.config/gsd-watch/config.toml
+    missing file  ->  Config defaults, nil error
+    bad TOML      ->  Config defaults, non-nil error (warn + continue)
+  if *noEmojiFlag { cfg.NoEmoji = true }   flag always wins
+  app.New(events, cfg)                 signature change: bool -> config.Config
 
-### fsnotify Event → Re-render
-
-```
-File write on disk
-    │
-    ▼ (fsnotify.Events channel)
-watcher goroutine: debounce 300ms via time.AfterFunc
-    │
-    ▼ p.Send(FileChangedMsg{path})
-tea.Program event loop: msgs channel
-    │
-    ▼ Update() receives FileChangedMsg
-tea.Cmd: parser.ParseIncremental(dir, path) in goroutine
-    │
-    ▼ returns ParsedMsg
-Update() receives ParsedMsg → m.project updated
-    │
-    ▼ View() called automatically by Bubble Tea
-Terminal re-renders
-```
-
-### Unix Socket Signal → Re-render
-
-```
-Claude Code Stop hook runs gsd-watch-signal.sh
-    │
-    ▼ (socat/nc writes "refresh" to /tmp/gsd-watch-<hash>.sock)
-socket goroutine: conn.Accept()
-    │
-    ▼ p.Send(RefreshMsg{})
-tea.Program event loop: msgs channel
-    │
-    ▼ Update() receives RefreshMsg
-tea.Cmd: parser.Parse(dir) full re-parse in goroutine
-    │  (full re-parse on socket signal, not incremental)
-    ▼ returns ParsedMsg
-Same path as above → View() re-renders
-```
-
-### State Management
-
-```
-Root Model (immutable value, replaced on each Update)
-    ├── project ProjectData     ← replaced atomically on ParsedMsg
-    ├── tree    TreeModel       ← updated on key events and ParsedMsg
-    ├── header  HeaderModel     ← derived from project on every View()
-    └── footer  FooterModel     ← updated on tick (time-since-last-update)
-
-No shared mutable state. No mutexes. All writes go through Update().
-```
-
-### Key Data Flows
-
-1. **Startup parse:** `main.go` launches initial parse as the first `tea.Cmd` from `Init()`, so the TUI displays immediately (with a spinner or "loading" state) and updates when parsing completes.
-2. **Incremental cache:** `parser` package tracks last-parsed mtime per file path; `ParseIncremental(dir, changedPath)` only re-parses the changed file and returns a fully merged `ProjectData`. Full re-parse only on startup and socket signal.
-3. **Window resize:** Bubble Tea automatically delivers `tea.WindowSizeMsg`; root model propagates width/height to `tree`, `header`, `footer` so they can re-flow their layout.
-
-## Scaling Considerations
-
-This is a single-user local TUI binary. Scaling dimensions are irrelevant. The practical performance constraints are:
-
-| Concern | Constraint | Mitigation |
-|---------|-----------|-----------|
-| Parse latency | 50+ PLAN.md files | Incremental cache; only re-parse changed file on fsnotify |
-| Render frequency | fsnotify burst during execute-phase | 300ms debounce in watcher goroutine |
-| Memory | Static binary under 15MB | No dynamic plugins, no Node.js runtime |
-| Startup time | First render should be near-instant | Show loading state immediately; parse async via Init() Cmd |
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Calling Parser Inside Update()
-
-**What people do:** Call `parser.Parse()` synchronously inside the `Update()` function when a `FileChangedMsg` arrives.
-
-**Why it's wrong:** `Update()` must return fast — it blocks the entire event loop, making the TUI unresponsive during parse. With 50+ files this will cause visible lag.
-
-**Do this instead:** Return a `tea.Cmd` from `Update()` that runs the parser in a goroutine and sends back a `ParsedMsg`.
-
-### Anti-Pattern 2: Accessing Model State from Watcher/Socket Goroutines
-
-**What people do:** Pass a pointer to the model into the watcher goroutine to read/write fields directly.
-
-**Why it's wrong:** `Update()` is the sole writer of model state and runs serially. Any concurrent access creates a data race. Go's race detector will catch it.
-
-**Do this instead:** Goroutines hold only a `*tea.Program` reference and communicate exclusively via `p.Send(msg)`.
-
-### Anti-Pattern 3: Using a Single Expanded-by-Position Key
-
-**What people do:** Key the `expanded` map by cursor position (`expanded[0]`, `expanded[1]`, ...) rather than by node identity.
-
-**Why it's wrong:** After a re-parse, the tree may have different nodes at the same positions (e.g., a phase was completed and a new one appeared). The user's expand/collapse state gets applied to the wrong nodes.
-
-**Do this instead:** Key by a stable string derived from the node's identity (e.g., phase directory name or `milestone-<n>/phase-<n>`).
-
-### Anti-Pattern 4: Watching Only the Root .planning/ Dir
-
-**What people do:** Pass only `.planning/` to `fsnotify.Watcher.Add()` and assume it watches recursively.
-
-**Why it's wrong:** macOS kqueue (which fsnotify uses on darwin) does not support recursive watching. Changes in `.planning/milestone-1/phase-2/` will not fire events.
-
-**Do this instead:** On startup, walk `.planning/` recursively and call `watcher.Add()` for every subdirectory found. When a new directory is created (rare), add it dynamically.
-
-### Anti-Pattern 5: Leaving a Stale Unix Socket File
-
-**What people do:** Create `/tmp/gsd-watch-<hash>.sock` on startup without checking if it already exists.
-
-**Why it's wrong:** If the process was killed (SIGKILL), the socket file remains. `net.Listen("unix", path)` will return `bind: address already in use`.
-
-**Do this instead:** On startup, attempt `net.Dial("unix", path)`. If it succeeds, another instance is running — exit or warn. If it fails, `os.Remove(path)` the stale file, then `net.Listen`.
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|--------------------|----|
-| fsnotify v1.x | Watcher goroutine in `internal/watcher/`; `p.Send()` bridge | Must manually walk and add all subdirs on darwin |
-| Unix socket (`net` stdlib) | Listener goroutine in `internal/socket/`; `p.Send()` bridge | Socket path: `/tmp/gsd-watch-<sha256-of-abs-path[:8]>.sock` |
-| Claude Code plugin | hooks in `hooks/hooks.json`; signal script in `scripts/` | Stop and SubagentStop events call `gsd-watch-signal.sh` |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|--------------|-------|
-| `watcher` → Root Model | `p.Send(msgs.FileChangedMsg{Path})` | Debounce handled in watcher; model receives coalesced events |
-| `socket` → Root Model | `p.Send(msgs.RefreshMsg{})` | Triggers full re-parse, not incremental |
-| Root Model → `parser` | `tea.Cmd` (goroutine, returns `msgs.ParsedMsg`) | Pure function call; parser has no knowledge of tea |
-| Root Model → `tree` | Direct method call in `Update()`: `m.tree = m.tree.Update(msg)` | Tree is a value type; returned as updated copy |
-| Root Model → `header`/`footer` | Direct method call in `Update()` | Same pattern as tree |
-| `parser` → `internal/tui` | `parser.ProjectData` struct | Defined in `internal/parser/types.go`; tui imports parser, not vice versa |
-
-## Plugin Architecture
-
-### Claude Code Plugin Structure
-
-```
-gsd-watch/                     ← plugin root (same as repo root)
-├── .claude-plugin/
-│   └── plugin.json            ← manifest (name, version, hooks reference)
-├── commands/
-│   └── gsd-watch.md           ← /gsd-watch slash command
-├── hooks/
-│   └── hooks.json             ← Stop and SubagentStop hook definitions
-└── scripts/
-    └── gsd-watch-signal.sh    ← sends "refresh" to the socket
-```
-
-### plugin.json
-
-```json
-{
-  "name": "gsd-watch",
-  "version": "1.0.0",
-  "description": "Live GSD project status sidebar for Claude Code",
-  "hooks": "./hooks/hooks.json"
-}
-```
-
-### hooks/hooks.json
-
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/gsd-watch-signal.sh"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/gsd-watch-signal.sh"
-          }
-        ]
-      }
-    ]
+internal/config/config.go             NEW PACKAGE (leaf — no tui imports)
+  type Config struct {
+      NoEmoji bool   `toml:"emoji"`    inverted: emoji=false in file -> NoEmoji=true
+      Theme   string `toml:"theme"`    "default" | "minimal" | "high-contrast"
   }
+  func Load() (Config, error)
+  func ConfigPath() string             returns ~/.config/gsd-watch/config.toml
+
+internal/tui/styles.go                ADDITIVE CHANGE — existing vars and functions untouched
+  type Theme struct {
+      CompleteStyle  lipgloss.Style
+      ActiveStyle    lipgloss.Style
+      PendingStyle   lipgloss.Style
+      FailedStyle    lipgloss.Style
+      NowMarkerStyle lipgloss.Style
+      // RefreshFlashStyle, QuitPendingStyle stay as package-level vars (footer/header unchanged)
+  }
+  func DefaultTheme() Theme
+  func MinimalTheme() Theme
+  func HighContrastTheme() Theme
+  func ThemeFromName(name string) Theme   switch on name, fallback to Default
+
+internal/tui/app/model.go             MODIFIED
+  Model.cfg config.Config              replaces noEmoji bool
+  New(events, cfg config.Config) calls tui.ThemeFromName(cfg.Theme), passes via SetOptions
+  helpView: gains cfgPath display (no signature change needed — call config.ConfigPath() directly)
+
+internal/tui/tree/model.go            MODIFIED
+  type Options struct {
+      NoEmoji bool
+      Theme   tui.Theme                NEW field
+  }
+
+internal/tui/tree/view.go             MODIFIED (~15 call sites)
+  opts.Theme.PendingStyle.Render(...)  replaces tui.PendingStyle.Render(...)
+  RenderArchiveRow: add theme tui.Theme param or pass opts.Theme into call chain
+  RenderArchiveSeparator: add theme tui.Theme param
+  Empty state: opts.Theme.PendingStyle as local style
+  StatusIcon / BadgeString: remain as package-level helpers, accept opts.NoEmoji as before
+
+internal/tui/header/model.go          UNCHANGED in v1.3
+internal/tui/footer/model.go          UNCHANGED in v1.3
+  continue using package-level tui.ColorXxx and style vars
+```
+
+---
+
+## Answering the Four Architecture Questions
+
+### Q1: Where does config loading live?
+
+**Answer: `internal/config/` package, called from `main.go` before `app.New()`.**
+
+The config package is a leaf. It imports only stdlib and the TOML library. It must not import anything from `internal/tui/` or `internal/parser/`.
+
+`app.New()` must not call `config.Load()` internally because:
+- `app.New()` returns `Model` (no error return path). Errors during config loading have no clean recovery surface inside a constructor.
+- Tests instantiate `app.New()` directly without config files on disk.
+- Config loading is a startup side effect, not a model concern.
+
+Call site in `main.go` (after existing flag parsing):
+```go
+cfg, err := config.Load()
+if err != nil {
+    fmt.Fprintf(os.Stderr, "gsd-watch: config warning: %v\n", err)
+    // continue — err means malformed TOML, cfg already holds defaults
+}
+// --no-emoji flag always wins over config file value
+if *noEmojiFlag {
+    cfg.NoEmoji = true
+}
+p := tea.NewProgram(app.New(events, cfg), tea.WithAltScreen())
+```
+
+### Q2: How do named themes work with existing lipgloss.AdaptiveColor usage in styles.go?
+
+**Answer: Add a `Theme` struct to `internal/tui/styles.go` alongside the existing package-level vars. Existing vars are NOT removed.**
+
+The existing `PendingStyle`, `CompleteStyle` etc. vars stay in place for header and footer (unchanged in v1.3). The `Theme` struct holds the same logical styles as fields, letting tree/view.go switch from package-var references to struct-field references.
+
+```go
+// internal/tui/styles.go (additions only — existing vars below unchanged)
+
+type Theme struct {
+    CompleteStyle  lipgloss.Style
+    ActiveStyle    lipgloss.Style
+    PendingStyle   lipgloss.Style
+    FailedStyle    lipgloss.Style
+    NowMarkerStyle lipgloss.Style
+}
+
+func DefaultTheme() Theme {
+    // mirrors the current package-level vars exactly
+    return Theme{
+        CompleteStyle:  lipgloss.NewStyle().Foreground(ColorGreen),
+        ActiveStyle:    lipgloss.NewStyle().Foreground(ColorGreen),
+        PendingStyle:   lipgloss.NewStyle().Foreground(ColorGray),
+        FailedStyle:    lipgloss.NewStyle().Foreground(ColorRed),
+        NowMarkerStyle: lipgloss.NewStyle().Foreground(ColorAmber),
+    }
+}
+
+func MinimalTheme() Theme { ... }       // reduced color palette
+func HighContrastTheme() Theme { ... }  // bold + high-contrast ANSI values
+
+func ThemeFromName(name string) Theme {
+    switch name {
+    case "minimal":
+        return MinimalTheme()
+    case "high-contrast":
+        return HighContrastTheme()
+    default:
+        return DefaultTheme()
+    }
 }
 ```
 
-### scripts/gsd-watch-signal.sh
+`StatusIcon()` in styles.go already takes `noEmoji bool` and calls the package-level style vars directly. For v1.3, leave `StatusIcon()` unchanged — tree/view.go passes `opts.Theme` for direct style calls, and calls `tui.StatusIcon(status, opts.NoEmoji)` for icon rendering. A full `StatusIcon(status string, noEmoji bool, theme Theme)` signature change is a v1.4 consideration.
 
-The signal script must locate the correct socket path (derived from the project directory `$PWD`), check the socket exists, and send a refresh signal:
+### Q3: How does config.emoji interact with the existing Options.NoEmoji pattern?
 
-```bash
-#!/usr/bin/env bash
-# Compute same hash as the Go binary uses
-HASH=$(echo -n "$PWD" | shasum -a 256 | cut -c1-8)
-SOCK="/tmp/gsd-watch-${HASH}.sock"
-[ -S "$SOCK" ] && echo -n "refresh" | nc -U "$SOCK" -q 1 2>/dev/null || true
+**Answer: config.emoji is the persistent default; --no-emoji flag is a one-shot override that always wins. Both land on the same `cfg.NoEmoji bool` before any model is constructed.**
+
+Precedence resolved entirely in `main.go`, two lines after `config.Load()`:
+
+```
+config.toml emoji = false   ->  cfg.NoEmoji = true   (inverted mapping)
+config.toml emoji = true    ->  cfg.NoEmoji = false
+config.toml absent          ->  cfg.NoEmoji = false   (default)
+--no-emoji flag present     ->  cfg.NoEmoji = true    (overrides config)
+both present, flag wins     ->  cfg.NoEmoji = true
 ```
 
-The script must exit 0 regardless of whether the TUI is running — hooks must not block Claude Code.
+The inversion (`emoji = false` in TOML -> `NoEmoji = true` in struct) is handled in `config.Load()`:
 
-### commands/gsd-watch.md
-
-```markdown
----
-name: gsd-watch
-description: Start gsd-watch status sidebar in a tmux split pane
----
-
-Start the gsd-watch sidebar by opening a new tmux pane and launching the binary:
-
-tmux split-window -h -l 40 "gsd-watch"
-
-If you are not in a tmux session, instruct the user to run `gsd-watch` manually
-in a tmux split pane. Do not attempt to automate tmux wrapping of the current session.
+```go
+type rawConfig struct {
+    Emoji *bool  `toml:"emoji"`  // pointer to detect presence
+    Theme string `toml:"theme"`
+}
+// After decode:
+if raw.Emoji != nil && !*raw.Emoji {
+    cfg.NoEmoji = true
+}
 ```
 
-## Suggested Build Order
+Alternatively, keep the field name matching TOML (`Emoji bool`) and invert at the assignment in `main.go`. Either way, the inversion happens once, not scattered across render paths.
 
-Build in dependency order — packages with no dependencies first:
+The `Options.NoEmoji` field on `tree.TreeModel` continues to work identically — it receives `cfg.NoEmoji` from `app.New()` via `SetOptions()`, unchanged interface.
 
-1. **`internal/parser/types.go`** — Define `ProjectData`, `Phase`, `Plan`, `StateInfo` structs. Everything imports this.
-2. **`internal/parser/`** — Implement full parse. No Bubble Tea dependency. Fully testable in isolation.
-3. **`internal/tui/messages.go`** — Define all custom `tea.Msg` types. Required by both watcher/socket and the TUI.
-4. **`internal/watcher/`** — Implement fsnotify wrapper. Depends only on `messages.go` and `*tea.Program`.
-5. **`internal/socket/`** — Implement Unix socket listener. Depends only on `messages.go` and `*tea.Program`.
-6. **`internal/tui/tree/`** — Implement tree model and renderer. Depends on `parser/types.go`. Core visual component.
-7. **`internal/tui/header/` and `internal/tui/footer/`** — Implement header and footer models.
-8. **`internal/tui/model.go`** — Assemble root model, wire all sub-models, implement `Init/Update/View`.
-9. **`cmd/gsd-watch/main.go`** — Wire everything: create program, start watcher and socket goroutines, call `p.Run()`.
-10. **Plugin files** — `plugin.json`, `hooks.json`, `gsd-watch.md`, `gsd-watch-signal.sh`. No Go compilation required.
-11. **`Makefile`** — `build`, `install`, `plugin-install`, `all`, `clean` targets.
+### Q4: How does the help overlay get config file path without tight coupling?
 
-**Rationale:** Parser first because it has no dependencies and all other packages need its types. Watcher and socket second because they are simple goroutine wrappers. Tree component before root model because the root model composes it. Main last because it wires everything — it's the thinnest layer.
+**Answer: Call `config.ConfigPath()` directly inside `helpView()`. No tight coupling — `app/model.go` already imports `internal/config` (it receives `config.Config` from `main.go`).**
+
+The concern about tight coupling does not apply here because:
+- `internal/config` is a leaf package (no imports from `internal/tui/`)
+- `internal/tui/app` already imports `internal/config` to accept the `config.Config` argument in `New()`
+- `helpView()` is a private function in `internal/tui/app/model.go` — same file, same package, same import graph node
+
+Adding `config.ConfigPath()` to the help text is two lines:
+
+```go
+// In helpView() — after existing phaseStages block:
+helpText := `...existing text...
+
+Config
+` + config.ConfigPath()
+```
+
+No new parameter. No new import. No new dependency edge.
+
+If `helpView` were ever to be extracted to a separate package or made testable without disk I/O, the correct move would be to accept `cfgPath string` as a parameter instead. But for v1.3, direct call is the least-ceremony approach consistent with the codebase style.
+
+---
+
+## Component Inventory: New vs Modified
+
+| Component | Status | Action Required |
+|-----------|--------|-----------------|
+| `internal/config/config.go` | NEW | Create from scratch |
+| `internal/tui/styles.go` | MODIFIED (additive) | Add Theme struct + 4 constructor funcs; existing vars and StatusIcon/BadgeString untouched |
+| `internal/tui/tree/model.go` | MODIFIED | Add `Theme tui.Theme` field to Options struct |
+| `internal/tui/tree/view.go` | MODIFIED | Replace ~15 `tui.PendingStyle.Render()` calls with `opts.Theme.PendingStyle.Render()`; add theme param to RenderArchiveRow/RenderArchiveSeparator |
+| `internal/tui/app/model.go` | MODIFIED | `New()` signature (bool -> config.Config), store cfg, call ThemeFromName, pass via SetOptions, add cfgPath to helpView |
+| `cmd/gsd-watch/main.go` | MODIFIED | Add config.Load(), apply flag override, update app.New() call |
+| `internal/tui/header/model.go` | UNCHANGED | Continues using tui.ColorXxx package vars |
+| `internal/tui/footer/model.go` | UNCHANGED | Continues using tui.ColorXxx package vars + RefreshFlashStyle/QuitPendingStyle |
+| `internal/parser/` | UNCHANGED | No config or theme concerns |
+| `internal/watcher/` | UNCHANGED | No config or theme concerns |
+| `go.mod` | MODIFIED | Add `github.com/BurntSushi/toml` |
+
+---
+
+## Import Graph: Cycle Risk Analysis
+
+The existing rule (PROJECT.md): `tui/*` sub-packages import `tui` for shared types. The new `internal/config` package must be a leaf.
+
+Safe import graph after v1.3:
+
+```
+cmd/gsd-watch/main.go
+    imports: internal/config          (NEW — leaf, stdlib + toml only)
+    imports: internal/tui/app
+
+internal/tui/app
+    imports: internal/config          (NEW — for config.Config type + config.ConfigPath())
+    imports: internal/tui             (styles, keys, messages)
+    imports: internal/tui/tree
+    imports: internal/tui/header
+    imports: internal/tui/footer
+    imports: internal/parser
+    imports: internal/watcher
+
+internal/tui/tree
+    imports: internal/tui             (for tui.Theme, tui.KeyMap, tui.StatusIcon etc.)
+    imports: internal/parser
+
+internal/tui/header, internal/tui/footer
+    imports: internal/tui             (unchanged)
+    imports: internal/parser          (unchanged)
+
+internal/config
+    imports: NOTHING from internal/   (stdlib + BurntSushi/toml only)
+```
+
+Cycle check: `internal/config` imports nothing from the project. No cycle possible. The new edge `internal/tui/app -> internal/config` is safe: app is a leaf consumer, config is a leaf provider, and no sub-package of tui imports config.
+
+---
+
+## Data Flow Diagrams
+
+### Startup Config-to-Render Path
+
+```
+main() invoked
+    |
+    +-- flag.Parse()
+    |
+    +-- config.Load()
+    |       reads ~/.config/gsd-watch/config.toml
+    |       ENOENT     ->  Config{NoEmoji:false, Theme:"default"}, nil
+    |       decode err ->  Config defaults, non-nil error (warn + continue)
+    |
+    +-- if *noEmojiFlag { cfg.NoEmoji = true }   (flag always wins)
+    |
+    +-- app.New(events, cfg)
+    |       tui.ThemeFromName(cfg.Theme) -> tui.Theme value (resolved once)
+    |       tree.SetOptions(Options{NoEmoji: cfg.NoEmoji, Theme: theme})
+    |
+    +-- tea.NewProgram(model).Run()
+    |
+    +-- model.Init()
+            cache.ParseFull()  ->  ParsedMsg  ->  tree.SetData()
+            viewport.SetContent(tree.View(width, vpHeight))
+                    opts.Theme.PendingStyle.Render(row)   <- theme applied here
+```
+
+### Flag vs Config Precedence
+
+```
+config.toml present + emoji = false   ->  cfg.NoEmoji = true
+--no-emoji flag present               ->  cfg.NoEmoji = true  (overrides)
+config.toml absent                    ->  cfg.NoEmoji = false (default)
+neither                               ->  cfg.NoEmoji = false (default)
+```
+
+Flag always wins. Two lines in `main.go` after `config.Load()` is all that's needed.
+
+---
+
+## Build Order Across Phases
+
+### Phase 1: Config infrastructure (zero visual change)
+
+1. `go get github.com/BurntSushi/toml` — add TOML dependency to go.mod
+2. Create `internal/config/config.go`:
+   - `Config` struct with `NoEmoji bool` and `Theme string`
+   - `ConfigPath() string` — expands `~/.config/gsd-watch/config.toml`
+   - `Load() (Config, error)` — ENOENT returns defaults + nil error; decode error returns defaults + non-nil error
+   - Default: `Config{NoEmoji: false, Theme: "default"}`
+   - TOML inversion: `emoji = false` in file maps to `NoEmoji = true`
+3. Update `internal/tui/tree/model.go`:
+   - Add `Theme tui.Theme` to `Options` struct (zero value is fine — DefaultTheme() called in app.New())
+4. Update `internal/tui/app/model.go`:
+   - Change `New(events chan tea.Msg, noEmoji bool)` -> `New(events chan tea.Msg, cfg config.Config)`
+   - Store `cfg config.Config` on `Model` (replaces `noEmoji bool`)
+   - Replace all `m.noEmoji` reads with `m.cfg.NoEmoji`
+   - `helpView` call: `helpView(m.width, m.cfg.NoEmoji)` (no change yet)
+5. Update `cmd/gsd-watch/main.go`:
+   - Import `internal/config`
+   - Call `config.Load()` before `app.New()`
+   - Apply flag override: `if *noEmojiFlag { cfg.NoEmoji = true }`
+   - Pass `cfg` to `app.New()`
+6. Unit tests for `internal/config/`:
+   - Missing file → defaults + nil error
+   - Valid TOML → correct struct values
+   - Malformed TOML → defaults + non-nil error
+   - Unknown keys → ignored (BurntSushi/toml ignores unknown keys by default)
+   - `emoji = false` → `NoEmoji = true`; `emoji = true` → `NoEmoji = false`
+
+Verifiable: binary runs identically to v1.2. No visual change.
+
+### Phase 2: Theme system
+
+1. Add `Theme` struct, `DefaultTheme()`, `MinimalTheme()`, `HighContrastTheme()`, `ThemeFromName()` to `internal/tui/styles.go`
+2. Update `internal/tui/app/model.go`:
+   - In `New()`: call `tui.ThemeFromName(cfg.Theme)`, pass via `SetOptions(Options{NoEmoji: cfg.NoEmoji, Theme: theme})`
+3. Update `internal/tui/tree/view.go`:
+   - Replace every `tui.PendingStyle` with `opts.Theme.PendingStyle` (approx. 15 sites)
+   - Replace `tui.CompleteStyle`, `tui.ActiveStyle`, `tui.FailedStyle`, `tui.NowMarkerStyle` equivalents
+   - Update `RenderArchiveRow(am, noEmoji, theme tui.Theme)` signature + body
+   - Update `RenderArchiveSeparator(width, theme tui.Theme)` signature + body
+   - Update `RenderArchiveZone(archives, width, noEmoji, theme tui.Theme)` signature + body
+   - Update callers of those exported functions (ArchiveZone method, test files)
+4. Tests:
+   - Each named theme produces non-zero styles
+   - Snapshot/golden test: DefaultTheme renders identically to pre-v1.3 output (regression guard)
+   - `RenderArchiveRow` and `RenderArchiveSeparator` unit tests pass updated signatures
+
+### Phase 3: Help overlay config file path
+
+1. `config.ConfigPath()` already available from Phase 1
+2. Update `helpView()` in `app/model.go`:
+   - Add `Config` section displaying `config.ConfigPath()`
+   - No signature change needed — app already imports internal/config
+3. Snapshot test for help overlay text includes the config file path string
+
+---
+
+## Anti-Patterns Specific to This Integration
+
+### Anti-Pattern 1: Mutating package-level style vars at runtime
+
+**What people do:** Write `SetTheme(name string)` that reassigns `tui.PendingStyle = newStyle`.
+**Why it's wrong:** Global mutable state breaks parallel tests and contradicts the Elm immutable-update pattern used throughout this codebase.
+**Do this instead:** Pass `tui.Theme` value through `tree.Options`. Each render uses its local Options copy.
+
+### Anti-Pattern 2: Loading config inside app.New() or model.Init()
+
+**What people do:** `app.New()` calls `config.Load()` internally so callers don't have to think about it.
+**Why it's wrong:** `app.New()` returns `Model` (no error path). Errors surface inside model construction with no clean recovery. Tests must either provide real config files on disk or mock the filesystem.
+**Do this instead:** Load in `main.go`, pass the loaded `Config` to `app.New()` as a plain value.
+
+### Anti-Pattern 3: Resolving theme name on every render frame
+
+**What people do:** Call `tui.ThemeFromName(m.cfg.Theme)` inside `View()` or `tree.View()`.
+**Why it's wrong:** Allocates a new Theme struct on every render (multiple times per second during scrolling). Theme does not change at runtime.
+**Do this instead:** Resolve once in `app.New()`. Store the resolved `Theme` in model state. Pass through `SetOptions()` once.
+
+### Anti-Pattern 4: Migrating header and footer to Theme in v1.3
+
+**What people do:** Migrate all four TUI components simultaneously.
+**Why it's wrong:** Header and footer each have 3-4 color references. The blast radius (changed files, test updates, regression risk) is disproportionate to the visual impact. These components have no `Options` struct to extend.
+**Do this instead:** Migrate tree only in v1.3 (highest visual weight, already has `Options` pattern). Header and footer remain on package-level vars. Revisit in v1.4 if theme completeness matters.
+
+### Anti-Pattern 5: Storing config file path as a hardcoded string in multiple places
+
+**What people do:** Paste `"~/.config/gsd-watch/config.toml"` in both `config.go` and `app/model.go` (for help overlay).
+**Why it's wrong:** Two sources of truth for the same path; diverge on rename.
+**Do this instead:** Export `config.ConfigPath() string` from the config package. Both `Load()` and `helpView()` call the same function.
+
+### Anti-Pattern 6: Changing RenderArchiveRow/RenderArchiveSeparator signatures without updating all callers
+
+**What people do:** Update the function signatures in view.go but forget the exported test callers in tree_test package.
+**Why it's wrong:** These functions are exported (PROJECT.md key decision: "FormatArchiveDate, RenderArchiveRow, RenderArchiveSeparator, RenderArchiveZone exported" for testability). External test files call them directly. Signature change without updating tests causes compilation failure.
+**Do this instead:** Search all call sites of exported archive functions before changing signatures. Update tree_test usages in the same commit as the signature change.
+
+---
+
+## TOML Library Decision
+
+`go.mod` has no TOML library. Two viable options:
+
+| Library | Stars | API | Transitive deps | Recommendation |
+|---------|-------|-----|-----------------|----------------|
+| `github.com/BurntSushi/toml` v1.x | ~4.5K | Minimal: `toml.DecodeFile()` | Zero | **Use this** |
+| `github.com/pelletier/go-toml/v2` | ~1.7K | Larger, richer | A few | Overkill for a 2-key config |
+
+BurntSushi/toml is the canonical Go TOML library. Unknown keys are silently ignored by default — exactly the behavior needed for a config file that may evolve (future keys in newer binaries don't break old binaries).
+
+Install: `go get github.com/BurntSushi/toml@v1`
+
+---
+
+## Style Reference Audit (view.go — all sites to migrate)
+
+Confirmed by reading `internal/tui/tree/view.go` directly:
+
+| Line context | Current call | Migration target |
+|---|---|---|
+| Empty state paragraph | `lipgloss.NewStyle().Foreground(tui.ColorGray)` | `opts.Theme.PendingStyle` |
+| RowPhase: dimmed name part | `tui.PendingStyle.Render(part)` | `opts.Theme.PendingStyle.Render(part)` |
+| RowPhase: dimmed prefix | `tui.PendingStyle.Render(prefixStr)` | `opts.Theme.PendingStyle.Render(prefixStr)` |
+| RowPhase: dimmed continuation | `tui.PendingStyle.Render(continuation)` | `opts.Theme.PendingStyle.Render(continuation)` |
+| RowPhase: dimmed badge line | `tui.PendingStyle.Render(badgeLine)` | `opts.Theme.PendingStyle.Render(badgeLine)` |
+| RowPhase: no plans yet | `tui.PendingStyle.Render("(no plans yet)")` | `opts.Theme.PendingStyle.Render("(no plans yet)")` |
+| RowPlan: dimmed connector | `tui.PendingStyle.Render(connector)` | `opts.Theme.PendingStyle.Render(connector)` |
+| RowPlan: dimmed continuation | `tui.PendingStyle.Render(continuation)` | `opts.Theme.PendingStyle.Render(continuation)` |
+| RowPlan: dimmed text | `tui.PendingStyle.Render(rawText)` | `opts.Theme.PendingStyle.Render(rawText)` |
+| RowQuickTask: dimmed connector | `tui.PendingStyle.Render(connector)` | `opts.Theme.PendingStyle.Render(connector)` |
+| RowQuickTask: dimmed continuation | `tui.PendingStyle.Render(continuation)` | `opts.Theme.PendingStyle.Render(continuation)` |
+| RowQuickTask: dimmed text | `tui.PendingStyle.Render(rawText)` | `opts.Theme.PendingStyle.Render(rawText)` |
+| RowQuickTask: no quick tasks | `tui.PendingStyle.Render("(no quick tasks)")` | `opts.Theme.PendingStyle.Render("(no quick tasks)")` |
+| RenderArchiveRow | `tui.PendingStyle.Render(row)` | add `theme tui.Theme` param |
+| RenderArchiveSeparator | `tui.PendingStyle.Render(result)` | add `theme tui.Theme` param |
+
+`NowMarkerStyle` is used once for the `← now` marker — add to Theme struct.
+`highlightStyle` (bold only, no color) is a view.go package-level var — leave unchanged, not theme-sensitive.
+
+---
 
 ## Sources
 
-- [Bubble Tea pkg.go.dev — v1.3.10 API reference](https://pkg.go.dev/github.com/charmbracelet/bubbletea)
-- [charmbracelet/bubbletea GitHub](https://github.com/charmbracelet/bubbletea)
-- [charmbracelet/bubbles GitHub](https://github.com/charmbracelet/bubbles)
-- [Concurrency and Goroutines — DeepWiki Bubble Tea](https://deepwiki.com/charmbracelet/bubbletea/5.1-concurrency-and-goroutines)
-- [Tips for building Bubble Tea programs — leg100.github.io](https://leg100.github.io/en/posts/building-bubbletea-programs/)
-- [Managing nested models with Bubble Tea — donderom.com](https://donderom.com/posts/managing-nested-models-with-bubble-tea/)
-- [Debounce discussion — charmbracelet/bubbletea #601](https://github.com/charmbracelet/bubbletea/discussions/601)
-- [Injecting messages from outside the program loop — Issue #25](https://github.com/charmbracelet/bubbletea/issues/25)
-- [tree-bubble package](https://pkg.go.dev/github.com/savannahostrowski/tree-bubble)
-- [Claude Code Plugins Reference](https://code.claude.com/docs/en/plugins-reference)
+- Direct code analysis (read 2026-03-26):
+  - `cmd/gsd-watch/main.go`
+  - `internal/tui/app/model.go`
+  - `internal/tui/styles.go`
+  - `internal/tui/tree/model.go`
+  - `internal/tui/tree/view.go`
+  - `internal/tui/header/model.go`
+  - `internal/tui/footer/model.go`
+  - `go.mod`
+- `.planning/PROJECT.md` — key decisions, v1.3 milestone goals, constraints
 
 ---
-*Architecture research for: Go Bubble Tea TUI with fsnotify + Unix socket IPC*
-*Researched: 2026-03-18*
+*Architecture research for: gsd-watch v1.3 config + theme integration*
+*Researched: 2026-03-26*

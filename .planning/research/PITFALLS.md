@@ -1,274 +1,234 @@
-# Pitfalls Research
+# Pitfalls Research — v1.3 Config + Theme
 
-**Domain:** Go TUI binary — Bubble Tea + fsnotify + Unix socket IPC + YAML frontmatter + Claude Code plugin
-**Researched:** 2026-03-18
-**Confidence:** HIGH (core Bubble Tea/fsnotify/socket pitfalls from official sources and primary maintainer discussions; MEDIUM for Claude Code hook edge cases from official docs)
+**Domain:** Adding TOML config file + 3-preset theme system to existing Go Bubble Tea TUI
+**Researched:** 2026-03-26
+**Confidence:** HIGH for TOML/flag precedence (stdlib + BurntSushi docs); HIGH for XDG gotcha (verified against open Go issue #76320); HIGH for lipgloss package-var mutation (verified against lipgloss source); HIGH for AdaptiveColor loss in theme presets (verified against lipgloss AdaptiveColor semantics); MEDIUM for Bubble Tea theme threading (pattern from maintainer discussions, no canonical guide exists)
+
+> This file is the v1.3-specific supplement to the broader ecosystem pitfalls previously documented.
+> The prior v1.0 concerns (Bubble Tea concurrency, fsnotify, socket IPC, YAML frontmatter, tmux detection)
+> are already shipped and are not duplicated here.
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Mutating Model State Outside Update()
+### Pitfall 1: Zero Value Cannot Be Distinguished From "Not Set" When Merging Flag + Config
 
 **What goes wrong:**
-Any goroutine that writes directly to model fields (e.g., `m.content = value` inside a `go func()`) races against `View()`. The result is intermittent rendering of partial or stale state that's non-deterministic and extremely hard to reproduce in tests.
+`--no-emoji` is a `bool` flag with a zero value of `false`. After `flag.Parse()`, both "user didn't pass the flag" and "user explicitly passed `--no-emoji=false`" produce `*noEmoji == false`. When the config file sets `emoji = false`, the merge logic cannot tell whether the command-line value should win — both are the same zero value. The result: config file overrides a user-supplied `--no-emoji=false`, or the flag always wins and config is ignored.
 
 **Why it happens:**
-Bubble Tea's event loop serializes all `Update()` calls — nothing else is serialized. Developers familiar with mutex-based Go concurrency assume they can write from any goroutine. They cannot.
+Go's `flag` package does not expose whether a flag was set; `flag.Lookup("no-emoji").Value.String()` returns `"false"` regardless of whether the flag appeared on the command line. There is no built-in `flag.IsSet()`. (Go issue #21226, open since 2017, marked "not planned" for the standard library.) Developers who check `if *noEmoji { ... }` silently implement "flag wins always" with no config merge.
 
 **How to avoid:**
-All state mutations happen exclusively in `Update()`. Background work (fsnotify event reading, socket accepts, file I/O) returns results as `tea.Msg` values via `tea.Cmd`. Never store a pointer to the model and write through it from a goroutine. Never use `sync.Mutex` or `sync.RWMutex` to "protect" model fields — the correct fix is to use commands.
-
-**Warning signs:**
-- Intermittent wrong content in the TUI that fixes itself on next keypress
-- Data race reports from `go test -race`
-- `View()` crashing on nil pointer dereference even though `Update()` always initializes fields
-
-**Phase to address:** Core TUI scaffold (Phase 1) — establish the command/message pattern before any background I/O is introduced.
-
----
-
-### Pitfall 2: Calling tea.Program.Send() Before Program.Run()
-
-**What goes wrong:**
-The Unix socket goroutine or fsnotify goroutine may fire events before `p.Run()` has started the event loop. `Program.Send()` will block (it uses a buffered channel that only drains once the loop is running), causing the goroutine to hang and the program to deadlock on startup.
-
-**Why it happens:**
-It is tempting to start the socket listener and file watcher immediately at the top of `main()` and pass the `*tea.Program` reference into them. If an event arrives in the sub-millisecond window before `p.Run()` begins draining the channel, the send blocks.
-
-**How to avoid:**
-Start background goroutines (socket listener, file watcher) only after `p.Run()` has returned its initial render, or — better — start them as `tea.Cmd` returned from `Init()`. Using `Init()` to return a batch of commands that spin up watchers guarantees they start inside the event loop lifecycle.
-
-**Warning signs:**
-- Program hangs at startup with no output
-- Deadlock detected by Go runtime: `all goroutines are asleep`
-- Works when there are no files to watch on startup
-
-**Phase to address:** File watcher integration (Phase 2) and socket IPC (Phase 3) — start both subsystems from `Init()` commands, not from `main()`.
-
----
-
-### Pitfall 3: fsnotify kqueue File Descriptor Exhaustion on macOS
-
-**What goes wrong:**
-kqueue (macOS's watch backend used by fsnotify v1.x) opens one file descriptor per watched file AND directory. A `.planning/` tree with 50+ PLAN.md files plus their parent directories can consume 100–200 fds. Under SIGKILL loops or rapid restarts this approaches macOS's default per-process fd limit (256 in some configurations), causing `too many open files` errors.
-
-**Why it happens:**
-fsnotify on macOS uses kqueue, which does not support recursive watching natively. The manual dir-walk approach required for this project (watch each subdirectory explicitly) compounds the fd usage because every directory entry also requires an fd.
-
-**How to avoid:**
-- Watch directories only, not individual files. fsnotify fires events for files inside a watched directory — there is no need to add individual file watches.
-- On startup, call `watcher.Add(dir)` for each directory found during the recursive walk, but skip adding individual file paths.
-- Set `ulimit -n 1024` in the Makefile's test target to surface exhaustion early.
-- Track the number of watched directories; log a warning if it exceeds 200.
-- Keep watches minimal: watch `.planning/` and its first-level subdirectories; the project structure does not go deeper than phase directories.
-
-**Warning signs:**
-- `watcher.Add()` returns an error containing "too many open files"
-- Events stop arriving after the watcher has been running for a while
-- `lsof -p <pid> | wc -l` grows unboundedly during testing
-
-**Phase to address:** File watcher integration (Phase 2).
-
----
-
-### Pitfall 4: Missing Recursive Watch for Newly Created Directories
-
-**What goes wrong:**
-`fsnotify.Watcher.Add()` is called once at startup for all existing directories. If a new phase directory (e.g., `.planning/phase-3/`) is created after startup, fsnotify never watches it and changes to files inside it are silently ignored.
-
-**Why it happens:**
-kqueue and inotify do not propagate watches to newly created subdirectories. The recursive walk at startup only covers what exists at that moment.
-
-**How to avoid:**
-In the fsnotify event handler, check for `fsnotify.Create` events where the target is a directory (use `os.Stat()` to confirm `IsDir()`). When a new directory is detected, immediately call `watcher.Add()` on it. This is the standard user-space recursive watcher pattern described in fsnotify's own issue tracker.
-
-**Warning signs:**
-- Adding a new phase via GSD does not trigger a TUI refresh
-- Only the top-level `.planning/` directory and pre-existing phase dirs see updates
-
-**Phase to address:** File watcher integration (Phase 2).
-
----
-
-### Pitfall 5: Stale Unix Socket File Prevents Startup After SIGKILL
-
-**What goes wrong:**
-If the process is killed with SIGKILL (or crashes), the deferred `os.Remove()` on the socket path never runs. The next invocation of `gsd-watch` calls `net.Listen("unix", sockPath)` and gets `bind: address already in use`, causing an immediate fatal exit or a silent fallback that leaves the IPC mechanism broken.
-
-**Why it happens:**
-Unix socket files are filesystem artifacts. `net.UnixListener.Close()` removes the file on graceful shutdown, but SIGKILL bypasses all deferred cleanup. The socket file at `/tmp/gsd-watch-<hash>.sock` persists.
-
-**How to avoid:**
-On startup, before calling `net.Listen()`:
-1. Attempt to connect to the existing socket path (`net.Dial("unix", sockPath)`).
-2. If the connect succeeds, another instance is already running — exit with a clear error message.
-3. If the connect fails (connection refused / no such file), call `os.Remove(sockPath)` unconditionally, then `net.Listen()`.
-
-This is the "try-connect, delete-if-dead" pattern already identified in the project decisions. Implement it in startup, not as a defer.
-
-**Warning signs:**
-- `gsd-watch` exits immediately with "address already in use" after a crash
-- Socket file exists in `/tmp/` but no `gsd-watch` process is running (`lsof /tmp/gsd-watch-*.sock` returns nothing)
-
-**Phase to address:** Unix socket IPC (Phase 3).
-
----
-
-### Pitfall 6: Unix Socket Goroutine Not Stopped on Program Quit
-
-**What goes wrong:**
-The socket accept loop runs in a goroutine started from `Init()`. When the user presses `q`, `tea.Quit` is sent and `p.Run()` returns — but the goroutine is still blocked on `listener.Accept()`. The process stays alive indefinitely (or until the OS reclaims it), and the socket file is never cleaned up.
-
-**Why it happens:**
-`p.Run()` returning does not cancel any commands or goroutines started outside the event loop. Background goroutines need explicit cancellation signals.
-
-**How to avoid:**
-Use a `context.Context` with `context.WithCancel`. Pass the cancel function into the socket goroutine. When `tea.Quit` is processed (or on `WindowFinalMsg` in Bubble Tea v1), call `cancel()`. In the goroutine, use `listener.SetDeadline()` or select on `ctx.Done()` to exit the accept loop. In the `Init()` command pattern, the context is created in `main()` and passed by closure.
-
-**Warning signs:**
-- `gsd-watch` process remains in `ps` after the TUI window closes
-- Socket file remains in `/tmp/` after expected exit
-- Port reuse test fails: launching a second instance immediately after quitting gets "address already in use"
-
-**Phase to address:** Unix socket IPC (Phase 3).
-
----
-
-### Pitfall 7: Debounce Timer Race with Go's time.Timer.Reset()
-
-**What goes wrong:**
-A naive debounce for fsnotify events looks like: reset a `time.Timer` every time an event arrives; fire the re-parse on expiry. If the timer fires concurrently while the goroutine is inside `timer.Reset()`, the drain-before-reset idiom is required but subtle. Pre-Go 1.23 code that doesn't drain `t.C` before `Reset()` drops or double-fires the debounce tick, causing either a missed refresh or two concurrent re-parses writing to shared state.
-
-**Why it happens:**
-`time.Timer.Reset()` is documented to have a race condition in Go versions < 1.23 unless the channel is drained first. The fix landed in Go 1.23 (unbuffered timer channel), but the project targets Go 1.22+, so the pre-1.23 behaviour must be handled.
-
-**How to avoid:**
-Use the safe drain pattern:
+Use `flag.Visit` to build a set of flags that were explicitly provided, before falling back to config:
 ```go
-if !timer.Stop() {
-    select {
-    case <-timer.C:
-    default:
-    }
+setByUser := map[string]bool{}
+flag.Visit(func(f *flag.Flag) { setByUser[f.Name] = true })
+
+cfg := loadConfig()            // load TOML, defaults applied
+noEmoji := cfg.NoEmoji         // config value is the base
+if setByUser["no-emoji"] {
+    noEmoji = *noEmojiFlag     // explicit CLI flag wins
 }
-timer.Reset(300 * time.Millisecond)
 ```
-Or: target Go 1.23+ minimum and drop the drain entirely (timer channel is unbuffered in 1.23+). Document the minimum Go version in the Makefile.
-
-Alternatively, implement debounce with a separate goroutine and a channel: send events to a channel, the goroutine waits for a quiet period using `time.After` and restarts it on each new event. This pattern sidesteps `Reset()` entirely.
+This is the only stdlib-compatible pattern. Precedence order: explicit CLI flag > config file > compiled default.
 
 **Warning signs:**
-- `go test -race` reports a race on the timer channel
-- Occasionally, two re-parse operations run simultaneously; last-write wins clobbers incremental cache
+- `--no-emoji` on the command line has no effect when config file has `emoji = true`
+- Config `emoji = false` is ignored when `--no-emoji` is not present on CLI
+- Tests pass individually but fail when run with different flag combinations
 
-**Phase to address:** File watcher integration (Phase 2).
+**Phase to address:** Config loading phase — implement `flag.Visit` merge at startup before constructing `app.New()`.
 
 ---
 
-### Pitfall 8: YAML Frontmatter Delimiter Detection Fragility
+### Pitfall 2: BurntSushi/toml Silently Ignores Unknown Keys by Default
 
 **What goes wrong:**
-`gopkg.in/yaml.v3` does not parse YAML frontmatter out of a mixed markdown+YAML file. You must split the `---` delimiters manually. Common mistakes:
-- Splitting on `\n---\n` misses files where the opening `---` is on the very first line with no preceding newline (e.g., a file that starts with `---` at byte 0).
-- Splitting on `---` (without newline anchoring) matches `---` inside a YAML value string.
-- Files written on Windows may have `\r\n` line endings; `\n---\n` never matches.
-- A file with only one `---` (opening delimiter present, closing missing) causes the second split part to contain the entire remaining file including markdown body — `yaml.Unmarshal` on that will either silently ignore fields or produce partial data with no error.
-
-**How to avoid:**
-Use `bytes.Index` on `\n---\n` and check for the special case where the file begins with `---\n` (offset 0). For the closing delimiter, search only after the opening. Enforce that both delimiters are found before attempting unmarshal; if either is missing, log a warning and return zero-value struct (never crash). Strip trailing `\r` before delimiter checks. Test with malformed files explicitly.
-
-**Warning signs:**
-- Plan files with `status: active` in frontmatter show as "upcoming" in the TUI
-- No error logged but no frontmatter fields populated
-- Works for all files in one phase dir, fails for files in another
-
-**Phase to address:** File parsing (Phase 2 or wherever PLAN.md parsing is introduced).
-
----
-
-### Pitfall 9: Rendering Panic When Terminal Width Is Below Minimum
-
-**What goes wrong:**
-Lip Gloss `Width()` constraints and padding calculations can produce negative values when the terminal pane is narrower than expected. `lipgloss.NewStyle().Width(-1)` does not error — it silently produces garbage output or panics in some Lip Gloss versions. In a tmux split pane that starts narrow, this crashes the TUI immediately on startup.
+A user adds a typo (`theem = "dark"`) or a future key (`accent_color = "#ff0000"`) to `~/.config/gsd-watch/config.toml`. BurntSushi/toml decodes it successfully, returns no error, and silently drops the unknown field. The user has no way to know their config key was ignored. If this is `emoji = true` misspelled as `emojis = true`, the feature appears broken.
 
 **Why it happens:**
-Layout arithmetic assumes a minimum width. Developers calculate `paneWidth - padding - borderWidth` without clamping to zero. A tmux pane 20 columns wide with 4 columns of padding and 2-column border leaves 14 columns — but if the user resizes aggressively, the pane can go to 10 or even 5 columns.
+BurntSushi/toml's default mode is "loose": TOML values that have no corresponding struct field are silently dropped. There is no `DisallowUnknownFields` option (unlike `pelletier/go-toml/v2`). The `MetaData.Undecoded()` method exists but must be called explicitly — it is not automatic.
 
 **How to avoid:**
-Always clamp computed width to a minimum (e.g., `max(computedWidth, 10)`). Establish a `minWidth` constant and render a "too narrow" placeholder message instead of the full tree when `msg.Width < minWidth`. Handle `tea.WindowSizeMsg` at every child model level to propagate current dimensions.
-
-**Warning signs:**
-- TUI crashes immediately when tmux split pane is very narrow
-- Lip Gloss border characters wrap unexpectedly
-- Width truncation breaks border rendering (known Lip Gloss v0.12.0 regression)
-
-**Phase to address:** TUI rendering (Phase 1 or wherever View() is first built).
-
----
-
-### Pitfall 10: Claude Code Stop Hook Causing Infinite Loop
-
-**What goes wrong:**
-The `Stop` hook fires every time Claude finishes a response. If the hook script always exits with a blocking decision, Claude enters forced continuation and the hook fires again — infinitely. The `gsd-watch-signal.sh` script is async and non-blocking (it just signals the socket), so infinite loops are not a risk by default — but any future change that adds a blocking decision must account for this.
-
-**Why it happens:**
-Claude Code passes `stop_hook_active: true` in the hook input when Claude is already in a forced-continuation state from a previous Stop block. Hooks that do not check this flag will block again, creating an infinite cycle.
-
-**How to avoid:**
-Even though `gsd-watch-signal.sh` is async, build in the guard explicitly:
-```bash
-STOP_ACTIVE=$(jq -r '.stop_hook_active // false' < /dev/stdin)
-[ "$STOP_ACTIVE" = "true" ] && exit 0
+After every `toml.Decode` call, check `md.Undecoded()` and log a warning (not an error — never crash on config) to stderr:
+```go
+md, err := toml.Decode(string(data), &cfg)
+if err != nil {
+    // parse error — use defaults, warn
+}
+if keys := md.Undecoded(); len(keys) > 0 {
+    fmt.Fprintf(os.Stderr, "gsd-watch: unknown config keys: %v\n", keys)
+}
 ```
-Mark this comment in the script: "do not remove — prevents infinite Stop loop."
+This surfaces typos without breaking the user's session. Do NOT return an error — the app must start with defaults regardless of config problems.
 
 **Warning signs:**
-- Claude Code session CPU spikes and never idles
-- Hook script invoked thousands of times in a session
-- Terminal floods with hook output in verbose mode
+- User reports setting `theme = "minimal"` has no effect (maybe they typed `themes = "minimal"`)
+- No error message shown despite config key mismatch
+- Adding a new config key in a later version silently works on old config files with old keys
 
-**Phase to address:** Claude Code plugin (Phase 4).
+**Phase to address:** Config loading phase — add `md.Undecoded()` check immediately after decode.
 
 ---
 
-### Pitfall 11: Async Hook Output and Exit Codes Are Silently Ignored
+### Pitfall 3: Package-Level `var` Styles Cannot Be Swapped at Runtime Without Global Mutation
 
 **What goes wrong:**
-Claude Code async hooks (`"async": true`) discard all stdout, stderr, exit codes, and JSON decisions. If `gsd-watch-signal.sh` fails to connect to the socket (because `gsd-watch` is not running), there is no error surface — Claude Code neither logs a warning nor retries. The TUI simply does not refresh.
+`internal/tui/styles.go` currently declares `ColorGreen`, `ColorAmber`, `CompleteStyle`, `PendingStyle`, etc. as `var` at package scope. A naive theme implementation reassigns these package-level vars after config loads:
+```go
+// WRONG — global mutation, not concurrency-safe, affects all goroutines
+tui.ColorGreen = lipgloss.AdaptiveColor{Light: "10", Dark: "10"}
+```
+This has two failure modes:
+1. **Test pollution:** Any test that runs after a theme-mutating test sees the mutated globals. Tests become order-dependent and flaky.
+2. **Concurrency unsafety:** `View()` reads package-level vars at render time; mutating them from outside the Bubble Tea event loop (e.g., at startup before `p.Run()`) is technically a data race under `-race` even if it happens before the first render.
 
 **Why it happens:**
-Async hooks run fire-and-forget. This is by design for non-blocking hook patterns. The documentation states: "response fields like decision and continue have no effect."
+Lipgloss `Style` is a value type (safe to copy), but the *vars that hold the color constants* are global pointers to named values. Reassigning the var itself races with any reader. Developers coming from CSS or React theming assume "just swap the global" is safe.
 
 **How to avoid:**
-This behaviour is acceptable for this project (the TUI refreshing on socket signal is a nice-to-have; missing one refresh is not a bug). However:
-- The shell script must handle a missing socket gracefully (check for socket existence before `nc` or `socat`, exit 0 either way).
-- Do not rely on async hook success for any correctness guarantee. File watcher is the primary refresh mechanism; socket signal is an accelerator only.
+Do NOT mutate package-level style vars. Instead, define a `Theme` struct that holds all color/style values, construct it once at startup from the config, and pass it into `app.New()` alongside `noEmoji`. Sub-models receive the theme through their constructor or via an `Options` struct (matching the existing `tree.Options{NoEmoji: noEmoji}` pattern already in the codebase):
+```go
+type Theme struct {
+    ColorGreen lipgloss.AdaptiveColor
+    ColorAmber lipgloss.AdaptiveColor
+    // ...
+    CompleteStyle lipgloss.Style
+    PendingStyle  lipgloss.Style
+}
+
+func DefaultTheme() Theme { ... }
+func MinimalTheme() Theme { ... }
+func HighContrastTheme() Theme { ... }
+```
+Keep the existing package-level vars as the `DefaultTheme()` values — they are still valid for tests that don't configure a theme. This is a zero-breaking-change approach.
 
 **Warning signs:**
-- Assuming the hook worked because Claude Code showed no error (it never shows async errors)
-- Debugging by checking hook exit codes (impossible with async hooks)
+- `go test -race ./...` reports a race on `tui.ColorGreen` or any style var
+- Changing theme in one test causes another test to see the wrong colors
+- `styles.go` gains an `init()` function that reads config — a strong anti-pattern
 
-**Phase to address:** Claude Code plugin (Phase 4).
+**Phase to address:** Theme definition phase — define `Theme` struct before wiring any color changes; never mutate package vars.
 
 ---
 
-### Pitfall 12: tmux Detection Relies on $TMUX Being Set
+### Pitfall 4: Theme Presets Using Hardcoded Colors Break Dark/Light Terminal Adaptivity
 
 **What goes wrong:**
-`$TMUX` is set by tmux when a process is started inside a tmux session, but subprocesses launched by Claude Code (which itself runs in a shell) may not inherit `$TMUX` if the shell strips or resets the environment. The slash command logic that checks whether to spawn a tmux pane will misfire: either trying to create a split pane outside tmux (fails silently) or refusing to create one when tmux is actually available.
+The existing codebase uses `lipgloss.AdaptiveColor{Light: "2", Dark: "2"}` throughout `styles.go`. This gives lipgloss two color values to choose from based on the detected terminal background (dark vs light). When writing new theme presets, developers switch to `lipgloss.Color("10")` (a non-adaptive single value) for brevity. Now `minimal` and `high-contrast` themes render with hardcoded colors that look wrong on one of the two terminal modes — for example, a gray meant for dark mode is invisible on a light terminal.
 
 **Why it happens:**
-Environment variable propagation in nested shells is not guaranteed. Claude Code spawns hooks via `sh -c`, which may start a non-interactive shell that does not source profile files. `$TMUX` may be absent even in a tmux-managed session.
+`lipgloss.Color("10")` looks nearly identical to `lipgloss.AdaptiveColor{...}` in usage at a call site. The distinction is invisible until tested on a terminal with the opposite background. The 3-preset theme is implemented and tested on the developer's dark terminal, then ships broken for light-background users.
 
 **How to avoid:**
-Use `$TMUX` as the primary check but fall back to `tmux list-sessions 2>/dev/null` as a secondary check. In the slash command documentation, make it explicit that the user must be in a tmux session and that the command is a no-op otherwise. Do not auto-detect and auto-create tmux sessions — the project already decided against this complexity.
+All color values in all Theme preset constructors must use `lipgloss.AdaptiveColor` with explicit `Light` and `Dark` fields, never `lipgloss.Color`:
+```go
+// CORRECT — both modes handled
+Green: lipgloss.AdaptiveColor{Light: "2", Dark: "10"}
+
+// WRONG — breaks one terminal mode
+Green: lipgloss.Color("10")
+```
+For the `default` theme, copy the exact values from the existing package-level vars. For `minimal` and `high-contrast`, choose `Light` and `Dark` values independently — do not assume the same ANSI index works on both backgrounds. Add a CI or manual verification step: run `gsd-watch --theme=minimal` on both a dark and light terminal before merging.
 
 **Warning signs:**
-- `/gsd-watch` slash command does nothing when the user is in tmux
-- `tmux split-window` returns an error about no current client
+- Theme preset constructors call `lipgloss.Color(...)` instead of `lipgloss.AdaptiveColor{...}`
+- Theme only tested on one terminal background (dark or light)
+- `minimal` theme text disappears or becomes unreadable on light-mode terminals
+- `high-contrast` theme loses contrast on one of the two modes
 
-**Phase to address:** Claude Code plugin (Phase 4).
+**Phase to address:** Theme definition phase — enforce `AdaptiveColor` in all preset constructors; code review should reject any `lipgloss.Color(...)` usage in theme presets.
+
+---
+
+### Pitfall 5: Storing Theme in the Model Causes Re-render Drift When Theme Changes
+
+**What goes wrong:**
+If the `Theme` struct is stored as a field on `app.Model`, it becomes model state. The Bubble Tea architecture requires model state to only change inside `Update()`. But theme is loaded once at startup and never changes at runtime (there is no in-TUI settings panel in v1.3). Storing it in the model bloats the model snapshot and confuses the mental model of what "state" means.
+
+A subtler failure: if theme is stored in model AND the tree/header/footer sub-models also each cache a copy, a theme-change message (even a future one) would require updating 4+ places in the model tree. If any copy is missed, the TUI renders with mixed themes.
+
+**Why it happens:**
+Developers default to "everything the model needs goes in the model." Render-only configuration (theme, noEmoji) feels like it should live there. This works but creates unnecessary coupling.
+
+**How to avoid:**
+Pass theme through sub-model constructors (same as `noEmoji` already does) and store it in the `Options` struct of each sub-model. For v1.3 (theme is immutable after startup), the sub-model constructors receive the theme once at `New()` time. This is consistent with how `noEmoji` is already threaded through `tree.Options`. No `ThemeChangedMsg` is needed for v1.3 scope.
+
+If a future milestone adds live theme switching, introduce `ThemeChangedMsg` at that point — do not pre-engineer it now.
+
+**Warning signs:**
+- `app.Model` struct gains a `Theme` field next to `tree`, `header`, `footer` (it should live in Options, not top-level model state)
+- Sub-models have their own `theme` field with no corresponding update path
+- `helpView()` in `app/model.go` uses hardcoded `tui.ColorGray` instead of the theme's gray
+
+**Phase to address:** Theme wiring phase — pass `Theme` through `Options` structs, not as model state.
+
+---
+
+### Pitfall 6: `os.UserConfigDir()` Returns `~/Library/Application Support` on macOS, Not `~/.config`
+
+**What goes wrong:**
+`os.UserConfigDir()` on macOS returns `/Users/<name>/Library/Application Support`. The target config path is `~/.config/gsd-watch/config.toml`. If the code uses `os.UserConfigDir()` naively to construct the config path, it reads from `~/Library/Application Support/gsd-watch/config.toml` instead — a path users will never find or create.
+
+More specifically: Go deliberately chose the macOS convention over XDG on Darwin, and this was closed as "not planned" in Go issue #76320 (November 2025). Even if a user sets `XDG_CONFIG_HOME=/Users/name/.config`, `os.UserConfigDir()` ignores it on macOS.
+
+**Why it happens:**
+Developers assume `os.UserConfigDir()` is the portable "correct" way to find the config directory on all platforms. It is correct for the OS convention — just not the convention this project targets. The project targets CLI power users who expect `~/.config/` (the XDG convention used by most developer tools on macOS too).
+
+**How to avoid:**
+Hardcode the XDG path construction manually, with `XDG_CONFIG_HOME` fallback:
+```go
+func configDir() (string, error) {
+    if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+        return filepath.Join(xdg, "gsd-watch"), nil
+    }
+    home, err := os.UserHomeDir()
+    if err != nil {
+        return "", err
+    }
+    return filepath.Join(home, ".config", "gsd-watch"), nil
+}
+```
+Do NOT use `os.UserConfigDir()`. Document this explicitly in the config loading code.
+
+**Warning signs:**
+- Config file exists at `~/.config/gsd-watch/config.toml` but is never loaded
+- No error is logged (the file at `~/Library/Application Support/gsd-watch/config.toml` simply doesn't exist, so missing-file path is taken silently)
+- Works on Linux CI but not on developer's Mac
+
+**Phase to address:** Config loading phase — the very first thing written in config path resolution.
+
+---
+
+### Pitfall 7: Missing Config File Must Silently Use Defaults (Never Error)
+
+**What goes wrong:**
+The loader calls `os.ReadFile(configPath)` and returns the error if the file doesn't exist. `main()` treats any config error as fatal and exits. A fresh install with no `~/.config/gsd-watch/config.toml` fails to start.
+
+**Why it happens:**
+Go's idiomatic error handling propagates errors up. Developers write `if err != nil { return err }` habitually. A missing optional config file is not an error.
+
+**How to avoid:**
+```go
+data, err := os.ReadFile(configPath)
+if errors.Is(err, os.ErrNotExist) {
+    return DefaultConfig(), nil  // missing = use defaults, not an error
+}
+if err != nil {
+    fmt.Fprintf(os.Stderr, "gsd-watch: cannot read config: %v\n", err)
+    return DefaultConfig(), nil  // unreadable = use defaults, warn only
+}
+```
+The function signature must be `func LoadConfig() Config` (not `(Config, error)`) to make it impossible for callers to treat config errors as fatal.
+
+**Warning signs:**
+- `gsd-watch` exits with "no such file or directory" on a fresh install
+- Config loading returns `(Config, error)` — any error-returning function is a footgun
+- Integration test creates a temp dir without a config file and panics
+
+**Phase to address:** Config loading phase — define function signature before writing the body.
 
 ---
 
@@ -276,11 +236,12 @@ Use `$TMUX` as the primary check but fall back to `tmux list-sessions 2>/dev/nul
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Full re-parse all PLAN.md files on every fsnotify event | Simpler code, no cache invalidation logic | Latency spike with 50+ files; potential for re-parse racing with ongoing write | Never — implement event-targeted cache from the start |
-| Ignore fsnotify errors channel | Fewer code paths | Silent loss of watch events; watcher silently dies on fd exhaustion | Never — always drain the `watcher.Errors` channel in the event loop |
-| Parse STATE.md with regex for all fields | Faster to implement | STATE.md is prose; regex breaks on any LLM rephrasing | Only for "best-effort" fields (current action text); never as source of truth for status |
-| Use `os.Exit(1)` on any parse error | Simpler error handling | Crashes TUI on any malformed PLAN.md, destroying user's working session | Never — all file parsing must be fault-tolerant |
-| Skip context cancellation for background goroutines | Fewer plumbing lines | Socket and watcher goroutines outlive the TUI; process zombie on quit | Never — context cancellation is mandatory for goroutine cleanup |
+| Mutate package-level style vars for themes | Fewer lines to thread theme through constructors | Flaky tests (order-dependent), data race under `-race`, impossible to unit test | Never |
+| Use `os.UserConfigDir()` on macOS | One stdlib call instead of custom path logic | Reads wrong directory silently; user config never loaded | Never — it reads `~/Library/Application Support`, not `~/.config` |
+| `return (Config, error)` from config loader | Idiomatic Go error signature | Callers can treat missing config as fatal; app fails to start on fresh install | Never for optional config |
+| Store full `Theme` struct in `app.Model` state | Simple to access everywhere | Couples render-only config to model snapshot; complicates future live-theme switching | Acceptable if only one place stores it and sub-models receive values not the whole struct |
+| Check `if *noEmojiFlag` without `flag.Visit` | One-line merge | Config emoji setting permanently ignored when `--no-emoji=false` | Never — the silent override will confuse users |
+| Use `lipgloss.Color(...)` in theme presets | Fewer characters per color definition | Breaks dark/light adaptivity; `minimal`/`high-contrast` presets look wrong on one terminal mode | Never — always use `lipgloss.AdaptiveColor{Light: ..., Dark: ...}` |
 
 ---
 
@@ -288,14 +249,14 @@ Use `$TMUX` as the primary check but fall back to `tmux list-sessions 2>/dev/nul
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| fsnotify + new directories | Add watch only at startup, miss newly created phase dirs | Detect `fsnotify.Create` events on directories; call `watcher.Add()` dynamically |
-| fsnotify + debounce | Reset `time.Timer` without draining on Go <1.23 | Use safe stop-drain-reset pattern or `time.After` channel pattern |
-| Unix socket + startup | Call `net.Listen()` without removing stale socket file | Try-connect then remove-if-dead before listen |
-| Unix socket + shutdown | Rely on `defer os.Remove()` to clean up | Use context cancellation + signal handler; defer is not called on SIGKILL |
-| Claude Code hooks + async | Expect async hook to report errors or be retried | Design assuming async hook may silently fail; watcher is primary refresh path |
-| Claude Code hooks + Stop | Missing `stop_hook_active` guard | Always check flag; add comment explaining the guard is mandatory |
-| Lip Gloss + narrow panes | Compute `width - N` without clamping | Clamp all dimension arithmetic to a minimum; render placeholder when too narrow |
-| `gopkg.in/yaml.v3` + frontmatter | Pass full file bytes to `yaml.Unmarshal` | Split on `---` delimiters first, handle missing/malformed delimiters gracefully |
+| BurntSushi/toml + unknown keys | Ignore `md.Undecoded()` result | Always call `md.Undecoded()` and log warnings; never crash |
+| BurntSushi/toml + missing file | Propagate `os.ErrNotExist` as error | Detect with `errors.Is(err, os.ErrNotExist)`; return defaults silently |
+| `flag` + TOML config | Check `*flag == zero value` to detect "not set" | Use `flag.Visit` to build explicit-set map; CLI flag only wins when in that map |
+| lipgloss styles + theme | Reassign package-level `var` at runtime | Construct `Theme` struct at startup; pass through `Options`; never mutate globals |
+| lipgloss AdaptiveColor + theme presets | Use `lipgloss.Color(...)` for brevity | Use `lipgloss.AdaptiveColor{Light: ..., Dark: ...}` for every color in every preset |
+| `os.UserConfigDir` + macOS | Assume it returns `~/.config` | Hardcode `$XDG_CONFIG_HOME` → `~/.config` fallback; do not call `os.UserConfigDir` |
+| config path in tests | Use real `~/.config` in test | Use `t.TempDir()` + inject config path via function parameter or env var override |
+| TOML theme value | Accept any string for `theme` field | Validate against known preset names after decode; warn and fall back to default |
 
 ---
 
@@ -303,20 +264,9 @@ Use `$TMUX` as the primary check but fall back to `tmux list-sessions 2>/dev/nul
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Re-parsing all PLAN.md files on every event | TUI stutters on rapid GSD writes; goroutine backlog | Incremental cache: only re-parse the specific file path reported by fsnotify | With 50+ PLAN.md files during execute-phase (many writes/second) |
-| Rendering full tree on every `tea.Msg` | Excessive terminal writes; flickering | Only re-render when model state actually changes; return `nil` cmd when no state change in Update() | During fsnotify event storms (many events within debounce window) |
-| Spotlight indexing generating phantom events | Spurious re-parses; false "file changed" indicators | Debounce is sufficient mitigation; optionally filter events from paths containing `.spotlight-V100` | On any macOS system with Spotlight enabled |
-| Walking entire `.planning/` on every fsnotify event to rebuild watcher | `O(n)` dir walk per event | Walk only on startup and when a new directory Create event is received | With large project trees |
-
----
-
-## Security Mistakes
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| World-readable Unix socket at `/tmp/gsd-watch-<hash>.sock` | Any local process can send "refresh" signals | Socket is in `/tmp/` with default 0600 permissions; `net.Listen("unix", path)` uses umask — explicitly `chmod 0600` after creation |
-| Parsing YAML frontmatter from arbitrary `.planning/` files without size limits | A maliciously crafted YAML with deeply nested aliases causes CPU/memory exhaustion (known `yaml.v3` vulnerability) | Check file size before parsing (reject files > 1MB); this project is personal-use so risk is low but the check costs nothing |
-| Socket path derived from cwd without sanitization | Path traversal in socket name | Use `filepath.Abs(cwd)` then hash with `crc32` or `fnv` — avoid embedding raw path segments in socket name |
+| Re-reading config file on every fsnotify event | Unnecessary disk I/O; config could change mid-session unexpectedly | Read config once at startup only; v1.3 has no live-reload | N/A for v1.3 scope |
+| Constructing `lipgloss.NewStyle()` inside `View()` | Style objects allocated per render frame; GC pressure | Construct all styles once in `Theme` struct at startup; reuse in `View()` | High-frequency renders (e.g., rapid key presses) |
+| Calling `ThemeFromName()` inside `View()` or `Update()` | Allocates new Theme struct on every render/update cycle | Resolve theme name once in `app.New()`; store resolved `Theme` in `Options` | Visible render latency during scrolling with large trees |
 
 ---
 
@@ -324,36 +274,97 @@ Use `$TMUX` as the primary check but fall back to `tmux list-sessions 2>/dev/nul
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| No "too narrow" message — TUI just corrupts | User sees garbage characters, assumes TUI is broken | Detect width < minWidth (e.g., 30 cols) and render single-line "pane too narrow" message |
-| Panic in tea.Cmd leaves terminal in raw mode | User must manually run `reset` to recover terminal | Recover panics in all background goroutines; always call `p.Quit()` on unrecoverable error, never `os.Exit()` directly inside a goroutine |
-| First render before file parse completes shows empty tree | Looks broken; user may assume no project is loaded | Show explicit "loading..." state in initial model; transition to tree once first parse completes |
-| Missing/malformed files cause silent empty state | User sees empty tree but no indication of why | Log warnings to a debug log file; surface "N files could not be parsed" in footer |
-| No visual feedback when socket signal received | User cannot tell if the "instant refresh" is working | Flash a subtle indicator (e.g., update "last-updated" timestamp) on every signal-triggered refresh |
+| No warning for unknown config keys | User typos `theem = "dark"`, theme silently stays default, user assumes bug | Log `gsd-watch: unknown config key "theem"` to stderr on startup |
+| No warning for invalid theme name | User sets `theme = "dracula"`, silently falls back to default | Log `gsd-watch: unknown theme "dracula", using "default"` to stderr |
+| Help overlay doesn't mention config file path | User doesn't know config exists | Help overlay (`?`) must show the exact config file path (PROJECT.md v1.3 goal) |
+| Config file created automatically on first run | User surprised by new file in `~/.config/` | Never auto-create config; only read if it exists |
+| Theme looks right on dark terminal, broken on light | Light-mode users see invisible or low-contrast text | Test each preset on both dark and light terminal backgrounds before shipping |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **fsnotify watcher:** Verify `watcher.Errors` channel is drained in the event loop — silently closing the watcher on error is invisible
-- [ ] **Socket cleanup:** Verify the socket file is removed after `q` press, after `Ctrl+C`, AND after `kill -9` (the last one won't be cleaned; verify behavior is graceful, not a crash on next start)
-- [ ] **Graceful file errors:** Verify TUI stays alive and shows partial data when any single PLAN.md is malformed YAML
-- [ ] **Terminal reset:** Verify terminal state is restored after `q`, after `Ctrl+C`, and after panic in a background goroutine
-- [ ] **Narrow pane:** Verify TUI renders without corruption in a 25-column tmux pane
-- [ ] **High-frequency writes:** Verify debounce works correctly during a GSD execute-phase that writes multiple files rapidly
-- [ ] **Stop hook guard:** Verify `stop_hook_active` check is present in the hook script before any blocking logic is ever added
-- [ ] **New directory:** Verify a new phase directory created after TUI startup is automatically watched
+- [ ] **Config missing file:** Verify `gsd-watch` starts correctly with no `~/.config/gsd-watch/config.toml` present — use a clean `t.TempDir()` in tests
+- [ ] **Config unknown keys:** Verify a config file with `theem = "dark"` logs a warning but does not crash or fail silently
+- [ ] **Flag precedence:** Verify `--no-emoji` on CLI overrides `emoji = true` in config; and that absence of `--no-emoji` allows config to set emoji mode
+- [ ] **Config path on macOS:** Verify config is read from `~/.config/gsd-watch/config.toml`, NOT `~/Library/Application Support/gsd-watch/config.toml`
+- [ ] **Theme mutation:** Verify `go test -race ./...` passes after theme wiring; no mutations to package-level style vars
+- [ ] **Theme fallback:** Verify invalid `theme = "unknown"` falls back to `default` with a warning, not a crash
+- [ ] **Help overlay config path:** Verify `?` overlay shows the config file path (exact path, not just the directory)
+- [ ] **Theme sub-model reach:** Verify header, footer, tree, and help overlay all respect the active theme (no hardcoded color references remaining in their render paths)
+- [ ] **AdaptiveColor in presets:** Verify every color in `MinimalTheme()` and `HighContrastTheme()` uses `lipgloss.AdaptiveColor{Light: ..., Dark: ...}`, not `lipgloss.Color(...)`
+- [ ] **Light terminal test:** Verify all three theme presets are readable on a light-background terminal (iTerm2 or Terminal.app with light profile)
 
 ---
 
 ## Recovery Strategies
 
+When pitfalls occur despite prevention, how to recover.
+
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Stale socket prevents startup | LOW | `rm /tmp/gsd-watch-*.sock` — startup try-connect logic handles this automatically in next version |
-| Terminal left in raw mode after panic | LOW | Run `reset` in shell; investigate panic cause with debug log |
-| fd exhaustion in watcher | MEDIUM | Restart TUI; reduce watched directories by pruning deeply nested dirs; check `ulimit -n` |
-| Goroutine leak (socket or watcher running after quit) | LOW | Kill process with `pkill gsd-watch`; fix: add context cancellation in Phase 3 |
-| yaml.v3 alias bomb on crafted file | LOW | Delete or fix malformed file; add file-size guard in parser |
+| `os.UserConfigDir()` used instead of XDG path | LOW | Change the one call site in `config.go`; re-run tests. No data migration needed — user config simply was never loaded from the wrong path |
+| Package-level vars mutated for theme | MEDIUM | Extract `Theme` struct (see Pitfall 3 pattern); mechanically replace ~10-15 call sites in `view.go`; fix any failing race tests. All changes are in `styles.go` and `tree/view.go` |
+| `(Config, error)` signature already in callers | LOW | Change signature to `Config` only; move error handling inside the function; update the 1-2 call sites in `main.go` |
+| flag/config merge broken — `flag.Visit` missing | LOW | Add `flag.Visit` block to `main.go` after `flag.Parse()`; no other files change |
+| Hardcoded `lipgloss.Color(...)` in theme presets | LOW | Replace each instance with `lipgloss.AdaptiveColor{Light: ..., Dark: ...}`; confined to theme preset constructors in `styles.go` |
+| Config tests touching real `~/.config/` | LOW | Add `path string` parameter to `LoadConfig()`; update tests to use `t.TempDir()`; takes under an hour |
+| Theme stored in `app.Model` state | MEDIUM | Move `Theme` out of model fields into `Options` struct; thread through `SetOptions()` calls; risk is limited to `app/model.go` and `tree/model.go` |
+
+---
+
+## Testing Pitfalls
+
+### Pitfall: Config Tests That Touch Real `~/.config/`
+
+**What goes wrong:**
+Config loading tests call `LoadConfig()` which reads from the real `~/.config/gsd-watch/config.toml` on the developer's machine (or CI). Tests pass locally because the developer has a config file, fail on CI where the path doesn't exist, or — worse — tests mutate the developer's real config.
+
+**How to avoid:**
+Extract the config path as a parameter. The loader must accept a path, not compute it internally:
+```go
+func LoadConfigFrom(path string) Config    // used by tests
+func LoadConfig() Config {                 // used by main — resolves path then calls LoadConfigFrom
+    return LoadConfigFrom(configFilePath())
+}
+```
+In tests:
+```go
+func TestLoadConfig_Theme(t *testing.T) {
+    dir := t.TempDir()
+    path := filepath.Join(dir, "config.toml")
+    os.WriteFile(path, []byte(`theme = "minimal"`), 0600)
+    cfg := LoadConfigFrom(path)
+    // assert
+}
+```
+`t.TempDir()` is automatically cleaned up after the test. Never use `os.TempDir()` directly (no automatic cleanup). Never hardcode paths inside the loader.
+
+**Warning signs:**
+- Config tests pass on developer machine, fail in CI (CI has no config file)
+- Test output changes depending on developer's personal `~/.config/gsd-watch/config.toml`
+- `LoadConfig()` has no injectable path parameter
+
+**Phase to address:** Config loading phase — define the function signature as `LoadConfigFrom(path string)` from the start.
+
+---
+
+### Pitfall: Theme Tests That Depend on Package-Level Style Var State
+
+**What goes wrong:**
+A test for the `minimal` theme calls a function that mutates `tui.PendingStyle`. A later test for the `default` theme expects the original `tui.PendingStyle` value. The tests fail in any order and are very hard to debug because the failure is in the assertion, not the mutation.
+
+**How to avoid:**
+Theme tests must operate on `Theme` struct instances, not package-level vars:
+```go
+func TestMinimalTheme_PendingColor(t *testing.T) {
+    theme := MinimalTheme()
+    // assert on theme.PendingStyle, not tui.PendingStyle
+}
+```
+Package-level vars in `styles.go` should be treated as read-only constants for tests. If a test needs to verify that `View()` uses the right theme colors, pass the theme through `Options` and assert on the rendered output.
+
+**Phase to address:** Theme definition phase — enforce the `Theme` struct approach before any test is written.
 
 ---
 
@@ -361,40 +372,32 @@ Use `$TMUX` as the primary check but fall back to `tmux list-sessions 2>/dev/nul
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Model mutation outside Update() | Phase 1: Core TUI scaffold | `go test -race` passes; no mutex in model struct |
-| Send() before Run() deadlock | Phase 1: Core TUI scaffold | All background goroutines start from `Init()` commands |
-| Narrow pane rendering panic | Phase 1: Core TUI scaffold | TUI renders correctly in 25-column pane without panic |
-| kqueue fd exhaustion | Phase 2: File watcher | `lsof -p <pid>` fd count stable under 200 after startup |
-| Missing watch for new directories | Phase 2: File watcher | Creating a new dir in `.planning/` while TUI runs triggers refresh |
-| Timer.Reset() race | Phase 2: File watcher | `go test -race` on debounce logic; or target Go 1.23+ |
-| YAML frontmatter delimiter fragility | Phase 2: File watcher / parsing | Malformed PLAN.md test cases; zero crashes on parse errors |
-| Stale socket on restart | Phase 3: Unix socket IPC | Kill -9 then re-launch succeeds; no "address already in use" |
-| Socket goroutine not stopped | Phase 3: Unix socket IPC | Socket file removed after `q`; `ps` shows no zombie process |
-| Stop hook infinite loop | Phase 4: Claude Code plugin | `stop_hook_active` guard present in script; manual test of repeated Stop |
-| Async hook silent failure | Phase 4: Claude Code plugin | TUI still refreshes via watcher when hook is disabled; no crash |
-| tmux detection failure | Phase 4: Claude Code plugin | `/gsd-watch` slash command works in tmux; graceful message outside tmux |
+| Zero value vs not-set in flag/config merge | Config loading phase | `flag.Visit` pattern present in code; test with explicit `--no-emoji=false` vs absent |
+| Unknown TOML keys silently dropped | Config loading phase | `md.Undecoded()` check in loader; test with unknown key logs warning |
+| Package-level style var mutation | Theme definition phase | `go test -race` green; no `tui.ColorX = ...` assignments anywhere |
+| Hardcoded `lipgloss.Color` in theme presets breaks adaptivity | Theme definition phase | Code review: no `lipgloss.Color(...)` in preset constructors; manual light-terminal test |
+| Theme stored as model state (wrong layer) | Theme wiring phase | `app.Model` struct has no `Theme` field; theme only in `Options` |
+| `os.UserConfigDir()` on macOS wrong dir | Config loading phase | Unit test with `XDG_CONFIG_HOME` set and unset; verify `~/Library/...` never used |
+| Missing config file treated as error | Config loading phase | Test with nonexistent path returns defaults, no error |
+| Config tests touching real `~/.config/` | Config loading phase | All config tests use `t.TempDir()` + `LoadConfigFrom(path)` |
+| Theme tests depending on global var state | Theme definition phase | Tests operate on `Theme` struct instances; no package-var assignment in tests |
+| `ThemeFromName()` called per render frame | Theme wiring phase | `ThemeFromName()` call only in `app.New()`; `View()` and `Update()` never call it |
 
 ---
 
 ## Sources
 
-- [Bubble Tea concurrency and goroutines (DeepWiki)](https://deepwiki.com/charmbracelet/bubbletea/5.1-concurrency-and-goroutines)
-- [Tips for building Bubble Tea programs — leg100.github.io](https://leg100.github.io/en/posts/building-bubbletea-programs/)
-- [Injecting messages from outside the program loop — bubbletea issue #25](https://github.com/charmbracelet/bubbletea/issues/25)
-- [Race condition on repaint fix — bubbletea PR #330](https://github.com/charmbracelet/bubbletea/pull/330)
-- [Teardown-related deadlock and race condition fixes — bubbletea PR #1373](https://github.com/charmbracelet/bubbletea/pull/1373)
-- [fsnotify user-space recursive watcher discussion — issue #18](https://github.com/fsnotify/fsnotify/issues/18)
-- [kqueue "too many open files" — notify-rs issue #596](https://github.com/notify-rs/notify/issues/596)
-- [Spotlight indexing extra events — fsnotify issue #15](https://github.com/fsnotify/fsnotify/issues/15)
-- [Go timer reset race condition — blogtitle.github.io](https://blogtitle.github.io/go-advanced-concurrency-patterns-part-2-timers/)
-- [Go 1.23 timer reset fix — antonz.org](https://antonz.org/timer-reset/)
-- [Unix domain socket file not removed on exit — golang issue #70985](https://github.com/golang/go/issues/70985)
-- [net.UnixListener.Close() removes socket file — Golang-nuts discussion](https://groups.google.com/g/Golang-nuts/c/UtBR4IfgaEw)
-- [Claude Code hooks reference — official docs](https://code.claude.com/docs/en/hooks)
-- [Claude Code async hooks explainer — reading.sh](https://reading.sh/claude-code-async-hooks-what-they-are-and-when-to-use-them-61b21cd71aad)
-- [Width truncation broke lipgloss border rendering — charmbracelet/x issue #123](https://github.com/charmbracelet/x/issues/123)
-- [gopkg.in/yaml.v3 — official package docs](https://pkg.go.dev/gopkg.in/yaml.v3)
+- [BurntSushi/toml pkg.go.dev — Decode, MetaData.Undecoded()](https://pkg.go.dev/github.com/BurntSushi/toml)
+- [Go issue #21226 — flag.IsSet proposal (not planned)](https://github.com/golang/go/issues/21226)
+- [Go issue #76320 — os.UserConfigDir should respect XDG_CONFIG_HOME on Darwin (closed: not planned, Nov 2025)](https://github.com/golang/go/issues/76320)
+- [flag.Visit pattern for detecting explicitly set flags — golang/go discussion](https://github.com/golang/go/issues/21226)
+- [lipgloss AdaptiveColor — charmbracelet/lipgloss v1.1.0](https://pkg.go.dev/github.com/charmbracelet/lipgloss@v1.1.0)
+- [lipgloss Style is a value type (safe copy semantics) — charmbracelet/lipgloss](https://github.com/charmbracelet/lipgloss)
+- [lipgloss compat package global-var impurity acknowledgment — lipgloss v2 docs](https://pkg.go.dev/github.com/charmbracelet/lipgloss/v2/compat)
+- [t.TempDir() automatic cleanup — Go testing package docs](https://pkg.go.dev/testing#T.TempDir)
+- [Bubble Tea model context and render-only state — bubbletea issue #1010](https://github.com/charmbracelet/bubbletea/issues/1010)
+- [Rob Pike on flag default-vs-set detection — golang/go issue #21226 comment](https://github.com/golang/go/issues/21226)
 
 ---
-*Pitfalls research for: Go Bubble Tea TUI with fsnotify, Unix socket IPC, YAML frontmatter, Claude Code plugin*
-*Researched: 2026-03-18*
+*Pitfalls research for: v1.3 TOML config + theme system added to existing Go Bubble Tea TUI*
+*Researched: 2026-03-26*

@@ -4,7 +4,7 @@
 
 - ✅ **v1.0 gsd-watch MVP** — Phases 1-6 (shipped 2026-03-23)
 - ✅ **v1.1 Parser Reliability + Observability + Quick Tasks** — Phases 7-10 (shipped 2026-03-25)
-- 📋 **v1.2 Archived Milestone Visibility** — Phases 11-12 (planned)
+- ✅ **v1.2 Archived Milestone Visibility** — Phases 11-12 (shipped 2026-03-26)
 - 📋 **v1.3 Settings** — Phases 13-15 (planned)
 
 ## Phases
@@ -35,50 +35,15 @@ Full phase details: `.planning/milestones/v1.1-ROADMAP.md`
 
 </details>
 
----
+<details>
+<summary>✅ v1.2 Archived Milestone Visibility (Phases 11-12) — SHIPPED 2026-03-26</summary>
 
-## Milestone v1.2: Archived Milestone Visibility
+- [x] Phase 11: Archive Detection (2/2 plans) — completed 2026-03-25
+- [x] Phase 12: Archive Display (2/2 plans) — completed 2026-03-26
 
-**Goal:** Completed milestones are acknowledged in the TUI without cluttering current work.
+Full phase details: `.planning/milestones/v1.2-ROADMAP.md`
 
-**Phases:** 11, 12 (continuing from v1.1 Phase 10)
-
-### Phase 11: Archive Detection
-**Goal**: The parser detects archived milestone directories and returns structured metadata (name, phase count, completion date) for each
-**Depends on**: Phase 10
-**Requirements**: ARC-01
-**Success Criteria** (what must be TRUE):
-  1. Parser returns one `ArchivedMilestone` struct per archived dir with name, phase count, and completion date populated
-  2. Phase count derived from subdirectory count inside the archived dir
-  3. Completion date read from metadata inside the archive; left empty (not crash) if absent
-  4. Malformed or missing archive dir is skipped with optional `--debug` log, no crash
-  5. No archive directory present returns empty list with no error
-**Plans**: 2 plans
-Plans:
-- [x] 11-01-PLAN.md — TDD: ArchivedMilestone struct, test fixtures, parseArchivedMilestones implementation
-- [ ] 11-02-PLAN.md — Wire parseArchivedMilestones into ParseProject + integration tests
-
-### Phase 12: Archive Display
-**Goal**: Users see a collapsed, non-interactive row per completed milestone below the active section in the TUI tree
-**Depends on**: Phase 11
-**Requirements**: ARC-02
-**Success Criteria** (what must be TRUE):
-  1. Each archived milestone renders as `▸ v1.0 — 6 phases ✓` below the active section and Quick Tasks section
-  2. j/k and arrow keys skip archive rows entirely; h/l produces no expand/collapse action on them
-  3. No archive section or placeholder appears when there are no archived milestones
-  4. Archive rows render in a visually distinct dimmed/muted style
-  5. New archive dir triggers a TUI update within 300ms via the existing fsnotify watcher
-**Plans**: 2 plans
-Plans:
-- [x] 12-01-PLAN.md
-- [x] 12-02-PLAN.md
-
-### v1.2 Progress
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 11. Archive Detection | 1/2 | In Progress|  |
-| 12. Archive Display | 2/2 | Complete    | 2026-03-26 |
+</details>
 
 ---
 
