@@ -172,7 +172,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.Height = vpHeight
 		m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
 		m.ready = true
-		return m, nil
+		return m, func() tea.Msg { return tea.ClearScreen() }
 
 	case tui.ParsedMsg:
 		// Live data flows here from both ParseFull (startup) and cache.Update (incremental).

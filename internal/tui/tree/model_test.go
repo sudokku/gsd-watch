@@ -857,7 +857,7 @@ func TestArchiveZoneHeight_WithArchives(t *testing.T) {
 	}
 }
 
-// TestArchiveZone_Content verifies ArchiveZone() returns padded separator + archive rows.
+// TestArchiveZone_Content verifies ArchiveZone() returns an unpadded separator + D-10-padded archive rows.
 func TestArchiveZone_Content(t *testing.T) {
 	data := mockProjectWithArchives()
 	m := tree.New().SetData(data)
@@ -870,10 +870,17 @@ func TestArchiveZone_Content(t *testing.T) {
 	if len(lines) != 3 {
 		t.Errorf("expected 3 lines in ArchiveZone output, got %d\nOutput:\n%s", len(lines), az)
 	}
-	// Each line should have 1-char left padding
+	// Archive rows (lines 1+) should have 1-char left padding; the separator (line 0) should not.
 	for i, line := range lines {
-		if len(line) > 0 && line[0] != ' ' {
-			t.Errorf("line %d should start with space (D-10 padding), got: %q", i, line)
+		if i == 0 {
+			// Separator renders at full width with no left-padding.
+			if len(line) > 0 && line[0] == ' ' {
+				t.Errorf("separator line (line 0) should NOT start with a space, got: %q", line)
+			}
+		} else {
+			if len(line) > 0 && line[0] != ' ' {
+				t.Errorf("archive row (line %d) should start with space (D-10 padding), got: %q", i, line)
+			}
 		}
 	}
 }

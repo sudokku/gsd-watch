@@ -5,16 +5,17 @@ BINARY_AMD64 := build/gsd-watch-darwin-amd64
 INSTALL_DIR  := $(HOME)/.local/bin
 LDFLAGS      := -ldflags="-s -w"
 CMD_SRC      := ./cmd/gsd-watch/
+CODESIGN_ID  := Apple Development
 
 build: $(BINARY_ARM64) $(BINARY_AMD64)
 
 $(BINARY_ARM64):
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $@ $(CMD_SRC)
-	codesign --sign - $@
+	codesign --force --sign "$(CODESIGN_ID)" $@
 
 $(BINARY_AMD64):
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $@ $(CMD_SRC)
-	codesign --sign - $@
+	codesign --force --sign "$(CODESIGN_ID)" $@
 
 install: build
 	mkdir -p $(INSTALL_DIR)

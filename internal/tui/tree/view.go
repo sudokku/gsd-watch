@@ -43,20 +43,19 @@ func RenderArchiveRow(am parser.ArchivedMilestone, noEmoji bool) string {
 }
 
 // RenderArchiveSeparator renders the "- - Archived Milestones - - -..." separator line
-// padded to innerWidth = width-1 (compensating for D-10 left-padding).
+// at full width (no D-10 offset — the caller must not add left-padding to this line).
 func RenderArchiveSeparator(width int) string {
-	innerWidth := width - 1
 	label := " Archived Milestones "
 	prefix := "- -"
 	body := prefix + label
-	remaining := innerWidth - len(body)
+	remaining := width - len(body)
 	if remaining < 0 {
 		remaining = 0
 	}
 	dashes := strings.Repeat(" -", (remaining/2)+1)
 	result := body + dashes
-	if len(result) > innerWidth {
-		result = result[:innerWidth]
+	if len(result) > width {
+		result = result[:width]
 	}
 	return tui.PendingStyle.Render(result)
 }
@@ -378,16 +377,23 @@ func (t TreeModel) ArchiveZoneHeight() int {
 	return len(t.data.ArchivedMilestones) + 1 // separator + rows
 }
 
-// ArchiveZone renders the pinned archive zone with D-10 left-padding applied.
-// Returns empty string when no archives exist.
+// ArchiveZone renders the pinned archive zone: separator at full width (no D-10 padding),
+// archive rows with D-10 left-padding. Returns empty string when no archives exist.
 func (t TreeModel) ArchiveZone(width int) string {
 	content := RenderArchiveZone(t.data.ArchivedMilestones, width, t.opts.NoEmoji)
 	if content == "" {
 		return ""
 	}
-	var padded []string
-	for _, line := range strings.Split(content, "\n") {
-		padded = append(padded, " "+line)
+	lines := strings.Split(content, "\n")
+	padded := make([]string, 0, len(lines))
+	for i, line := range lines {
+		if i == 0 {
+			// Separator spans full width — no D-10 left-padding.
+			padded = append(padded, line)
+		} else {
+			// Archive rows get D-10 left-padding (1 char), matching the main tree content.
+			padded = append(padded, " "+line)
+		}
 	}
 	return strings.Join(padded, "\n")
 }
