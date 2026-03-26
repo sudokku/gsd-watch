@@ -276,7 +276,7 @@ func TestViewStatusIcons(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
 	m = pressKey(t, m, "l") // expand phase 1
-	out := m.View(80)
+	out := m.View(80, 999)
 	// phase 1 status is "in_progress" -> arrow icon
 	// plan 0 status is "complete" -> check icon
 	// plan 2 status is "pending" -> circle icon
@@ -292,7 +292,7 @@ func TestViewActiveMarker(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
 	m = pressKey(t, m, "l") // expand phase 1
-	out := m.View(80)
+	out := m.View(80, 999)
 	if !strings.Contains(out, "← now") {
 		t.Errorf("View output missing '← now' marker\nOutput:\n%s", out)
 	}
@@ -302,7 +302,7 @@ func TestViewActiveMarker(t *testing.T) {
 func TestViewBadges(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
-	out := m.View(80)
+	out := m.View(80, 999)
 	// Phase 1 has badges "discussed" and "researched"
 	if !strings.Contains(out, "💬") {
 		t.Errorf("View output missing badge 💬\nOutput:\n%s", out)
@@ -316,7 +316,7 @@ func TestViewBadges(t *testing.T) {
 func TestViewTooNarrow(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
-	out := m.View(20)
+	out := m.View(20, 999)
 	if !strings.Contains(out, "too narrow") {
 		t.Errorf("expected 'too narrow' for narrow width, got: %s", out)
 	}
@@ -326,7 +326,7 @@ func TestViewTooNarrow(t *testing.T) {
 func TestViewCollapsedHidesPlans(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
-	out := m.View(80)
+	out := m.View(80, 999)
 	// When all phases are collapsed, no plan titles should appear
 	planTitles := []string{
 		"Foundation: types, messages, mock data",
@@ -344,7 +344,7 @@ func TestViewCollapsedHidesPlans(t *testing.T) {
 // TestView_NoProject verifies that an empty project shows the "No GSD project found" message.
 func TestView_NoProject(t *testing.T) {
 	m := tree.New() // no data set, empty project
-	out := m.View(80)
+	out := m.View(80, 999)
 	if !strings.Contains(out, "No GSD project found") {
 		t.Errorf("expected 'No GSD project found' in empty project view\nOutput:\n%s", out)
 	}
@@ -363,7 +363,7 @@ func TestView_NoPlansYet(t *testing.T) {
 		m = pressKey(t, m, "j")
 	}
 	m = pressKey(t, m, "l") // expand phase 6
-	out := m.View(80)
+	out := m.View(80, 999)
 	if !strings.Contains(out, "(no plans yet)") {
 		t.Errorf("expected '(no plans yet)' for empty phase\nOutput:\n%s", out)
 	}
@@ -381,7 +381,7 @@ func TestView_CompletedPhaseDimmed(t *testing.T) {
 		m = pressKey(t, m, "j")
 	}
 	m = pressKey(t, m, "l") // expand phase 5
-	out := m.View(80)
+	out := m.View(80, 999)
 	// The output should contain the phase name
 	if !strings.Contains(out, "Phase 5: TUI Polish") {
 		t.Errorf("expected 'Phase 5: TUI Polish' in output\nOutput:\n%s", out)
@@ -428,7 +428,7 @@ func TestView_PhaseNameWrapping(t *testing.T) {
 	// Use a narrow width (32) to force wrapping on long phase names.
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
-	out := m.View(32)
+	out := m.View(32, 999)
 	// At width 32, phase names longer than ~25 chars should wrap.
 	// Just verify it doesn't crash and produces output with the phase name text.
 	if !strings.Contains(out, "Core TUI") {
@@ -440,7 +440,7 @@ func TestView_PhaseNameWrapping(t *testing.T) {
 func TestView_Padding(t *testing.T) {
 	data := mock.MockProject()
 	m := tree.New().SetData(data)
-	out := m.View(80)
+	out := m.View(80, 999)
 	lines := strings.Split(out, "\n")
 	checked := 0
 	for i, line := range lines {
@@ -535,7 +535,7 @@ func TestQuickTasksEmptySection(t *testing.T) {
 		m = pressKey(t, m, "j")
 	}
 	m = pressKey(t, m, "l") // expand
-	out := m.View(80)
+	out := m.View(80, 999)
 	if !strings.Contains(out, "(no quick tasks)") {
 		t.Errorf("expected '(no quick tasks)' placeholder\nOutput:\n%s", out)
 	}
@@ -549,7 +549,7 @@ func TestQuickTasksViewIcons(t *testing.T) {
 		m = pressKey(t, m, "j")
 	}
 	m = pressKey(t, m, "l") // expand
-	out := m.View(80)
+	out := m.View(80, 999)
 	// complete task shows check icon, in_progress shows arrow
 	if !strings.Contains(out, "fix gsd watch sidebar closing") {
 		t.Errorf("expected quick task display name in output\nOutput:\n%s", out)
@@ -586,7 +586,7 @@ func TestView_PhaseActiveWhenCursorOnChildPlan(t *testing.T) {
 		t.Errorf("expected IsPhaseActive(rows, 0) to be true when cursor is on child plan at index 1")
 	}
 
-	out := m.View(80)
+	out := m.View(80, 999)
 	// Phase 1 badges ([disc] [rsrch]) should appear in the output regardless of style
 	if !strings.Contains(out, "[disc]") {
 		t.Errorf("expected badge '[disc]' in output when cursor on child plan\nOutput:\n%s", out)
@@ -612,7 +612,7 @@ func TestView_BadgeInheritsDimForCompletedPhase(t *testing.T) {
 	m = pressKey(t, m, "l") // expand phase 5
 
 	// cursor is on phase 5 (active) — badges should appear
-	out := m.View(80)
+	out := m.View(80, 999)
 	if !strings.Contains(out, "[disc]") {
 		t.Errorf("expected badge '[disc]' for phase 5 (active cursor)\nOutput:\n%s", out)
 	}
@@ -643,7 +643,7 @@ func TestView_BadgeInheritsDimForCompletedPhase(t *testing.T) {
 	}
 
 	// Badges should still appear (dimmed via PendingStyle but present as text)
-	out2 := m.View(80)
+	out2 := m.View(80, 999)
 	if !strings.Contains(out2, "[disc]") {
 		t.Errorf("expected badge '[disc]' for phase 5 (dimmed, cursor elsewhere)\nOutput:\n%s", out2)
 	}
@@ -664,7 +664,7 @@ func TestView_BadgeUnstyledForNonCompleteNonActivePhase(t *testing.T) {
 		t.Errorf("expected IsPhaseActive(rows, 0) to be false when cursor is on phase 2")
 	}
 
-	out := m.View(80)
+	out := m.View(80, 999)
 	// Phase 1 badges should still appear as plain text
 	if !strings.Contains(out, "[disc]") {
 		t.Errorf("expected '[disc]' badge to appear even when phase 1 not active\nOutput:\n%s", out)

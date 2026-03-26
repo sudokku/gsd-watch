@@ -136,12 +136,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Expand-all / collapse-all delegation (D-07).
 		if key.Matches(msg, m.keys.ExpandAll) {
 			m.tree = m.tree.ExpandAll()
-			m.viewport.SetContent(m.tree.View(m.width))
+			m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
 			return m, nil
 		}
 		if key.Matches(msg, m.keys.CollapseAll) {
 			m.tree = m.tree.CollapseAll()
-			m.viewport.SetContent(m.tree.View(m.width))
+			m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
 			m.viewport.SetYOffset(0)
 			return m, nil
 		}
@@ -150,7 +150,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.tree, cmd = m.tree.Update(msg)
 		// Sync viewport content and scroll to keep cursor visible.
-		m.viewport.SetContent(m.tree.View(m.width))
+		m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
 		cursorLine := m.tree.RenderedCursorLine(m.width)
 		if cursorLine < m.viewport.YOffset {
 			m.viewport.SetYOffset(cursorLine)
@@ -168,7 +168,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		vpHeight := max(msg.Height-headerH-footerH, 0)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = vpHeight
-		m.viewport.SetContent(m.tree.View(m.width))
+		m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
 		m.ready = true
 		return m, nil
 
@@ -182,7 +182,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			vpHeight := max(m.height-m.header.Height()-m.footer.Height(), 0)
 			m.viewport.Height = vpHeight
 		}
-		m.viewport.SetContent(m.tree.View(m.width))
+		m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
 		return m, nil
 
 	case tui.FileChangedMsg:
@@ -298,7 +298,7 @@ func (m Model) View() string {
 		return helpView(m.width, m.noEmoji)
 	}
 	// Sync viewport content with current tree state.
-	m.viewport.SetContent(m.tree.View(m.width))
+	m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		m.header.View(m.width),

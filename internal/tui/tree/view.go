@@ -96,9 +96,11 @@ func (t TreeModel) IsPhaseActive(rows []Row, phaseRowIdx int) bool {
 	return false
 }
 
-// View renders the tree as a string for the given terminal width.
+// View renders the tree as a string for the given terminal width and height.
+// The available height is split between a scrollable zone (phases + quick tasks)
+// and a pinned archive zone at the bottom (separator + archive rows).
 // If width < tui.MinWidth, it returns a "too narrow" placeholder.
-func (t TreeModel) View(width int) string {
+func (t TreeModel) View(width, height int) string {
 	if width < tui.MinWidth {
 		return "◀ too narrow"
 	}
@@ -358,7 +360,34 @@ func (t TreeModel) View(width int) string {
 	for _, line := range strings.Split(strings.Join(lines, "\n"), "\n") {
 		padded = append(padded, " "+line)
 	}
-	return strings.Join(padded, "\n")
+
+	// Two-pass render: scrollable zone + pinned archive zone (D-01, D-02).
+	archiveContent := RenderArchiveZone(t.data.ArchivedMilestones, width, t.opts.NoEmoji)
+	if archiveContent == "" {
+		// No archives — return scrollable content as-is, no height capping needed.
+		return strings.Join(padded, "\n")
+	}
+
+	// D-02: pinnedH = len(archives) + 1 (separator + archive rows).
+	pinnedH := len(t.data.ArchivedMilestones) + 1
+	scrollH := height - pinnedH
+	if scrollH < 0 {
+		scrollH = 0
+	}
+
+	// Cap scrollable content to scrollH lines.
+	if len(padded) > scrollH {
+		padded = padded[:scrollH]
+	}
+
+	// Apply D-10 left-padding to archive zone lines.
+	var archivePadded []string
+	for _, line := range strings.Split(archiveContent, "\n") {
+		archivePadded = append(archivePadded, " "+line)
+	}
+
+	// Join scrollable + pinned zones.
+	return strings.Join(padded, "\n") + "\n" + strings.Join(archivePadded, "\n")
 }
 
 // RenderedCursorLine returns the line index (0-based) of the cursor row's
