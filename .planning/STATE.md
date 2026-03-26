@@ -193,7 +193,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-26 - Completed quick task 260326-qai: fix TUI trailing column visual debris on resize
+Last activity: 2026-03-26 - Completed quick task 260326-svs: fix no-project placeholder shown when only archived milestones exist
 Last session: 2026-03-26T18:51:10.379Z
 Stopped at: Quick task 260326-svs complete
 Resume file: None

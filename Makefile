@@ -11,11 +11,11 @@ build: $(BINARY_ARM64) $(BINARY_AMD64)
 
 $(BINARY_ARM64):
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $@ $(CMD_SRC)
-	codesign --force --sign "$(CODESIGN_ID)" $@
+	codesign --force --sign "$(CODESIGN_ID)" --options runtime --timestamp $@
 
 $(BINARY_AMD64):
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $@ $(CMD_SRC)
-	codesign --force --sign "$(CODESIGN_ID)" $@
+	codesign --force --sign "$(CODESIGN_ID)" --options runtime --timestamp $@
 
 install: build
 	mkdir -p $(INSTALL_DIR)
