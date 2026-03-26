@@ -175,6 +175,7 @@ None yet.
 |---|-------------|------|--------|--------|-----------|
 | 260323-re2 | Fix gsd-watch sidebar closing immediately after opening | 2026-03-23 | cd8d9d5 | Verified | [260323-re2-fix-gsd-watch-sidebar-closing-immediatel](./quick/260323-re2-fix-gsd-watch-sidebar-closing-immediatel/) |
 | 260325-398 | Phase title stays white+bold when navigating to child plan rows | 2026-03-25 | cdc2517 | Complete | [260325-398-phase-title-stays-white-bold-when-naviga](./quick/260325-398-phase-title-stays-white-bold-when-naviga/) |
+| 260326-5f1 | Pin archived milestones zone to bottom of pane (outside viewport) | 2026-03-26 | a7ea4fe | Complete | [260326-5f1-pin-archived-milestones-zone-to-bottom-o](./quick/260326-5f1-pin-archived-milestones-zone-to-bottom-o/) |
 
 ### Blockers/Concerns
 
