@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/radu/gsd-watch/internal/config"
 	"github.com/radu/gsd-watch/internal/tui"
 	"github.com/radu/gsd-watch/internal/tui/app"
 	"github.com/radu/gsd-watch/internal/tui/mock"
@@ -21,14 +22,16 @@ func updateModel(m app.Model, msg tea.Msg) (app.Model, tea.Cmd) {
 
 // newTestModel creates a Model with a buffered events channel for testing.
 // Tests never send to the channel, so it just needs to be non-nil.
-// noEmoji=false preserves existing emoji rendering behavior.
+// Uses config.Defaults() which has Emoji=true (emoji rendering behavior).
 func newTestModel() app.Model {
-	return app.New(make(chan tea.Msg, 10), false)
+	return app.New(make(chan tea.Msg, 10), config.Defaults())
 }
 
-// newTestModelNoEmoji creates a Model with noEmoji=true for ASCII rendering tests.
+// newTestModelNoEmoji creates a Model with Emoji=false for ASCII rendering tests.
 func newTestModelNoEmoji() app.Model {
-	return app.New(make(chan tea.Msg, 10), true)
+	cfg := config.Defaults()
+	cfg.Emoji = false
+	return app.New(make(chan tea.Msg, 10), cfg)
 }
 
 func TestWindowSizeNormal(t *testing.T) {

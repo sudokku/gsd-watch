@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/radu/gsd-watch/internal/config"
 	"github.com/radu/gsd-watch/internal/parser"
 	"github.com/radu/gsd-watch/internal/tui"
 	"github.com/radu/gsd-watch/internal/tui/footer"
@@ -35,19 +36,19 @@ type Model struct {
 	cache        *parser.ProjectCache // incremental cache backed by .planning/
 	events       chan tea.Msg          // watcher event channel
 	planningRoot string               // path to .planning/ dir
-	noEmoji      bool                 // true when --no-emoji flag was passed
+	cfg          config.Config        // user configuration (emoji, theme, etc.)
 }
 
 // New returns a Model initialized with empty project data. Data arrives via
 // ParsedMsg dispatched from Init(). The events channel is created in main()
 // and passed here so the watcher goroutine and Bubble Tea runtime share it.
-// noEmoji controls whether ASCII icons/badges are used instead of emoji.
-func New(events chan tea.Msg, noEmoji bool) Model {
+// cfg holds user configuration (emoji, theme, etc.) loaded from the config file.
+func New(events chan tea.Msg, cfg config.Config) Model {
 	root, _ := os.Getwd()
 	planningRoot := filepath.Join(root, ".planning")
 	keys := tui.DefaultKeyMap()
 	t := tree.New()
-	t = t.SetOptions(tree.Options{NoEmoji: noEmoji})
+	t = t.SetOptions(tree.Options{NoEmoji: !cfg.Emoji})
 	h := header.New(parser.ProjectData{})
 	f := footer.New(parser.ProjectData{}, keys)
 	vp := viewport.New(0, 0)
@@ -61,7 +62,7 @@ func New(events chan tea.Msg, noEmoji bool) Model {
 		events:       events,
 		planningRoot: planningRoot,
 		cache:        parser.NewCache(planningRoot),
-		noEmoji:      noEmoji,
+		cfg:          cfg,
 	}
 }
 
@@ -298,7 +299,7 @@ func (m Model) View() string {
 		return "\u25c0 pane too narrow"
 	}
 	if m.helpVisible {
-		return helpView(m.width, m.noEmoji)
+		return helpView(m.width, !m.cfg.Emoji)
 	}
 	// Sync viewport content with current tree state.
 	m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
