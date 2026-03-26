@@ -106,7 +106,12 @@ func (t TreeModel) View(width, height int) string {
 
 	// Empty state (D-01): no phases in project data.
 	if len(t.data.Phases) == 0 {
-		msg := "No GSD project found.\n\nTo get started, open\nClaude Code and run:\n/gsd:new-project"
+		var msg string
+		if len(t.data.ArchivedMilestones) > 0 {
+			msg = "All milestones archived.\n\nStart a new milestone:\n/gsd:new-milestone\n\nor run a quick task:\n/gsd:quick"
+		} else {
+			msg = "No GSD project found.\n\nTo get started, open\nClaude Code and run:\n/gsd:new-project"
+		}
 		centered := lipgloss.NewStyle().
 			Width(width - 2).
 			Align(lipgloss.Center).

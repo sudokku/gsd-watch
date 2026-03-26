@@ -353,6 +353,30 @@ func TestView_NoProject(t *testing.T) {
 	}
 }
 
+// TestView_ArchivedOnly verifies that when only archived milestones exist,
+// the contextually correct message is shown — not "No GSD project found".
+func TestView_ArchivedOnly(t *testing.T) {
+	data := parser.ProjectData{
+		ArchivedMilestones: []parser.ArchivedMilestone{
+			{Name: "v1.0", PhaseCount: 4, CompletionDate: "2025-01-15"},
+		},
+	}
+	m := tree.New().SetData(data)
+	out := m.View(80, 999)
+	if strings.Contains(out, "No GSD project found") {
+		t.Errorf("expected no 'No GSD project found' when archives exist\nOutput:\n%s", out)
+	}
+	if !strings.Contains(out, "All milestones archived") {
+		t.Errorf("expected 'All milestones archived' when archives exist\nOutput:\n%s", out)
+	}
+	if !strings.Contains(out, "/gsd:new-milestone") {
+		t.Errorf("expected '/gsd:new-milestone' in archived-only view\nOutput:\n%s", out)
+	}
+	if !strings.Contains(out, "/gsd:quick") {
+		t.Errorf("expected '/gsd:quick' in archived-only view\nOutput:\n%s", out)
+	}
+}
+
 // TestView_NoPlansYet verifies that an expanded phase with no plans shows "(no plans yet)".
 func TestView_NoPlansYet(t *testing.T) {
 	data := mock.MockProject()
