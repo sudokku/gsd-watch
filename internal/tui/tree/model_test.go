@@ -5,9 +5,20 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/radu/gsd-watch/internal/parser"
 	"github.com/radu/gsd-watch/internal/tui/mock"
 	"github.com/radu/gsd-watch/internal/tui/tree"
 )
+
+// mockProjectWithArchives returns a MockProject with two ArchivedMilestones appended.
+func mockProjectWithArchives() parser.ProjectData {
+	data := mock.MockProject()
+	data.ArchivedMilestones = []parser.ArchivedMilestone{
+		{Name: "v1.0", PhaseCount: 6, CompletionDate: "2025-01-15"},
+		{Name: "v0.9", PhaseCount: 3, CompletionDate: ""},
+	}
+	return data
+}
 
 // helper to send a key press message to the tree model
 func pressKey(t *testing.T, m tree.TreeModel, key string) tree.TreeModel {
@@ -657,5 +668,113 @@ func TestView_BadgeUnstyledForNonCompleteNonActivePhase(t *testing.T) {
 	// Phase 1 badges should still appear as plain text
 	if !strings.Contains(out, "[disc]") {
 		t.Errorf("expected '[disc]' badge to appear even when phase 1 not active\nOutput:\n%s", out)
+	}
+}
+
+// --- Archive rendering helper tests ---
+
+// TestFormatArchiveDate verifies ISO date to "Mon YYYY" conversion.
+func TestFormatArchiveDate(t *testing.T) {
+	cases := []struct {
+		input string
+		want  string
+	}{
+		{"2026-03-23", "Mar 2026"},
+		{"2025-01-15", "Jan 2025"},
+		{"", ""},
+		{"not-a-date", ""},
+		{"2025-12-01", "Dec 2025"},
+	}
+	for _, c := range cases {
+		got := tree.FormatArchiveDate(c.input)
+		if got != c.want {
+			t.Errorf("FormatArchiveDate(%q) = %q, want %q", c.input, got, c.want)
+		}
+	}
+}
+
+// TestRenderArchiveRow_Emoji verifies emoji mode archive row contains expected text.
+func TestRenderArchiveRow_Emoji(t *testing.T) {
+	am := parser.ArchivedMilestone{Name: "v1.0", PhaseCount: 6, CompletionDate: "2025-01-15"}
+	out := tree.RenderArchiveRow(am, false)
+	if !strings.Contains(out, "▸ v1.0 — 6 phases ✓  Jan 2025") {
+		t.Errorf("emoji mode: expected '▸ v1.0 — 6 phases ✓  Jan 2025' in output, got: %q", out)
+	}
+}
+
+// TestRenderArchiveRow_NoEmoji verifies noEmoji mode archive row contains expected text.
+func TestRenderArchiveRow_NoEmoji(t *testing.T) {
+	am := parser.ArchivedMilestone{Name: "v1.0", PhaseCount: 6, CompletionDate: "2025-01-15"}
+	out := tree.RenderArchiveRow(am, true)
+	if !strings.Contains(out, "> v1.0 — 6 phases [done]  Jan 2025") {
+		t.Errorf("noEmoji mode: expected '> v1.0 — 6 phases [done]  Jan 2025' in output, got: %q", out)
+	}
+}
+
+// TestRenderArchiveRow_NoDate verifies that empty CompletionDate omits trailing space.
+func TestRenderArchiveRow_NoDate(t *testing.T) {
+	am := parser.ArchivedMilestone{Name: "v0.9", PhaseCount: 3, CompletionDate: ""}
+	out := tree.RenderArchiveRow(am, false)
+	if !strings.Contains(out, "▸ v0.9 — 3 phases ✓") {
+		t.Errorf("no-date: expected '▸ v0.9 — 3 phases ✓' in output, got: %q", out)
+	}
+	if strings.Contains(out, "✓  ") {
+		t.Errorf("no-date: output should not contain trailing double-space after checkmark, got: %q", out)
+	}
+}
+
+// TestRenderArchiveSeparator verifies separator contains label and starts with "- - ".
+func TestRenderArchiveSeparator(t *testing.T) {
+	out := tree.RenderArchiveSeparator(80)
+	if !strings.Contains(out, "Archived Milestones") {
+		t.Errorf("separator: expected 'Archived Milestones' in output, got: %q", out)
+	}
+	if !strings.HasPrefix(out, "- - ") {
+		t.Errorf("separator: expected output to start with '- - ', got: %q", out)
+	}
+}
+
+// TestRenderArchiveZone_Empty verifies empty slice returns empty string.
+func TestRenderArchiveZone_Empty(t *testing.T) {
+	out := tree.RenderArchiveZone(nil, 80, false)
+	if out != "" {
+		t.Errorf("empty archives: expected empty string, got: %q", out)
+	}
+}
+
+// TestRenderArchiveZone_NonEmpty verifies 2 milestones produce 3 lines (separator + 2 rows).
+func TestRenderArchiveZone_NonEmpty(t *testing.T) {
+	archives := []parser.ArchivedMilestone{
+		{Name: "v1.0", PhaseCount: 6, CompletionDate: "2025-01-15"},
+		{Name: "v0.9", PhaseCount: 3, CompletionDate: ""},
+	}
+	out := tree.RenderArchiveZone(archives, 80, false)
+	lines := strings.Split(out, "\n")
+	if len(lines) != 3 {
+		t.Errorf("expected 3 lines (separator + 2 rows), got %d lines\nOutput:\n%s", len(lines), out)
+	}
+	if !strings.Contains(out, "v1.0") {
+		t.Errorf("expected 'v1.0' in archive zone output, got: %q", out)
+	}
+	if !strings.Contains(out, "v0.9") {
+		t.Errorf("expected 'v0.9' in archive zone output, got: %q", out)
+	}
+}
+
+// TestArchiveRowsNotInVisibleRows verifies visibleRows excludes archive data.
+func TestArchiveRowsNotInVisibleRows(t *testing.T) {
+	data := mockProjectWithArchives()
+	m := tree.New().SetData(data)
+	rows := m.VisibleRows()
+	validKinds := map[tree.RowKind]bool{
+		tree.RowPhase:       true,
+		tree.RowPlan:        true,
+		tree.RowQuickSection: true,
+		tree.RowQuickTask:   true,
+	}
+	for i, row := range rows {
+		if !validKinds[row.Kind] {
+			t.Errorf("row %d has unexpected kind %v — archive rows must not appear in visibleRows", i, row.Kind)
+		}
 	}
 }
