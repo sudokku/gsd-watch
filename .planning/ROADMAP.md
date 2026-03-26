@@ -53,44 +53,55 @@ Full phase details: `.planning/milestones/v1.2-ROADMAP.md`
 
 **Phases:** 13, 14, 15 (continuing from v1.2 Phase 12)
 
-### Phase 13: Config File Infrastructure
-**Goal**: The app reads `~/.config/gsd-watch/config.toml` on startup and applies `emoji` and `theme` settings; a missing or malformed file silently uses defaults
-**Depends on**: Phase 12
-**Requirements**: CFG-01, CFG-02, CFG-03
-**Success Criteria** (what must be TRUE):
-  1. When `~/.config/gsd-watch/config.toml` does not exist, gsd-watch starts normally with defaults — no error, no crash
-  2. When config contains `emoji = false`, emoji is suppressed exactly as if `--no-emoji` was passed
-  3. When both `--no-emoji` flag and `emoji = true` in config are present, emoji is disabled (flag takes precedence)
-  4. When config contains `theme = "default"` or the key is absent, the TUI renders with the existing default color scheme unchanged
-  5. A config file with invalid TOML or unrecognised keys is skipped silently — gsd-watch starts with defaults
-**Plans**: 2 plans
+- [x] **Phase 13: Config Infrastructure** — New `internal/config/` package; TOML loading with silent-defaults, fatal-error, and unknown-key-warning behaviors; `--no-emoji` and `--theme` flags override config via `flag.Visit` (completed 2026-03-26)
+- [ ] **Phase 14: Theme System** — `Theme` struct + three named presets in `styles.go`; call-site migration in `tree/view.go`; exported archive function signatures updated; theme name validated at startup
+- [ ] **Phase 15: Help Overlay Config Hint** — `?` overlay shows config file path and active theme name
 
-### Phase 14: Themes
-**Goal**: Users can select a named color theme via config; all three presets render coherently throughout the TUI using Lip Gloss
-**Depends on**: Phase 13
-**Requirements**: THEME-01, THEME-02, THEME-03
+## Phase Details
+
+### Phase 13: Config Infrastructure
+**Goal**: Users can start gsd-watch with or without a config file; the app reads `~/.config/gsd-watch/config.toml`, applies `emoji` and `theme` settings, and CLI flags always override config values
+**Depends on**: Phase 12
+**Requirements**: CFG-01, CFG-02, CFG-03, CFG-04, CFG-05
 **Success Criteria** (what must be TRUE):
-  1. `theme = "default"` (or omitted) produces no visual regression from pre-v1.3
-  2. `theme = "minimal"` renders text-only status icons and muted/dimmed colors throughout
-  3. `theme = "high-contrast"` renders bold, high-contrast foreground colors throughout
-  4. All three themes use `lipgloss.AdaptiveColor` — no new external dependencies
-  5. Switching themes by editing config and restarting applies the new theme fully
-**Plans**: 2 plans
+  1. When `~/.config/gsd-watch/config.toml` does not exist, gsd-watch starts normally with defaults — no error, no log noise, no crash
+  2. When config.toml exists but is invalid TOML, gsd-watch exits with a fatal error message that includes the file path
+  3. When config.toml contains unrecognised keys, gsd-watch prints a warning to stderr and starts normally with defaults for those keys
+  4. When `--no-emoji` is passed on the command line, emoji is suppressed regardless of the `emoji` key value in config
+  5. When `--theme <name>` is passed on the command line, that theme is used regardless of the `theme` key value in config
+**Plans:** 2/2 plans complete
+Plans:
+- [x] 13-01-PLAN.md — Config package: Load(), Defaults(), UnknownKeysError, tests, testdata fixtures
+- [x] 13-02-PLAN.md — Wire config into main.go (three-case dispatch, flag.Visit, --theme) and migrate app.New() signature
+
+### Phase 14: Theme System
+**Goal**: Users can select a named color theme (`default`, `minimal`, `high-contrast`) via config; all three presets render coherently in the tree view; an unknown theme name warns and falls back to default
+**Depends on**: Phase 13
+**Requirements**: THEME-01, THEME-02, THEME-03, THEME-04
+**Success Criteria** (what must be TRUE):
+  1. `theme = "default"` (or key omitted) produces no visual regression from gsd-watch v1.2
+  2. `theme = "minimal"` renders muted status colors and a content-first appearance throughout the tree
+  3. `theme = "high-contrast"` renders bold foreground colors using only 16-color ANSI palette indices — visible over SSH and in degraded terminals
+  4. An unknown theme name (in config or via `--theme`) prints a stderr warning and falls back to `default` — gsd-watch does not crash
+  5. Switching themes by editing config and restarting applies the new theme fully with no leftover colors from the previous theme
+**Plans**: TBD
+**UI hint**: yes
 
 ### Phase 15: Help Overlay Config Hint
-**Goal**: The `?` help overlay shows the config file path so users can discover and edit their settings
+**Goal**: The `?` help overlay exposes the config file path and active theme name so users can discover and edit their settings without consulting docs
 **Depends on**: Phase 14
-**Requirements**: HELP-01
+**Requirements**: DISC-01, DISC-02
 **Success Criteria** (what must be TRUE):
-  1. The `?` overlay displays a line showing `Config: ~/.config/gsd-watch/config.toml`
-  2. The path is shown regardless of whether the file currently exists on disk
-  3. The config path line is visually distinct from keybinding rows (muted style or separator)
-**Plans**: 2 plans
+  1. Pressing `?` shows a line with the full config file path (e.g. `Config: ~/.config/gsd-watch/config.toml`) regardless of whether that file exists on disk
+  2. Pressing `?` shows a line with the currently active theme name (e.g. `Theme: default`)
+  3. Both lines are present whether the config file is absent, present-with-defaults, or present-with-explicit-values
+**Plans**: TBD
+**UI hint**: yes
 
 ### v1.3 Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 13. Config File Infrastructure | 0/? | Not started | - |
-| 14. Themes | 0/? | Not started | - |
+| 13. Config Infrastructure | 2/2 | Complete   | 2026-03-26 |
+| 14. Theme System | 0/? | Not started | - |
 | 15. Help Overlay Config Hint | 0/? | Not started | - |

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Settings
-status: Planning next milestone
-stopped_at: v1.2 archived — ready for /gsd:new-milestone
-last_updated: "2026-03-26T00:00:00.000Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 13-02-PLAN.md
+last_updated: "2026-03-26T11:49:31.220Z"
 last_activity: 2026-03-26
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 3
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
 ---
 
 # Project State
@@ -20,12 +20,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** v1.3 Settings — run /gsd:new-milestone to begin
+**Current focus:** Phase 13 — config-infrastructure
 
 ## Current Position
 
-Phase: 12
-Plan: Not started
+Phase: 13 (config-infrastructure) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -75,6 +75,8 @@ Plan: Not started
 | Phase 10-emoji-text-toggle P02 | 10 | 2 tasks | 3 files |
 | Phase 11-archive-detection P01 | 5 | 2 tasks | 7 files |
 | Phase 12-archive-display P02 | 2 | 2 tasks | 1 files |
+| Phase 13-config-infrastructure P01 | 2 | 1 tasks | 8 files |
+| Phase 13-config-infrastructure P02 | 5 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -118,26 +120,23 @@ Recent decisions affecting current work:
 - [Phase 03-03]: Watcher goroutine started from Init() not New() — Init() runs after Bubble Tea runtime is ready
 - [Phase 03-03]: waitForEvent re-armed via tea.Batch in FileChangedMsg handler — perpetuates event loop while async parse runs concurrently
 - [Phase 03-03]: Model starts with empty ProjectData; live data arrives via ParsedMsg from ParseFull() in Init() cmd — mock data removed
-- [Phase 03-03]: Watcher goroutine started from Init() not New() — Init() runs after Bubble Tea runtime is ready
-- [Phase 03-03]: waitForEvent re-armed via tea.Batch in FileChangedMsg handler — perpetuates event loop while async parse runs concurrently
-- [Phase 03-03]: Model starts with empty ProjectData; live data arrives via ParsedMsg from ParseFull() in Init() cmd — mock data removed
 - [Phase 04-01]: build/ directory added to .gitignore — binaries are generated output, not source-controlled
 - [Phase 04-01]: OSC 2 pane title set before tea.NewProgram — title available from process start before any Bubble Tea rendering
 - [Phase 04-01]: uname -m used in Makefile install for arch detection: arm64 maps to arm64 binary, x86_64 maps to amd64 binary
 - [Phase 04-plugin-delivery]: disable-model-invocation: true keeps slash command invocation instant — Claude runs Bash steps directly without composing prose
 - [Phase 04-plugin-delivery]: Duplicate detection keyed on pane_title matching gsd-watch:<project> set by OSC 2 in main.go (plan 01)
 - [Phase 04-plugin-delivery]: tmux split-window -d flag keeps focus on original pane after spawning sidebar so developer workflow is uninterrupted
-- [Phase 05-02]: [05-02] Footer two-line hints use static strings not KeyMap.ShortHelp() for layout control
-- [Phase 05-02]: [05-02] Footer Height() default changed from 2 to 3 to match two-hint-line layout
+- [Phase 05-02]: Footer two-line hints use static strings not KeyMap.ShortHelp() for layout control
+- [Phase 05-02]: Footer Height() default changed from 2 to 3 to match two-hint-line layout
 - [Phase 05-01]: Reuse PendingStyle (gray) for completed phase dimming — no new DimmedStyle needed
 - [Phase 05-01]: Add Expanded bool to Row struct so renderedRowLines can count the (no plans yet) line
 - [Phase 05-01]: TestView_CompletedPhaseDimmed uses structural assertions rather than ANSI escape checks — lipgloss strips colors without TTY
-- [Phase 05-03]: [05-03] helpView() is a package-level function taking width — keeps View() readable and avoids accessing model state in render path
-- [Phase 05-03]: [05-03] quitPending reset on every non-quit key — simpler than a timeout, matches expected UX for CLI tools
-- [Phase 05-03]: [05-03] Help overlay captures all keys except Ctrl+C — q single-press closes overlay without entering double-quit flow
+- [Phase 05-03]: helpView() is a package-level function taking width — keeps View() readable and avoids accessing model state in render path
+- [Phase 05-03]: quitPending reset on every non-quit key — simpler than a timeout, matches expected UX for CLI tools
+- [Phase 05-03]: Help overlay captures all keys except Ctrl+C — q single-press closes overlay without entering double-quit flow
 - [Phase 06-02]: README audience is GSD+Claude Code users — GSD framework not explained
 - [Phase 06-02]: Demo section uses placeholder image tag with vhs/ttyrec comment for future recording
-- [Phase 06-01]: [06-01] Footer hint uses static string '? help' appended to existing hints; help overlay adds Phase stages with badge emojis; phase names word-wrap per-line with independent highlight/dim; --help uses flag stdlib; TMUX check uses os.Getenv
+- [Phase 06-01]: Footer hint uses static string '? help' appended to existing hints; help overlay adds Phase stages with badge emojis; phase names word-wrap per-line with independent highlight/dim; --help uses flag stdlib; TMUX check uses os.Getenv
 - [Phase 07-01]: extractFrontmatter strips BOM then TrimLeft whitespace — two discrete lines, in that order, before HasPrefix check
 - [Phase 07-01]: phaseHeadingRe uses (?m)#{2,4} to match H2/H3/H4 without multiline flag affecting capture groups
 - [Phase 07-01]: ROADMAP-absent phase name uses phaseDirRe.ReplaceAllString to strip NN- prefix then ReplaceAll - to spaces
@@ -160,6 +159,13 @@ Recent decisions affecting current work:
 - [Phase 11-archive-detection]: lookupCompletionDate uses regexp.QuoteMeta(version) to safely escape dot in version strings like v1.0
 - [Phase 11-archive-detection]: MILESTONES.md pre-read once per parseArchivedMilestones call, nil data means empty CompletionDate for all
 - [Phase 12-archive-display]: app/model.go tree.View call sites already updated by Plan 01 deviation (Rule 3) — Plan 02 is a verification-only plan confirming ARC-02 complete
+- [Phase 13-01]: Initialize cfg := Defaults() before toml.DecodeFile to avoid Go bool zero-value pitfall; use errors.Is(err, fs.ErrNotExist) for missing-file detection; UnknownKeysError.Keys as []string to avoid leaking toml.Key type
+- [Phase 13-02]: Use _ = flag.Bool('no-emoji', ...) for flag registration without pointer capture — avoids unused variable error while keeping flag.Visit detection
+- [Phase 13-02]: \!cfg.Emoji inversion at call sites (New() and View()) — Config.Emoji=true means show emoji, tree.Options.NoEmoji=true means suppress; inversion at boundary
+
+### v1.3 Decisions (accumulated during this milestone)
+
+None yet — first phase not started.
 
 ### Roadmap Evolution
 
@@ -186,6 +192,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-03-26
-Last session: 2026-03-26T01:31:28.559Z
-Stopped at: Completed quick task 260326-5f1 (needs visual confirmation in live TUI)
+Last session: 2026-03-26T11:49:31.216Z
+Stopped at: Completed 13-02-PLAN.md
 Resume file: None
