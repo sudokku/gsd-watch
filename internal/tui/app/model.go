@@ -165,7 +165,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.footer = m.footer.SetWidth(msg.Width)
 		headerH := m.header.Height()
 		footerH := m.footer.Height()
-		vpHeight := max(msg.Height-headerH-footerH, 0)
+		archiveH := m.tree.ArchiveZoneHeight()
+		vpHeight := max(msg.Height-headerH-footerH-archiveH, 0)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = vpHeight
 		m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
@@ -177,9 +178,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tree = m.tree.SetData(msg.Project)
 		m.header = m.header.SetData(msg.Project)
 		m.footer = m.footer.SetData(msg.Project)
-		// Recalculate viewport height: footer height may change if currentAction wraps.
+		// Recalculate viewport height: footer height may change if currentAction wraps,
+		// and archive zone height may change if archived milestones were added/removed.
 		if m.ready {
-			vpHeight := max(m.height-m.header.Height()-m.footer.Height(), 0)
+			archiveH := m.tree.ArchiveZoneHeight()
+			vpHeight := max(m.height-m.header.Height()-m.footer.Height()-archiveH, 0)
 			m.viewport.Height = vpHeight
 		}
 		m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
@@ -299,12 +302,15 @@ func (m Model) View() string {
 	}
 	// Sync viewport content with current tree state.
 	m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
+	sections := []string{
 		m.header.View(m.width),
 		m.viewport.View(),
-		m.footer.View(m.width),
-	)
+	}
+	if az := m.tree.ArchiveZone(m.width); az != "" {
+		sections = append(sections, az)
+	}
+	sections = append(sections, m.footer.View(m.width))
+	return lipgloss.JoinVertical(lipgloss.Left, sections...)
 }
 
 // ViewportHeight returns the current viewport height. Used in tests.
