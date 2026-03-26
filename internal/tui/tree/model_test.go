@@ -779,25 +779,21 @@ func TestArchiveRowsNotInVisibleRows(t *testing.T) {
 	}
 }
 
-// --- Two-pass View(width, height) tests ---
+// --- View (scrollable-only) and ArchiveZone/ArchiveZoneHeight tests ---
 
-// TestView_ArchiveZonePinned verifies archive zone appears at bottom of View output.
+// TestView_ArchiveZonePinned verifies View() does NOT contain archive content
+// (archive zone is extracted to ArchiveZone() method, outside the viewport).
 func TestView_ArchiveZonePinned(t *testing.T) {
 	data := mockProjectWithArchives()
 	m := tree.New().SetData(data)
 	output := m.View(80, 30)
-	if !strings.Contains(output, "Archived Milestones") {
-		t.Errorf("expected 'Archived Milestones' separator in View output\nOutput:\n%s", output)
+	if strings.Contains(output, "Archived Milestones") {
+		t.Errorf("View() must NOT contain 'Archived Milestones' — archive zone is now outside the viewport\nOutput:\n%s", output)
 	}
-	// pinnedH = 2 milestones + 1 separator = 3 lines
-	// Last 3 lines should be the archive zone
-	allLines := strings.Split(output, "\n")
-	if len(allLines) < 3 {
-		t.Fatalf("expected at least 3 lines in output, got %d", len(allLines))
-	}
-	lastLines := strings.Join(allLines[len(allLines)-3:], "\n")
-	if !strings.Contains(lastLines, "Archived Milestones") {
-		t.Errorf("expected 'Archived Milestones' in last 3 lines\nLast lines:\n%s", lastLines)
+	// ArchiveZone() should contain the archive content
+	az := m.ArchiveZone(80)
+	if !strings.Contains(az, "Archived Milestones") {
+		t.Errorf("ArchiveZone() must contain 'Archived Milestones'\nOutput:\n%s", az)
 	}
 }
 
@@ -811,44 +807,83 @@ func TestView_NoArchiveSectionWhenEmpty(t *testing.T) {
 	}
 }
 
-// TestView_ArchiveRowFormat verifies archive row content appears in View output.
+// TestView_ArchiveRowFormat verifies archive row content appears in ArchiveZone() output (not View).
 func TestView_ArchiveRowFormat(t *testing.T) {
 	data := mockProjectWithArchives()
 	m := tree.New().SetData(data)
-	output := m.View(80, 999)
-	if !strings.Contains(output, "v1.0") {
-		t.Errorf("expected 'v1.0' in View output\nOutput:\n%s", output)
+	az := m.ArchiveZone(80)
+	if !strings.Contains(az, "v1.0") {
+		t.Errorf("expected 'v1.0' in ArchiveZone output\nOutput:\n%s", az)
 	}
-	if !strings.Contains(output, "6 phases") {
-		t.Errorf("expected '6 phases' in View output\nOutput:\n%s", output)
+	if !strings.Contains(az, "6 phases") {
+		t.Errorf("expected '6 phases' in ArchiveZone output\nOutput:\n%s", az)
 	}
-	if !strings.Contains(output, "Jan 2025") {
-		t.Errorf("expected 'Jan 2025' in View output\nOutput:\n%s", output)
+	if !strings.Contains(az, "Jan 2025") {
+		t.Errorf("expected 'Jan 2025' in ArchiveZone output\nOutput:\n%s", az)
 	}
 }
 
-// TestView_ArchiveRowFormatNoEmoji verifies noEmoji mode archive rows in View output.
+// TestView_ArchiveRowFormatNoEmoji verifies noEmoji mode archive rows in ArchiveZone() output.
 func TestView_ArchiveRowFormatNoEmoji(t *testing.T) {
 	data := mockProjectWithArchives()
 	m := tree.New().SetData(data).SetOptions(tree.Options{NoEmoji: true})
-	output := m.View(80, 999)
-	if !strings.Contains(output, "> v1.0") {
-		t.Errorf("noEmoji: expected '> v1.0' in View output\nOutput:\n%s", output)
+	az := m.ArchiveZone(80)
+	if !strings.Contains(az, "> v1.0") {
+		t.Errorf("noEmoji: expected '> v1.0' in ArchiveZone output\nOutput:\n%s", az)
 	}
-	if !strings.Contains(output, "[done]") {
-		t.Errorf("noEmoji: expected '[done]' in View output\nOutput:\n%s", output)
+	if !strings.Contains(az, "[done]") {
+		t.Errorf("noEmoji: expected '[done]' in ArchiveZone output\nOutput:\n%s", az)
 	}
 }
 
-// TestView_ScrollZoneHeightReduced verifies scrollable content capped when archives present.
-// mockProjectWithArchives has 2 milestones -> pinnedH=3; height=15 -> scrollH=12.
-// Total output = scrollH + pinnedH = height = 15 lines.
-func TestView_ScrollZoneHeightReduced(t *testing.T) {
+// TestArchiveZoneHeight_Empty verifies ArchiveZoneHeight() returns 0 when no archives.
+func TestArchiveZoneHeight_Empty(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	h := m.ArchiveZoneHeight()
+	if h != 0 {
+		t.Errorf("expected ArchiveZoneHeight()=0 when no archives, got %d", h)
+	}
+}
+
+// TestArchiveZoneHeight_WithArchives verifies ArchiveZoneHeight() returns len(archives)+1.
+// mockProjectWithArchives has 2 archives -> expected height = 3 (separator + 2 rows).
+func TestArchiveZoneHeight_WithArchives(t *testing.T) {
 	data := mockProjectWithArchives()
-	m := tree.New().SetData(data).ExpandAll()
-	output := m.View(80, 15)
-	lines := strings.Split(output, "\n")
-	if len(lines) != 15 {
-		t.Errorf("expected exactly 15 lines with height=15, got %d\nOutput:\n%s", len(lines), output)
+	m := tree.New().SetData(data)
+	h := m.ArchiveZoneHeight()
+	if h != 3 {
+		t.Errorf("expected ArchiveZoneHeight()=3 (separator+2 rows), got %d", h)
+	}
+}
+
+// TestArchiveZone_Content verifies ArchiveZone() returns padded separator + archive rows.
+func TestArchiveZone_Content(t *testing.T) {
+	data := mockProjectWithArchives()
+	m := tree.New().SetData(data)
+	az := m.ArchiveZone(80)
+	if az == "" {
+		t.Fatal("expected non-empty ArchiveZone() output")
+	}
+	lines := strings.Split(az, "\n")
+	// 1 separator + 2 archive rows = 3 lines
+	if len(lines) != 3 {
+		t.Errorf("expected 3 lines in ArchiveZone output, got %d\nOutput:\n%s", len(lines), az)
+	}
+	// Each line should have 1-char left padding
+	for i, line := range lines {
+		if len(line) > 0 && line[0] != ' ' {
+			t.Errorf("line %d should start with space (D-10 padding), got: %q", i, line)
+		}
+	}
+}
+
+// TestArchiveZone_EmptyWhenNoArchives verifies ArchiveZone() returns "" when no archives.
+func TestArchiveZone_EmptyWhenNoArchives(t *testing.T) {
+	data := mock.MockProject()
+	m := tree.New().SetData(data)
+	az := m.ArchiveZone(80)
+	if az != "" {
+		t.Errorf("expected empty string from ArchiveZone() when no archives, got: %q", az)
 	}
 }

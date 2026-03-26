@@ -78,7 +78,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 11. Archive Detection | 1/2 | In Progress|  |
-| 12. Archive Display | 2/2 | Complete   | 2026-03-26 |
+| 12. Archive Display | 2/2 | Complete    | 2026-03-26 |
 
 ---
 

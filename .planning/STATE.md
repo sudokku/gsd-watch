@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Archived Milestone Visibility
-status: Phase complete — ready for verification
+status: Milestone complete
 stopped_at: Completed 12-archive-display 12-02-PLAN.md
-last_updated: "2026-03-26T01:31:28.561Z"
+last_updated: "2026-03-26T01:34:22.123Z"
 last_activity: 2026-03-26
 progress:
   total_phases: 2
@@ -24,8 +24,8 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Phase: 11 (archive-detection) — EXECUTING
-Plan: 2 of 2
+Phase: 12
+Plan: Not started
 
 ## Performance Metrics
 
