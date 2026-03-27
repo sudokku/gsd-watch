@@ -293,7 +293,7 @@ func helpView(width int, noEmoji bool, configPath, themeName string) string {
 🧪  UAT`
 	}
 
-	configSection := fmt.Sprintf(`Config
+	configSection := fmt.Sprintf(`Configurations
 Config:  %s
 Theme:   %s`, configPath, themeName)
 
