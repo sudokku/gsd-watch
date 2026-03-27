@@ -50,10 +50,11 @@ Full phase details: `.planning/milestones/v1.2-ROADMAP.md`
 **Goal:** Users can override individual theme colors in config.toml under [theme.colors], with the chosen preset as the base and per-field hex overrides applied on top
 **Requirements**: TBD
 **Depends on:** Phase 15
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 16 to break down)
+- [x] 16-01-PLAN.md — Config schema: rename Theme to Preset, add ThemeColors struct with 5 *string fields, test fixtures and tests
+- [x] 16-02-PLAN.md — ApplyColorOverrides + IsValidHex in styles.go, wire into app.New/main.go, rename all cfg.Theme to cfg.Preset
 
 ---
 
@@ -66,7 +67,7 @@ Plans:
 - [x] **Phase 13: Config Infrastructure** — New `internal/config/` package; TOML loading with silent-defaults, fatal-error, and unknown-key-warning behaviors; `--no-emoji` and `--theme` flags override config via `flag.Visit` (completed 2026-03-26)
 - [x] **Phase 14: Theme System** — `Theme` struct + three named presets in `styles.go`; call-site migration in `tree/view.go`; exported archive function signatures updated; theme name validated at startup (completed 2026-03-27)
 - [x] **Phase 15: Help Overlay Config Hint** — `?` overlay shows config file path and active theme name (completed 2026-03-27)
-- [ ] **Phase 16: Custom Color Config** — Per-field hex color overrides in config.toml under [theme.colors], applied on top of the active preset
+- [x] **Phase 16: Custom Color Config** — Per-field hex color overrides in config.toml under [theme.colors], applied on top of the active preset (completed 2026-03-27)
 
 ## Phase Details
 
