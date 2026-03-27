@@ -134,7 +134,7 @@ func (t TreeModel) View(width, height int) string {
 			if t.expanded[row.Phase.DirName] {
 				expandIndicator = "▼ "
 			}
-			icon := tui.StatusIcon(row.Phase.Status, t.opts.NoEmoji)
+			icon := tui.StatusIcon(row.Phase.Status, t.opts.NoEmoji, th)
 			isDimmedPhase := row.Phase.Status == parser.StatusComplete
 			phaseActive := t.IsPhaseActive(rows, i)
 
@@ -218,7 +218,7 @@ func (t TreeModel) View(width, height int) string {
 				connector = "    └── "
 			}
 
-			icon := tui.StatusIcon(row.Plan.Status, t.opts.NoEmoji)
+			icon := tui.StatusIcon(row.Plan.Status, t.opts.NoEmoji, th)
 			nowMarker := ""
 			if row.Plan.IsActive {
 				nowMarker = " " + th.NowMarker.Render("← now")
@@ -308,7 +308,7 @@ func (t TreeModel) View(width, height int) string {
 			if isLast {
 				connector = "    └── "
 			}
-			icon := tui.StatusIcon(qt.Status, t.opts.NoEmoji)
+			icon := tui.StatusIcon(qt.Status, t.opts.NoEmoji, th)
 			isDimmed := qt.Status == parser.StatusComplete
 
 			// Calculate wrap width — same pattern as RowPlan
@@ -421,13 +421,14 @@ func (t TreeModel) RenderedCursorLine(width int) int {
 
 // renderedRowLines returns the number of output lines a single row occupies.
 func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
+	th := themeFor(t.opts)
 	switch row.Kind {
 	case RowPhase:
 		// Calculate wrapped phase name line count.
 		// expandIndicator ("▶ " or "▼ ") is always 2 chars wide. icon + " " is prefix.
 		// We use a fixed prefix string for width calculation.
 		expandIndicatorWidth := 2 // "▶ " or "▼ " — both 2 display cells
-		icon := tui.StatusIcon(row.Phase.Status, noEmoji)
+		icon := tui.StatusIcon(row.Phase.Status, noEmoji, th)
 		prefixWidth := expandIndicatorWidth + lipgloss.Width(icon) + 1
 		wrapWidth := width - 2 - prefixWidth
 		if wrapWidth < 1 {
@@ -449,7 +450,7 @@ func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 		return n
 
 	case RowPlan:
-		icon := tui.StatusIcon(row.Plan.Status, noEmoji)
+		icon := tui.StatusIcon(row.Plan.Status, noEmoji, th)
 		nowWidth := 0
 		if row.Plan.IsActive {
 			// Use theme NowMarker to get correct width (theme may affect ANSI sequence length).
@@ -474,7 +475,7 @@ func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 		return n
 
 	case RowQuickTask:
-		icon := tui.StatusIcon(row.QuickTask.Status, noEmoji)
+		icon := tui.StatusIcon(row.QuickTask.Status, noEmoji, th)
 		const connectorWidth = 8
 		prefixWidth := connectorWidth + lipgloss.Width(icon) + 1
 		wrapWidth := width - 2 - prefixWidth

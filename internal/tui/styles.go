@@ -120,28 +120,29 @@ func ThemeByName(name string) (Theme, bool) {
 
 // StatusIcon returns a styled status icon string for the given status value.
 // When noEmoji is true, ASCII bracket equivalents are returned instead of emoji.
-func StatusIcon(status string, noEmoji bool) string {
+// The theme parameter controls the colors applied to the icon.
+func StatusIcon(status string, noEmoji bool, theme Theme) string {
 	if noEmoji {
 		switch status {
 		case "complete":
-			return CompleteStyle.Render("[x]")
+			return theme.Complete.Render("[x]")
 		case "in_progress":
 			return "[>]"
 		case "failed":
-			return FailedStyle.Render("[!]")
+			return theme.Failed.Render("[!]")
 		default:
-			return PendingStyle.Render("[ ]")
+			return theme.Pending.Render("[ ]")
 		}
 	}
 	switch status {
 	case "complete":
-		return CompleteStyle.Render("✓")
+		return theme.Complete.Render("✓")
 	case "in_progress":
 		return "▶"
 	case "failed":
-		return FailedStyle.Render("✗")
+		return theme.Failed.Render("✗")
 	default:
-		return PendingStyle.Render("○")
+		return theme.Pending.Render("○")
 	}
 }
 

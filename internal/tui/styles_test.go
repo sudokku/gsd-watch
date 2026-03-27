@@ -9,9 +9,10 @@ import (
 
 // TestStatusIcon_Emoji: all 4 statuses with noEmoji=false produce non-empty strings.
 func TestStatusIcon_Emoji(t *testing.T) {
+	theme := tui.ThemeDefault()
 	statuses := []string{"complete", "in_progress", "pending", "failed"}
 	for _, status := range statuses {
-		got := tui.StatusIcon(status, false)
+		got := tui.StatusIcon(status, false, theme)
 		if got == "" {
 			t.Errorf("StatusIcon(%q, false) returned empty string", status)
 		}
@@ -20,6 +21,7 @@ func TestStatusIcon_Emoji(t *testing.T) {
 
 // TestStatusIcon_NoEmoji: all 4 statuses with noEmoji=true contain the right ASCII brackets.
 func TestStatusIcon_NoEmoji(t *testing.T) {
+	theme := tui.ThemeDefault()
 	tests := []struct {
 		status string
 		want   string
@@ -30,7 +32,7 @@ func TestStatusIcon_NoEmoji(t *testing.T) {
 		{"failed", "[!]"},
 	}
 	for _, tt := range tests {
-		got := tui.StatusIcon(tt.status, true)
+		got := tui.StatusIcon(tt.status, true, theme)
 		if !strings.Contains(got, tt.want) {
 			t.Errorf("StatusIcon(%q, true) = %q; want it to contain %q", tt.status, got, tt.want)
 		}
@@ -39,7 +41,7 @@ func TestStatusIcon_NoEmoji(t *testing.T) {
 
 // TestStatusIcon_NoEmoji_Default: unknown status falls back to pending "[ ]".
 func TestStatusIcon_NoEmoji_Default(t *testing.T) {
-	got := tui.StatusIcon("unknown_status", true)
+	got := tui.StatusIcon("unknown_status", true, tui.ThemeDefault())
 	if !strings.Contains(got, "[ ]") {
 		t.Errorf("StatusIcon(unknown, true) = %q; want it to contain [ ]", got)
 	}
