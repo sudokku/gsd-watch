@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -68,6 +69,11 @@ func Run(root string, events chan<- tea.Msg) {
 				}
 			}
 
+			// Skip known editor temp/swap files (e.g. micro's .tmp.PID.ts, vim's .swp).
+			if isTempFile(e.Name) {
+				continue
+			}
+
 			// WATCH-03: Debounce — reset per-path timer to 300ms.
 			// Capture path locally to avoid closure-capture issues.
 			path := e.Name
@@ -96,4 +102,21 @@ func Run(root string, events chan<- tea.Msg) {
 			fmt.Fprintf(os.Stderr, "watcher error: %v\n", err)
 		}
 	}
+}
+
+// isTempFile reports whether path is a known editor temp or swap file that
+// should be ignored by the watcher. Patterns covered:
+//   - micro: file.ext.tmp.PID.timestamp  (contains ".tmp.")
+//   - vim:   file.swp / file.swx / file.swo
+//   - generic: files ending in "~"
+func isTempFile(path string) bool {
+	base := filepath.Base(path)
+	if strings.Contains(base, ".tmp.") {
+		return true
+	}
+	ext := filepath.Ext(base)
+	if ext == ".swp" || ext == ".swx" || ext == ".swo" {
+		return true
+	}
+	return strings.HasSuffix(base, "~")
 }

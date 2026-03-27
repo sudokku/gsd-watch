@@ -11,22 +11,45 @@ import (
 	tui "github.com/radu/gsd-watch/internal/tui"
 )
 
-func TestFooterView_ContainsCurrentAction(t *testing.T) {
-	data := mock.MockProject()
-	f := footer.New(data, tui.DefaultKeyMap())
+func TestFooterView_ContainsWatchingLabel(t *testing.T) {
+	// No file set yet — footer should show the "watching…" fallback label.
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	f = f.SetWidth(80)
 	out := f.View(80)
-	if !strings.Contains(out, "Phase 1 — building TUI scaffold") {
-		t.Errorf("expected View(80) to contain current action, got:\n%s", out)
+	if !strings.Contains(out, "watching") {
+		t.Errorf("expected View(80) to contain 'watching…' label before any file change, got:\n%s", out)
 	}
 }
 
-func TestFooterView_ContainsTimeSince(t *testing.T) {
+func TestFooterView_ContainsLastChangeLabel(t *testing.T) {
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	f = f.SetWidth(80)
+	f = f.SetLastFile("STATE.md")
+	out := f.View(80)
+	if !strings.Contains(out, "Last change: STATE.md") {
+		t.Errorf("expected View(80) to contain 'Last change: STATE.md', got:\n%s", out)
+	}
+}
+
+func TestFooterView_ContainsTimeSince_JustNow(t *testing.T) {
+	// MockProject sets LastUpdated to time.Now() — should show "just now".
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	f = f.SetWidth(80)
+	out := f.View(80)
+	if !strings.Contains(out, "just now") {
+		t.Errorf("expected View(80) to contain 'just now' for a fresh timestamp, got:\n%s", out)
+	}
+}
+
+func TestFooterView_ContainsTimeSince_SecondsAgo(t *testing.T) {
+	// Set LastUpdated to 10 seconds ago — should show "Ns ago".
 	data := mock.MockProject()
-	// MockProject sets LastUpdated to time.Now(), so we expect "0s ago" or "1s ago".
+	data.LastUpdated = time.Now().Add(-10 * time.Second)
 	f := footer.New(data, tui.DefaultKeyMap())
+	f = f.SetWidth(80)
 	out := f.View(80)
 	if !strings.Contains(out, "ago") {
-		t.Errorf("expected View(80) to contain time-since string like '0s ago', got:\n%s", out)
+		t.Errorf("expected View(80) to contain 'ago' for a 10s-old timestamp, got:\n%s", out)
 	}
 }
 
@@ -58,39 +81,83 @@ func TestFooterHeight(t *testing.T) {
 	}
 }
 
-func TestFooterSetData_UpdatesAction(t *testing.T) {
+func TestFooterSetData_UpdatesLastUpdated(t *testing.T) {
 	data := mock.MockProject()
 	f := footer.New(data, tui.DefaultKeyMap())
+	f = f.SetWidth(80)
 
-	newData := parser.ProjectData{
-		Name:          data.Name,
-		ModelProfile:  data.ModelProfile,
-		Mode:          data.Mode,
-		CurrentAction: "Phase 2 — parsing files",
-		LastUpdated:   time.Now(),
-		Phases:        data.Phases,
+	// Set lastUpdated to something old so timeSince shows "ago".
+	oldData := parser.ProjectData{
+		LastUpdated: time.Now().Add(-30 * time.Second),
 	}
-	f = f.SetData(newData)
+	f = f.SetData(oldData)
 	out := f.View(80)
-	if !strings.Contains(out, "Phase 2 — parsing files") {
-		t.Errorf("expected View(80) after SetData to contain new action, got:\n%s", out)
+	if !strings.Contains(out, "ago") {
+		t.Errorf("expected View(80) after SetData to show stale timestamp ('ago'), got:\n%s", out)
 	}
 }
 
-func TestFooter_RefreshIdle(t *testing.T) {
+func TestFooter_IdleCheckmark(t *testing.T) {
+	// Default state (no active changes) should show the ✓ checkmark.
 	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
 	out := f.View(80)
-	if !strings.Contains(out, "↺") {
-		t.Errorf("expected idle refresh icon ↺, got:\n%s", out)
+	if !strings.Contains(out, "✓") {
+		t.Errorf("expected idle checkmark ✓ in footer, got:\n%s", out)
 	}
 }
 
-func TestFooter_RefreshFlash(t *testing.T) {
+func TestFooter_ActiveChanges_ShowsSpinner(t *testing.T) {
 	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
-	f = f.SetRefreshFlash(true)
+	f = f.SetActiveChanges(true)
 	out := f.View(80)
-	if !strings.Contains(out, "⟳") {
-		t.Errorf("expected flash refresh icon ⟳, got:\n%s", out)
+	// The idle ✓ should not appear when active.
+	if strings.Contains(out, "✓") {
+		t.Errorf("expected no ✓ while active, got:\n%s", out)
+	}
+	// A braille spinner frame should be present.
+	spinFrames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	found := false
+	for _, frame := range spinFrames {
+		if strings.Contains(out, frame) {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected a braille spinner frame while active, got:\n%s", out)
+	}
+}
+
+func TestFooter_AdvanceSpinFrame(t *testing.T) {
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	f = f.SetActiveChanges(true)
+	// Advance through all 10 frames and verify each appears in the view.
+	spinFrames := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+	for i, want := range spinFrames {
+		out := f.View(80)
+		if !strings.Contains(out, want) {
+			t.Errorf("frame %d: expected %q in view, got:\n%s", i, want, out)
+		}
+		f = f.AdvanceSpinFrame()
+	}
+}
+
+func TestFooter_SetActiveChanges_False_ResetsFrame(t *testing.T) {
+	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
+	f = f.SetActiveChanges(true)
+	f = f.AdvanceSpinFrame()
+	f = f.AdvanceSpinFrame()
+	f = f.SetActiveChanges(false)
+	// After clearing active state, view should show ✓ and first braille frame should
+	// appear again if re-activated (spinFrame reset to 0).
+	out := f.View(80)
+	if !strings.Contains(out, "✓") {
+		t.Errorf("expected ✓ after SetActiveChanges(false), got:\n%s", out)
+	}
+	f = f.SetActiveChanges(true)
+	out2 := f.View(80)
+	if !strings.Contains(out2, "⠋") {
+		t.Errorf("expected spinner to restart at frame 0 (⠋) after re-activation, got:\n%s", out2)
 	}
 }
 
@@ -113,20 +180,6 @@ func TestFooter_QuitPending(t *testing.T) {
 	// Normal hints should not appear while pending.
 	if strings.Contains(out, "←h") {
 		t.Errorf("expected nav hints hidden while quit-pending, got:\n%s", out)
-	}
-}
-
-func TestFooterSetRefreshFlash(t *testing.T) {
-	f := footer.New(mock.MockProject(), tui.DefaultKeyMap())
-	f = f.SetRefreshFlash(true)
-	out1 := f.View(80)
-	if !strings.Contains(out1, "⟳") {
-		t.Errorf("expected flash icon after SetRefreshFlash(true)")
-	}
-	f = f.SetRefreshFlash(false)
-	out2 := f.View(80)
-	if !strings.Contains(out2, "↺") {
-		t.Errorf("expected idle icon after SetRefreshFlash(false)")
 	}
 }
 

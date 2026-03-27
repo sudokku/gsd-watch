@@ -57,7 +57,7 @@ func RenderArchiveSeparator(width int) string {
 	if len(result) > width {
 		result = result[:width]
 	}
-	return tui.PendingStyle.Render(result)
+	return lipgloss.NewStyle().Render(result)
 }
 
 // RenderArchiveZone renders the full pinned archive zone: separator + one row per milestone.

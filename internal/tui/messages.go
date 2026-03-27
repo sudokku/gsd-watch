@@ -25,8 +25,18 @@ type FileChangedMsg struct {
 // Phase 3 will use this for the Stop hook signal from Claude Code.
 type RefreshMsg struct{}
 
-// RefreshFlashMsg is sent by a tea.Tick to clear the refresh flash indicator.
-type RefreshFlashMsg struct{}
+// RefreshFlashMsg is sent by a tea.Tick to clear the activity indicator.
+// Gen is matched against the model's flashGen so stale ticks from earlier
+// file-change bursts are ignored when rapid changes overlap.
+type RefreshFlashMsg struct{ Gen int }
+
+// ClockTickMsg is sent every second to force the footer timestamp to re-render,
+// keeping the "Ns ago" counter visually up-to-date without requiring a file change.
+type ClockTickMsg struct{}
+
+// SpinTickMsg is sent at ~80ms intervals to advance the braille spinner frame.
+// The spin loop self-terminates when activeChanges is false.
+type SpinTickMsg struct{}
 
 // QuitTimeoutMsg is sent by a tea.Tick after the quit-confirm window expires.
 // If quitPending is still true when this arrives, it is cleared (user did not

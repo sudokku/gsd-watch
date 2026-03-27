@@ -33,6 +33,7 @@ type Model struct {
 	ready        bool                 // set to true after first WindowSizeMsg
 	helpVisible  bool                 // true when the help overlay is shown
 	quitPending  bool                 // true after first q/Esc press (double-quit state machine)
+	flashGen     int                  // incremented on each FileChangedMsg; used to discard stale RefreshFlashMsgs
 	cache        *parser.ProjectCache // incremental cache backed by .planning/
 	events       chan tea.Msg          // watcher event channel
 	planningRoot string               // path to .planning/ dir
@@ -73,6 +74,22 @@ func waitForEvent(ch chan tea.Msg) tea.Cmd {
 	return func() tea.Msg { return <-ch }
 }
 
+// clockTickCmd returns a Cmd that fires ClockTickMsg at the next 1-second wall-clock
+// boundary, keeping the footer timestamp visually up-to-date every second.
+func clockTickCmd() tea.Cmd {
+	return tea.Every(time.Second, func(time.Time) tea.Msg {
+		return tui.ClockTickMsg{}
+	})
+}
+
+// spinTickCmd returns a Cmd that fires SpinTickMsg after 80ms, advancing the
+// braille spinner one frame. The spin loop self-terminates when activeChanges is false.
+func spinTickCmd() tea.Cmd {
+	return tea.Tick(80*time.Millisecond, func(time.Time) tea.Msg {
+		return tui.SpinTickMsg{}
+	})
+}
+
 // Init implements tea.Model. Starts the watcher goroutine and dispatches both
 // an async full-parse cmd and a waitForEvent cmd so the loop is live from
 // the first frame.
@@ -87,6 +104,7 @@ func (m Model) Init() tea.Cmd {
 			return tui.ParsedMsg{Project: project}
 		},
 		waitForEvent(m.events),
+		clockTickCmd(),
 	)
 }
 
@@ -179,7 +197,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tree = m.tree.SetData(msg.Project)
 		m.header = m.header.SetData(msg.Project)
 		m.footer = m.footer.SetData(msg.Project)
-		// Recalculate viewport height: footer height may change if currentAction wraps,
+		// Recalculate viewport height: footer height may change if the left label wraps,
 		// and archive zone height may change if archived milestones were added/removed.
 		if m.ready {
 			archiveH := m.tree.ArchiveZoneHeight()
@@ -190,8 +208,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tui.FileChangedMsg:
-		// D-05: set refresh flash on file change, schedule tick to clear it.
-		m.footer = m.footer.SetRefreshFlash(true)
+		// Increment generation so any in-flight RefreshFlashMsg from a prior change is ignored.
+		m.flashGen++
+		gen := m.flashGen
+		m.footer = m.footer.SetLastFile(filepath.Base(msg.Path))
+		m.footer = m.footer.SetActiveChanges(true)
 		path := msg.Path
 		cache := m.cache
 		return m, tea.Batch(
@@ -200,14 +221,29 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return tui.ParsedMsg{Project: project}
 			},
 			waitForEvent(m.events),
-			tea.Tick(time.Second, func(time.Time) tea.Msg {
-				return tui.RefreshFlashMsg{}
+			spinTickCmd(),
+			tea.Tick(3*time.Second, func(time.Time) tea.Msg {
+				return tui.RefreshFlashMsg{Gen: gen}
 			}),
 		)
 
 	case tui.RefreshFlashMsg:
-		// D-05: clear refresh flash after the tick fires.
-		m.footer = m.footer.SetRefreshFlash(false)
+		// Only clear active state if this tick belongs to the latest file-change burst.
+		if msg.Gen == m.flashGen {
+			m.footer = m.footer.SetActiveChanges(false)
+		}
+		return m, nil
+
+	case tui.ClockTickMsg:
+		// Re-arm the 1-second clock so the footer timestamp increments every second.
+		return m, clockTickCmd()
+
+	case tui.SpinTickMsg:
+		// Advance spinner frame and re-arm only while changes are still active.
+		if m.footer.ActiveChanges() {
+			m.footer = m.footer.AdvanceSpinFrame()
+			return m, spinTickCmd()
+		}
 		return m, nil
 
 	case tui.QuitTimeoutMsg:

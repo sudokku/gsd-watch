@@ -10,29 +10,31 @@ import (
 	tui "github.com/radu/gsd-watch/internal/tui"
 )
 
-// FooterModel renders the bottom bar with current action, time since last update,
-// and keybinding hints.
+// spinFrames is the braille spinner sequence cycled during active file changes.
+var spinFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+
+// FooterModel renders the bottom bar with last changed file, time since last
+// update, and keybinding hints.
 type FooterModel struct {
-	currentAction string
-	lastUpdated   time.Time
+	lastFile      string    // base name of the last changed file, e.g. "STATE.md"
+	lastUpdated   time.Time // when the last file change was parsed
+	activeChanges bool      // true while within the 3-second activity window
+	spinFrame     int       // current index into spinFrames
 	keys          tui.KeyMap
 	width         int
-	refreshFlash  bool
 	quitPending   bool
 }
 
 // New creates a FooterModel populated from the given ProjectData and KeyMap.
 func New(data parser.ProjectData, keys tui.KeyMap) FooterModel {
 	return FooterModel{
-		currentAction: data.CurrentAction,
-		lastUpdated:   data.LastUpdated,
-		keys:          keys,
+		lastUpdated: data.LastUpdated,
+		keys:        keys,
 	}
 }
 
-// SetData returns a new FooterModel with currentAction and lastUpdated updated from data.
+// SetData returns a new FooterModel with lastUpdated refreshed from data.
 func (f FooterModel) SetData(data parser.ProjectData) FooterModel {
-	f.currentAction = data.CurrentAction
 	f.lastUpdated = data.LastUpdated
 	return f
 }
@@ -43,10 +45,32 @@ func (f FooterModel) SetWidth(width int) FooterModel {
 	return f
 }
 
-// SetRefreshFlash returns a new FooterModel with the refresh flash state toggled.
-func (f FooterModel) SetRefreshFlash(flash bool) FooterModel {
-	f.refreshFlash = flash
+// SetLastFile returns a new FooterModel with lastFile updated to the base name of path.
+func (f FooterModel) SetLastFile(file string) FooterModel {
+	f.lastFile = file
 	return f
+}
+
+// SetActiveChanges returns a new FooterModel with the activity state set.
+// Passing false also resets the spinner frame to 0.
+func (f FooterModel) SetActiveChanges(active bool) FooterModel {
+	f.activeChanges = active
+	if !active {
+		f.spinFrame = 0
+	}
+	return f
+}
+
+// AdvanceSpinFrame returns a new FooterModel with spinFrame incremented by one,
+// wrapping around the spinFrames slice.
+func (f FooterModel) AdvanceSpinFrame() FooterModel {
+	f.spinFrame = (f.spinFrame + 1) % len(spinFrames)
+	return f
+}
+
+// ActiveChanges reports whether the footer is currently in the activity window.
+func (f FooterModel) ActiveChanges() bool {
+	return f.activeChanges
 }
 
 // SetQuitPending returns a new FooterModel with the quit-confirm state set.
@@ -56,7 +80,7 @@ func (f FooterModel) SetQuitPending(pending bool) FooterModel {
 }
 
 // Height returns the number of lines the footer occupies.
-// Dynamic: extra lines are added when currentAction wraps.
+// Dynamic: extra lines are added when the left label wraps.
 // Returns 5 when width is not yet set (before first WindowSizeMsg).
 func (f FooterModel) Height() int {
 	if f.width == 0 {
@@ -68,18 +92,26 @@ func (f FooterModel) Height() int {
 	return len(f.actionLines()) + 4 // separator + action lines + 2 hint lines + blank
 }
 
-// actionLines word-wraps currentAction to fit beside timeSince on line 1.
+// actionLines word-wraps the left label to fit beside the right-side indicator.
 func (f FooterModel) actionLines() []string {
-	timeSinceW := lipgloss.Width(timeSince(f.lastUpdated))
-	availWidth := f.width - 2 - timeSinceW - 1 // 2 for L/R padding, 1 for space
+	// icon (1 cell) + space (1) + time string
+	rightW := 2 + lipgloss.Width(timeSince(f.lastUpdated))
+	availWidth := f.width - 2 - rightW - 1 // 2 for L/R padding, 1 for gap
 	if availWidth < 10 {
-		// Terminal too narrow to share the line — give action the content width.
 		availWidth = f.width - 2
 		if availWidth < 1 {
 			availWidth = 1
 		}
 	}
-	return tui.WordWrap(f.currentAction, availWidth)
+	return tui.WordWrap(f.leftLabel(), availWidth)
+}
+
+// leftLabel returns the text shown on the left side of the footer action row.
+func (f FooterModel) leftLabel() string {
+	if f.lastFile == "" {
+		return "watching…"
+	}
+	return "Last change: " + f.lastFile
 }
 
 // View renders the footer for the given terminal width.
@@ -95,36 +127,41 @@ func (f FooterModel) View(width int) string {
 	grayStyle := lipgloss.NewStyle().Foreground(tui.ColorGray)
 
 	// First line: light-horizontal separator spanning full width.
-	sepLine := grayStyle.Render(strings.Repeat("─", width))
+	sepLine := lipgloss.NewStyle().Render(strings.Repeat("─", width))
 
-	// Build the time-since string with refresh icon.
+	// Build right-side indicator: spinner or checkmark + time string.
 	ts := timeSince(f.lastUpdated)
-	var timeSinceStr string
-	if f.refreshFlash {
-		timeSinceStr = tui.RefreshFlashStyle.Render("⟳ " + ts)
+	var rightStr string
+	if f.activeChanges {
+		frame := spinFrames[f.spinFrame%len(spinFrames)]
+		rightStr = tui.RefreshFlashStyle.Render(frame + " " + ts)
 	} else {
-		timeSinceStr = grayStyle.Render("↺ " + ts)
+		rightStr = grayStyle.Render("✓ " + ts)
 	}
-	rightWidth := lipgloss.Width(timeSinceStr)
+	rightWidth := lipgloss.Width(rightStr)
 
 	// Use stored width for wrapping; fall back to the passed width if not set.
 	wrapWidth := f.width
 	if wrapWidth == 0 {
 		wrapWidth = width
 	}
-	actionParts := tui.WordWrap(f.currentAction, wrapWidth-2-rightWidth-1)
+	actionParts := tui.WordWrap(f.leftLabel(), wrapWidth-2-rightWidth-1)
 
 	var allLines []string
+	labelStyle := grayStyle
+	if f.lastFile != "" {
+		labelStyle = lipgloss.NewStyle()
+	}
 	for i, part := range actionParts {
-		rendered := grayStyle.Render(part)
+		rendered := labelStyle.Render(part)
 		if i == 0 {
-			// Line 1: action on left, time-since (with icon) on right, 1-char L/R padding.
+			// Line 1: label on left, indicator on right, 1-char L/R padding.
 			actionW := lipgloss.Width(rendered)
 			padding := contentWidth - actionW - rightWidth
 			if padding < 0 {
 				padding = 0
 			}
-			allLines = append(allLines, strings.Repeat(" ", pad)+rendered+strings.Repeat(" ", padding)+timeSinceStr)
+			allLines = append(allLines, strings.Repeat(" ", pad)+rendered+strings.Repeat(" ", padding)+rightStr)
 		} else {
 			allLines = append(allLines, strings.Repeat(" ", pad)+rendered)
 		}
@@ -166,8 +203,13 @@ func (f FooterModel) View(width int) string {
 
 // timeSince returns a human-readable duration string for how long ago t was.
 func timeSince(t time.Time) string {
+	if t.IsZero() {
+		return "–"
+	}
 	d := time.Since(t)
 	switch {
+	case d < 3*time.Second:
+		return "just now"
 	case d < time.Minute:
 		return fmt.Sprintf("%ds ago", int(d.Seconds()))
 	case d < time.Hour:
