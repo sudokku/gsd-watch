@@ -1,0 +1,6 @@
+preset = "default"
+emoji = true
+
+[theme]
+complete = "#00ff00"
+failed   = "#ff0000"

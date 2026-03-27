@@ -1,0 +1,5 @@
+preset = "default"
+
+[theme]
+complete = "not-a-hex"
+failed   = "#ff"
