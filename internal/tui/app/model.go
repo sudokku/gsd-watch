@@ -3,8 +3,10 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -264,7 +266,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // helpView renders the full-pane help overlay.
 // When noEmoji is true, ASCII bracket codes replace emoji in the Phase stages section.
-func helpView(width int, noEmoji bool) string {
+// configPath is the tilde-abbreviated config file path; themeName is the active theme name.
+func helpView(width int, noEmoji bool, configPath, themeName string) string {
 	if width < tui.MinWidth {
 		return "\u25c0 too narrow"
 	}
@@ -290,6 +293,10 @@ func helpView(width int, noEmoji bool) string {
 🧪  UAT`
 	}
 
+	configSection := fmt.Sprintf(`Config
+Config:  %s
+Theme:   %s`, configPath, themeName)
+
 	helpText := `gsd-watch help
 
 Navigation
@@ -308,6 +315,8 @@ qq   quit gsd-watch
 esc  quit gsd-watch
 
 ` + phaseStages + `
+
+` + configSection + `
 
 press q or esc to close`
 
@@ -336,7 +345,14 @@ func (m Model) View() string {
 		return "\u25c0 pane too narrow"
 	}
 	if m.helpVisible {
-		return helpView(m.width, !m.cfg.Emoji)
+		home, _ := os.UserHomeDir()
+		absPath := filepath.Join(home, config.ConfigPath)
+		cfgPath := strings.Replace(absPath, home, "~", 1)
+		themeName := m.cfg.Theme
+		if themeName == "" {
+			themeName = "default"
+		}
+		return helpView(m.width, !m.cfg.Emoji, cfgPath, themeName)
 	}
 	// Sync viewport content with current tree state.
 	m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))

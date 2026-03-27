@@ -334,6 +334,34 @@ func TestNoEmoji_False_RendersEmoji(t *testing.T) {
 	}
 }
 
+// TestHelpOverlay_ContainsConfigPath: '?' overlay shows the config file path (DISC-01).
+func TestHelpOverlay_ContainsConfigPath(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	view := m.View()
+	if !strings.Contains(view, "Config:") {
+		t.Error("expected help overlay to contain 'Config:' label")
+	}
+	if !strings.Contains(view, "config.toml") {
+		t.Error("expected help overlay to contain 'config.toml' in config path")
+	}
+}
+
+// TestHelpOverlay_ContainsThemeName: '?' overlay shows the active theme name (DISC-02).
+func TestHelpOverlay_ContainsThemeName(t *testing.T) {
+	m := newTestModel()
+	m, _ = updateModel(m, tea.WindowSizeMsg{Width: 80, Height: 24})
+	m, _ = updateModel(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	view := m.View()
+	if !strings.Contains(view, "Theme:") {
+		t.Error("expected help overlay to contain 'Theme:' label")
+	}
+	if !strings.Contains(view, "default") {
+		t.Error("expected help overlay to contain 'default' theme name when cfg.Theme is empty")
+	}
+}
+
 func TestViewContainsHeaderAndFooter(t *testing.T) {
 	m := newTestModel()
 	// Inject project data via ParsedMsg (new live-data path) so header has project name.
