@@ -1,6 +1,12 @@
 package tui
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"fmt"
+	"io"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/radu/gsd-watch/internal/config"
+)
 
 // MinWidth is the minimum terminal width before showing a "too narrow" placeholder.
 const MinWidth = 30
@@ -144,6 +150,34 @@ func StatusIcon(status string, noEmoji bool, theme Theme) string {
 	default:
 		return theme.Pending.Render("○")
 	}
+}
+
+// IsValidHex returns true if s is a valid #RRGGBB hex color string.
+// Only checks length (7) and # prefix per D-04. Does not validate hex digits.
+func IsValidHex(s string) bool {
+	return len(s) == 7 && s[0] == '#'
+}
+
+// ApplyColorOverrides returns a copy of theme with each non-nil ThemeColors
+// field applied as a hex foreground color. Invalid hex values emit a warning
+// to w and preserve the preset color. Per D-05: never fatal for color errors.
+func ApplyColorOverrides(theme Theme, overrides config.ThemeColors, w io.Writer) Theme {
+	apply := func(style *lipgloss.Style, field string, val *string) {
+		if val == nil {
+			return
+		}
+		if IsValidHex(*val) {
+			*style = lipgloss.NewStyle().Foreground(lipgloss.Color(*val))
+		} else {
+			fmt.Fprintf(w, "gsd-watch: invalid color %q for [theme].%s (ignored)\n", *val, field)
+		}
+	}
+	apply(&theme.Complete, "complete", overrides.Complete)
+	apply(&theme.Active, "active", overrides.Active)
+	apply(&theme.Pending, "pending", overrides.Pending)
+	apply(&theme.Failed, "failed", overrides.Failed)
+	apply(&theme.NowMarker, "now_marker", overrides.NowMarker)
+	return theme
 }
 
 // BadgeString returns the emoji (or ASCII short code) for a given phase lifecycle badge.
