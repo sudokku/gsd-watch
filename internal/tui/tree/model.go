@@ -35,6 +35,17 @@ type Row struct {
 // Options configures optional rendering behaviors for TreeModel.
 type Options struct {
 	NoEmoji bool
+	Theme   tui.Theme // color theme; zero value resolves to ThemeDefault() at render time
+}
+
+// themeFor returns opts.Theme if it has a non-zero Highlight style, else ThemeDefault().
+// A zero Theme occurs when Options is constructed without a Theme field (e.g. in tests).
+func themeFor(opts Options) tui.Theme {
+	// Highlight is always set in every ThemeX() constructor; use it as a zero-check.
+	if opts.Theme.Highlight.GetBold() || opts.Theme.Pending.GetForeground() != nil {
+		return opts.Theme
+	}
+	return tui.ThemeDefault()
 }
 
 // TreeModel manages collapsible tree state: data, expanded map, and cursor.

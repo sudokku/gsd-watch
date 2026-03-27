@@ -24,8 +24,8 @@ func FormatArchiveDate(iso string) string {
 }
 
 // RenderArchiveRow renders a single archived milestone row in emoji or noEmoji mode.
-// Archive rows are styled with PendingStyle (ColorGray) — non-interactive and dimmed.
-func RenderArchiveRow(am parser.ArchivedMilestone, noEmoji bool) string {
+// Archive rows are styled with th.Pending — non-interactive and dimmed.
+func RenderArchiveRow(am parser.ArchivedMilestone, noEmoji bool, th tui.Theme) string {
 	indicator := "▸ "
 	checkmark := "✓"
 	if noEmoji {
@@ -39,7 +39,7 @@ func RenderArchiveRow(am parser.ArchivedMilestone, noEmoji bool) string {
 	} else {
 		row = fmt.Sprintf("%s%s — %d phases %s", indicator, am.Name, am.PhaseCount, checkmark)
 	}
-	return tui.PendingStyle.Render(row)
+	return th.Pending.Render(row)
 }
 
 // RenderArchiveSeparator renders the "- - Archived Milestones - - -..." separator line
@@ -62,18 +62,16 @@ func RenderArchiveSeparator(width int) string {
 
 // RenderArchiveZone renders the full pinned archive zone: separator + one row per milestone.
 // Returns empty string when archives is nil or empty (D-04).
-func RenderArchiveZone(archives []parser.ArchivedMilestone, width int, noEmoji bool) string {
+func RenderArchiveZone(archives []parser.ArchivedMilestone, width int, noEmoji bool, th tui.Theme) string {
 	if len(archives) == 0 {
 		return ""
 	}
 	lines := []string{RenderArchiveSeparator(width)}
 	for _, am := range archives {
-		lines = append(lines, RenderArchiveRow(am, noEmoji))
+		lines = append(lines, RenderArchiveRow(am, noEmoji, th))
 	}
 	return strings.Join(lines, "\n")
 }
-
-var highlightStyle = lipgloss.NewStyle().Bold(true)
 
 // IsPhaseActive returns true if the cursor is on the phase row at phaseRowIdx,
 // or on any of its consecutive child RowPlan rows immediately after it.
@@ -104,6 +102,8 @@ func (t TreeModel) View(width, height int) string {
 		return "◀ too narrow"
 	}
 
+	th := themeFor(t.opts)
+
 	// Empty state (D-01): no phases in project data.
 	if len(t.data.Phases) == 0 {
 		var msg string
@@ -115,7 +115,7 @@ func (t TreeModel) View(width, height int) string {
 		centered := lipgloss.NewStyle().
 			Width(width - 2).
 			Align(lipgloss.Center).
-			Foreground(tui.ColorGray).
+			Foreground(th.EmptyFg).
 			Render(msg)
 		var padded []string
 		for _, line := range strings.Split(centered, "\n") {
@@ -154,9 +154,9 @@ func (t TreeModel) View(width, height int) string {
 				var text string
 				switch {
 				case phaseActive:
-					text = highlightStyle.Render(part)
+					text = th.Highlight.Render(part)
 				case isDimmedPhase:
-					text = tui.PendingStyle.Render(part)
+					text = th.Pending.Render(part)
 				default:
 					text = part
 				}
@@ -164,18 +164,18 @@ func (t TreeModel) View(width, height int) string {
 				var phaseLine string
 				if j == 0 {
 					if phaseActive {
-						phaseLine = highlightStyle.Render(prefixStr) + text
+						phaseLine = th.Highlight.Render(prefixStr) + text
 					} else if isDimmedPhase {
-						phaseLine = tui.PendingStyle.Render(prefixStr) + text
+						phaseLine = th.Pending.Render(prefixStr) + text
 					} else {
 						phaseLine = prefixStr + text
 					}
 				} else {
 					cont := continuation
 					if phaseActive {
-						cont = highlightStyle.Render(continuation)
+						cont = th.Highlight.Render(continuation)
 					} else if isDimmedPhase {
-						cont = tui.PendingStyle.Render(continuation)
+						cont = th.Pending.Render(continuation)
 					}
 					phaseLine = cont + text
 				}
@@ -195,9 +195,9 @@ func (t TreeModel) View(width, height int) string {
 					badgeLine := "    " + strings.Join(badgeParts, " ")
 					switch {
 					case phaseActive:
-						lines = append(lines, highlightStyle.Render(badgeLine))
+						lines = append(lines, th.Highlight.Render(badgeLine))
 					case isDimmedPhase:
-						lines = append(lines, tui.PendingStyle.Render(badgeLine))
+						lines = append(lines, th.Pending.Render(badgeLine))
 					default:
 						lines = append(lines, badgeLine)
 					}
@@ -206,7 +206,7 @@ func (t TreeModel) View(width, height int) string {
 
 			// D-02: show "(no plans yet)" for expanded phases with no plans.
 			if t.expanded[row.Phase.DirName] && len(row.Phase.Plans) == 0 {
-				lines = append(lines, "    "+tui.PendingStyle.Render("(no plans yet)"))
+				lines = append(lines, "    "+th.Pending.Render("(no plans yet)"))
 			}
 
 		case RowPlan:
@@ -221,7 +221,7 @@ func (t TreeModel) View(width, height int) string {
 			icon := tui.StatusIcon(row.Plan.Status, t.opts.NoEmoji)
 			nowMarker := ""
 			if row.Plan.IsActive {
-				nowMarker = " " + tui.NowMarkerStyle.Render("← now")
+				nowMarker = " " + th.NowMarker.Render("← now")
 			}
 
 			// Bug-2 fix: subtract 2 for D-10 left-padding (1) + implicit right-padding (1)
@@ -245,7 +245,7 @@ func (t TreeModel) View(width, height int) string {
 			// D-03: dim plan rows belonging to a completed phase.
 			// Bug-3 fix: apply dim independently to the connector/continuation and
 			// the text rather than to the whole assembled line. Wrapping the entire
-			// line with PendingStyle.Render() causes the icon's inner \033[0m reset
+			// line with Pending.Render() causes the icon's inner \033[0m reset
 			// to kill the gray mid-string, so line-1 text ends up white while
 			// line-2 continuation (no inner reset) stays gray.
 			isDimmed := phase.Status == parser.StatusComplete
@@ -260,9 +260,9 @@ func (t TreeModel) View(width, height int) string {
 				var text string
 				switch {
 				case i == t.cursor:
-					text = highlightStyle.Render(rawText)
+					text = th.Highlight.Render(rawText)
 				case isDimmed:
-					text = tui.PendingStyle.Render(rawText)
+					text = th.Pending.Render(rawText)
 				default:
 					text = rawText
 				}
@@ -271,13 +271,13 @@ func (t TreeModel) View(width, height int) string {
 				if j == 0 {
 					c := connector
 					if isDimmed {
-						c = tui.PendingStyle.Render(connector)
+						c = th.Pending.Render(connector)
 					}
 					l = c + icon + " " + text
 				} else {
 					cont := continuation
 					if isDimmed {
-						cont = tui.PendingStyle.Render(continuation)
+						cont = th.Pending.Render(continuation)
 					}
 					l = cont + text
 				}
@@ -292,13 +292,13 @@ func (t TreeModel) View(width, height int) string {
 			}
 			label := "Quick tasks"
 			if i == t.cursor {
-				lines = append(lines, highlightStyle.Render(indicator)+highlightStyle.Render(label))
+				lines = append(lines, th.Highlight.Render(indicator)+th.Highlight.Render(label))
 			} else {
 				lines = append(lines, indicator+label)
 			}
 			// D-02: empty state placeholder when expanded with no quick tasks
 			if t.expanded[quickSectionKey] && len(t.data.QuickTasks) == 0 {
-				lines = append(lines, "    "+tui.PendingStyle.Render("(no quick tasks)"))
+				lines = append(lines, "    "+th.Pending.Render("(no quick tasks)"))
 			}
 
 		case RowQuickTask:
@@ -332,9 +332,9 @@ func (t TreeModel) View(width, height int) string {
 				var text string
 				switch {
 				case i == t.cursor:
-					text = highlightStyle.Render(rawText)
+					text = th.Highlight.Render(rawText)
 				case isDimmed:
-					text = tui.PendingStyle.Render(rawText)
+					text = th.Pending.Render(rawText)
 				default:
 					text = rawText
 				}
@@ -343,13 +343,13 @@ func (t TreeModel) View(width, height int) string {
 				if j == 0 {
 					c := connector
 					if isDimmed {
-						c = tui.PendingStyle.Render(connector)
+						c = th.Pending.Render(connector)
 					}
 					l = c + icon + " " + text
 				} else {
 					cont := continuation
 					if isDimmed {
-						cont = tui.PendingStyle.Render(continuation)
+						cont = th.Pending.Render(continuation)
 					}
 					l = cont + text
 				}
@@ -385,7 +385,8 @@ func (t TreeModel) ArchiveZoneHeight() int {
 // ArchiveZone renders the pinned archive zone: separator at full width (no D-10 padding),
 // archive rows with D-10 left-padding. Returns empty string when no archives exist.
 func (t TreeModel) ArchiveZone(width int) string {
-	content := RenderArchiveZone(t.data.ArchivedMilestones, width, t.opts.NoEmoji)
+	th := themeFor(t.opts)
+	content := RenderArchiveZone(t.data.ArchivedMilestones, width, t.opts.NoEmoji, th)
 	if content == "" {
 		return ""
 	}
@@ -451,7 +452,9 @@ func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 		icon := tui.StatusIcon(row.Plan.Status, noEmoji)
 		nowWidth := 0
 		if row.Plan.IsActive {
-			nowWidth = lipgloss.Width(" " + tui.NowMarkerStyle.Render("← now"))
+			// Use theme NowMarker to get correct width (theme may affect ANSI sequence length).
+			th := themeFor(t.opts)
+			nowWidth = lipgloss.Width(" " + th.NowMarker.Render("← now"))
 		}
 		const connectorWidth = 8 // "    ├── " or "    └── " = 8 cells
 		prefixWidth := connectorWidth + lipgloss.Width(icon) + 1

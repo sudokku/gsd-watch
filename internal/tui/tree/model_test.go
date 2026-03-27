@@ -6,6 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/radu/gsd-watch/internal/parser"
+	tui "github.com/radu/gsd-watch/internal/tui"
 	"github.com/radu/gsd-watch/internal/tui/mock"
 	"github.com/radu/gsd-watch/internal/tui/tree"
 )
@@ -720,7 +721,7 @@ func TestFormatArchiveDate(t *testing.T) {
 // TestRenderArchiveRow_Emoji verifies emoji mode archive row contains expected text.
 func TestRenderArchiveRow_Emoji(t *testing.T) {
 	am := parser.ArchivedMilestone{Name: "v1.0", PhaseCount: 6, CompletionDate: "2025-01-15"}
-	out := tree.RenderArchiveRow(am, false)
+	out := tree.RenderArchiveRow(am, false, tui.ThemeDefault())
 	if !strings.Contains(out, "▸ v1.0 — 6 phases ✓  Jan 2025") {
 		t.Errorf("emoji mode: expected '▸ v1.0 — 6 phases ✓  Jan 2025' in output, got: %q", out)
 	}
@@ -729,7 +730,7 @@ func TestRenderArchiveRow_Emoji(t *testing.T) {
 // TestRenderArchiveRow_NoEmoji verifies noEmoji mode archive row contains expected text.
 func TestRenderArchiveRow_NoEmoji(t *testing.T) {
 	am := parser.ArchivedMilestone{Name: "v1.0", PhaseCount: 6, CompletionDate: "2025-01-15"}
-	out := tree.RenderArchiveRow(am, true)
+	out := tree.RenderArchiveRow(am, true, tui.ThemeDefault())
 	if !strings.Contains(out, "> v1.0 — 6 phases [done]  Jan 2025") {
 		t.Errorf("noEmoji mode: expected '> v1.0 — 6 phases [done]  Jan 2025' in output, got: %q", out)
 	}
@@ -738,7 +739,7 @@ func TestRenderArchiveRow_NoEmoji(t *testing.T) {
 // TestRenderArchiveRow_NoDate verifies that empty CompletionDate omits trailing space.
 func TestRenderArchiveRow_NoDate(t *testing.T) {
 	am := parser.ArchivedMilestone{Name: "v0.9", PhaseCount: 3, CompletionDate: ""}
-	out := tree.RenderArchiveRow(am, false)
+	out := tree.RenderArchiveRow(am, false, tui.ThemeDefault())
 	if !strings.Contains(out, "▸ v0.9 — 3 phases ✓") {
 		t.Errorf("no-date: expected '▸ v0.9 — 3 phases ✓' in output, got: %q", out)
 	}
@@ -760,7 +761,7 @@ func TestRenderArchiveSeparator(t *testing.T) {
 
 // TestRenderArchiveZone_Empty verifies empty slice returns empty string.
 func TestRenderArchiveZone_Empty(t *testing.T) {
-	out := tree.RenderArchiveZone(nil, 80, false)
+	out := tree.RenderArchiveZone(nil, 80, false, tui.ThemeDefault())
 	if out != "" {
 		t.Errorf("empty archives: expected empty string, got: %q", out)
 	}
@@ -772,7 +773,7 @@ func TestRenderArchiveZone_NonEmpty(t *testing.T) {
 		{Name: "v1.0", PhaseCount: 6, CompletionDate: "2025-01-15"},
 		{Name: "v0.9", PhaseCount: 3, CompletionDate: ""},
 	}
-	out := tree.RenderArchiveZone(archives, 80, false)
+	out := tree.RenderArchiveZone(archives, 80, false, tui.ThemeDefault())
 	lines := strings.Split(out, "\n")
 	if len(lines) != 3 {
 		t.Errorf("expected 3 lines (separator + 2 rows), got %d lines\nOutput:\n%s", len(lines), out)
