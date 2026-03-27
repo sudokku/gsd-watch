@@ -45,17 +45,28 @@ Full phase details: `.planning/milestones/v1.2-ROADMAP.md`
 
 </details>
 
+### Phase 16: Custom Color Config
+
+**Goal:** Users can override individual theme colors in config.toml under [theme.colors], with the chosen preset as the base and per-field hex overrides applied on top
+**Requirements**: TBD
+**Depends on:** Phase 15
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 16 to break down)
+
 ---
 
 ## Milestone v1.3: Settings
 
 **Goal:** Users can configure appearance once via a config file, and discover it through the help overlay.
 
-**Phases:** 13, 14, 15 (continuing from v1.2 Phase 12)
+**Phases:** 13, 14, 15, 16 (continuing from v1.2 Phase 12)
 
 - [x] **Phase 13: Config Infrastructure** — New `internal/config/` package; TOML loading with silent-defaults, fatal-error, and unknown-key-warning behaviors; `--no-emoji` and `--theme` flags override config via `flag.Visit` (completed 2026-03-26)
-- [ ] **Phase 14: Theme System** — `Theme` struct + three named presets in `styles.go`; call-site migration in `tree/view.go`; exported archive function signatures updated; theme name validated at startup
-- [ ] **Phase 15: Help Overlay Config Hint** — `?` overlay shows config file path and active theme name
+- [x] **Phase 14: Theme System** — `Theme` struct + three named presets in `styles.go`; call-site migration in `tree/view.go`; exported archive function signatures updated; theme name validated at startup (completed 2026-03-27)
+- [x] **Phase 15: Help Overlay Config Hint** — `?` overlay shows config file path and active theme name (completed 2026-03-27)
+- [ ] **Phase 16: Custom Color Config** — Per-field hex color overrides in config.toml under [theme.colors], applied on top of the active preset
 
 ## Phase Details
 
@@ -84,7 +95,10 @@ Plans:
   3. `theme = "high-contrast"` renders bold foreground colors using only 16-color ANSI palette indices — visible over SSH and in degraded terminals
   4. An unknown theme name (in config or via `--theme`) prints a stderr warning and falls back to `default` — gsd-watch does not crash
   5. Switching themes by editing config and restarting applies the new theme fully with no leftover colors from the previous theme
-**Plans**: TBD
+**Plans:** 2/2 plans complete
+Plans:
+- [x] 14-01-PLAN.md — Theme struct, three preset constructors, ResolveTheme, update tree.Options
+- [x] 14-02-PLAN.md — Migrate view.go call sites, archive function signatures, main.go wiring + unknown-theme warning
 **UI hint**: yes
 
 ### Phase 15: Help Overlay Config Hint
@@ -95,7 +109,9 @@ Plans:
   1. Pressing `?` shows a line with the full config file path (e.g. `Config: ~/.config/gsd-watch/config.toml`) regardless of whether that file exists on disk
   2. Pressing `?` shows a line with the currently active theme name (e.g. `Theme: default`)
   3. Both lines are present whether the config file is absent, present-with-defaults, or present-with-explicit-values
-**Plans**: TBD
+**Plans:** 1/1 plans complete
+Plans:
+- [x] 15-01-PLAN.md — Extend helpView signature; render Config section with path + theme name; add DISC-01/DISC-02 tests
 **UI hint**: yes
 
 ### v1.3 Progress
@@ -103,5 +119,5 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 13. Config Infrastructure | 2/2 | Complete    | 2026-03-26 |
-| 14. Theme System | 0/? | Not started | - |
-| 15. Help Overlay Config Hint | 0/? | Not started | - |
+| 14. Theme System | 2/2 | Complete    | 2026-03-27 |
+| 15. Help Overlay Config Hint | 1/1 | Complete   | 2026-03-27 |

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: Settings
-status: Ready to plan
-stopped_at: Quick task 260326-svs complete
-last_updated: "2026-03-26T18:51:10.384Z"
-last_activity: "2026-03-26 - Completed quick task 260326-qai: fix TUI trailing column visual debris on resize"
+status: Phase complete — ready for verification
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-03-27T16:00:23.844Z"
+last_activity: 2026-03-27
 progress:
-  total_phases: 3
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_phases: 4
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
@@ -20,12 +20,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 13 — config-infrastructure
+**Current focus:** Phase 15 — help-overlay-config-hint
 
 ## Current Position
 
-Phase: 14
-Plan: Not started
+Phase: 15 (help-overlay-config-hint) — EXECUTING
+Plan: 1 of 1
 
 ## Performance Metrics
 
@@ -77,6 +77,7 @@ Plan: Not started
 | Phase 12-archive-display P02 | 2 | 2 tasks | 1 files |
 | Phase 13-config-infrastructure P01 | 2 | 1 tasks | 8 files |
 | Phase 13-config-infrastructure P02 | 5 | 2 tasks | 3 files |
+| Phase 15-help-overlay-config-hint P01 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -162,6 +163,8 @@ Recent decisions affecting current work:
 - [Phase 13-01]: Initialize cfg := Defaults() before toml.DecodeFile to avoid Go bool zero-value pitfall; use errors.Is(err, fs.ErrNotExist) for missing-file detection; UnknownKeysError.Keys as []string to avoid leaking toml.Key type
 - [Phase 13-02]: Use _ = flag.Bool('no-emoji', ...) for flag registration without pointer capture — avoids unused variable error while keeping flag.Visit detection
 - [Phase 13-02]: \!cfg.Emoji inversion at call sites (New() and View()) — Config.Emoji=true means show emoji, tree.Options.NoEmoji=true means suppress; inversion at boundary
+- [Phase 15-01]: helpView(width, noEmoji, configPath, themeName) — two string params for config path and theme name; caller resolves before calling, keeps function pure
+- [Phase 15-01]: Config path tilde-abbreviated inline in View() via filepath.Join + strings.Replace; theme empty sentinel normalized to 'default' before passing to helpView
 
 ### v1.3 Decisions (accumulated during this milestone)
 
@@ -170,6 +173,7 @@ None yet — first phase not started.
 ### Roadmap Evolution
 
 - Phase 6 added: Onboarding, documentation, and UX improvements
+- Phase 16 added: Custom Color Config — per-field hex overrides in config.toml under [theme.colors], v1.3 milestone extended to phases 13-16
 
 ### Pending Todos
 
@@ -193,7 +197,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-26 - Completed quick task 260326-svs: fix no-project placeholder shown when only archived milestones exist
-Last session: 2026-03-26T18:51:10.379Z
-Stopped at: Quick task 260326-svs complete
+Last activity: 2026-03-27
+Last session: 2026-03-27T16:00:23.841Z
+Stopped at: Completed 15-01-PLAN.md
 Resume file: None
