@@ -7,10 +7,21 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// ThemeColors holds optional hex color overrides for the 5 status-tree colors.
+// Pointer fields: nil = not set by user; non-nil = user provided a value.
+type ThemeColors struct {
+	Complete  *string `toml:"complete"`
+	Active    *string `toml:"active"`
+	Pending   *string `toml:"pending"`
+	Failed    *string `toml:"failed"`
+	NowMarker *string `toml:"now_marker"`
+}
+
 // Config holds user configuration loaded from TOML.
 type Config struct {
-	Emoji bool   `toml:"emoji"`
-	Theme string `toml:"theme"`
+	Emoji  bool        `toml:"emoji"`
+	Preset string      `toml:"preset"`
+	Colors ThemeColors `toml:"theme"`
 }
 
 // ConfigPath is the XDG-relative config file path (joined with os.UserHomeDir()).
@@ -26,9 +37,9 @@ func (e *UnknownKeysError) Error() string {
 }
 
 // Defaults returns a Config with all fields at their documented defaults.
-// Emoji is true (show emoji by default). Theme is "" (Phase 14 interprets as "default").
+// Emoji is true (show emoji by default). Preset is "" (Phase 14 interprets as "default").
 func Defaults() Config {
-	return Config{Emoji: true, Theme: ""}
+	return Config{Emoji: true, Preset: ""}
 }
 
 // Load reads the config file at path and returns the decoded Config.

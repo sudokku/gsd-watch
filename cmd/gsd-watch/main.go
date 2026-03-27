@@ -81,15 +81,15 @@ Then start a session: tmux new-session`)
 		case "no-emoji":
 			cfg.Emoji = false
 		case "theme":
-			cfg.Theme = *themeFlag
+			cfg.Preset = *themeFlag
 		}
 	})
 
 	// THEME-04: validate theme name; warn and fall back to default on unknown names.
-	if cfg.Theme != "" {
-		if _, ok := tui.ThemeByName(cfg.Theme); !ok {
-			fmt.Fprintf(os.Stderr, "gsd-watch: unknown theme %q, using default\n", cfg.Theme)
-			cfg.Theme = ""
+	if cfg.Preset != "" {
+		if _, ok := tui.ThemeByName(cfg.Preset); !ok {
+			fmt.Fprintf(os.Stderr, "gsd-watch: unknown theme %q, using default\n", cfg.Preset)
+			cfg.Preset = ""
 		}
 	}
 

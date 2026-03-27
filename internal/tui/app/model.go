@@ -50,7 +50,7 @@ func New(events chan tea.Msg, cfg config.Config) Model {
 	root, _ := os.Getwd()
 	planningRoot := filepath.Join(root, ".planning")
 	keys := tui.DefaultKeyMap()
-	th, _ := tui.ThemeByName(cfg.Theme)
+	th, _ := tui.ThemeByName(cfg.Preset)
 	t := tree.New()
 	t = t.SetOptions(tree.Options{NoEmoji: !cfg.Emoji, Theme: th})
 	h := header.New(parser.ProjectData{})
@@ -348,7 +348,7 @@ func (m Model) View() string {
 		home, _ := os.UserHomeDir()
 		absPath := filepath.Join(home, config.ConfigPath)
 		cfgPath := strings.Replace(absPath, home, "~", 1)
-		themeName := m.cfg.Theme
+		themeName := m.cfg.Preset
 		if themeName == "" {
 			themeName = "default"
 		}
