@@ -51,6 +51,7 @@ func New(events chan tea.Msg, cfg config.Config) Model {
 	planningRoot := filepath.Join(root, ".planning")
 	keys := tui.DefaultKeyMap()
 	th, _ := tui.ThemeByName(cfg.Preset)
+	th = tui.ApplyColorOverrides(th, cfg.Colors, os.Stderr)
 	t := tree.New()
 	t = t.SetOptions(tree.Options{NoEmoji: !cfg.Emoji, Theme: th})
 	h := header.New(parser.ProjectData{})
