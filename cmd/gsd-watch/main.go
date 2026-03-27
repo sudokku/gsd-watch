@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/radu/gsd-watch/internal/config"
 	"github.com/radu/gsd-watch/internal/parser"
+	"github.com/radu/gsd-watch/internal/tui"
 	"github.com/radu/gsd-watch/internal/tui/app"
 )
 
@@ -83,6 +84,14 @@ Then start a session: tmux new-session`)
 			cfg.Theme = *themeFlag
 		}
 	})
+
+	// THEME-04: validate theme name; warn and fall back to default on unknown names.
+	if cfg.Theme != "" {
+		if _, ok := tui.ThemeByName(cfg.Theme); !ok {
+			fmt.Fprintf(os.Stderr, "gsd-watch: unknown theme %q, using default\n", cfg.Theme)
+			cfg.Theme = ""
+		}
+	}
 
 	// Set tmux pane title for duplicate detection.
 	// Deferred reset clears the window-level title on exit so the stale
