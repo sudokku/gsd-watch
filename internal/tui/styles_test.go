@@ -49,17 +49,21 @@ func TestStatusIcon_NoEmoji_Default(t *testing.T) {
 
 // TestBadgeString_Emoji: all 7 badges with noEmoji=false produce non-empty strings.
 func TestBadgeString_Emoji(t *testing.T) {
+	theme := tui.ThemeDefault()
 	badges := []string{"discussed", "researched", "ui_spec", "planned", "executed", "verified", "uat"}
 	for _, badge := range badges {
-		got := tui.BadgeString(badge, false)
+		got := tui.BadgeString(badge, false, theme)
 		if got == "" {
-			t.Errorf("BadgeString(%q, false) returned empty string", badge)
+			t.Errorf("BadgeString(%q, false, theme) returned empty string", badge)
 		}
 	}
 }
 
-// TestBadgeString_NoEmoji: all 7 badges with noEmoji=true return exact bracketed short codes.
+// TestBadgeString_NoEmoji: all 7 badges with noEmoji=true return bracketed short codes
+// (may be styled, so we check for Contains rather than exact equality).
 func TestBadgeString_NoEmoji(t *testing.T) {
+	// Use a zero Theme (no BadgeStyle) to get plain text output for exact matching.
+	emptyTheme := tui.Theme{}
 	tests := []struct {
 		badge string
 		want  string
@@ -73,19 +77,20 @@ func TestBadgeString_NoEmoji(t *testing.T) {
 		{"uat", "[uat]"},
 	}
 	for _, tt := range tests {
-		got := tui.BadgeString(tt.badge, true)
+		got := tui.BadgeString(tt.badge, true, emptyTheme)
 		if got != tt.want {
-			t.Errorf("BadgeString(%q, true) = %q; want %q", tt.badge, got, tt.want)
+			t.Errorf("BadgeString(%q, true, emptyTheme) = %q; want %q", tt.badge, got, tt.want)
 		}
 	}
 }
 
 // TestBadgeString_Unknown: unknown badge returns "" for both modes.
 func TestBadgeString_Unknown(t *testing.T) {
-	if got := tui.BadgeString("unknown_badge", false); got != "" {
-		t.Errorf("BadgeString(unknown, false) = %q; want empty string", got)
+	theme := tui.ThemeDefault()
+	if got := tui.BadgeString("unknown_badge", false, theme); got != "" {
+		t.Errorf("BadgeString(unknown, false, theme) = %q; want empty string", got)
 	}
-	if got := tui.BadgeString("unknown_badge", true); got != "" {
-		t.Errorf("BadgeString(unknown, true) = %q; want empty string", got)
+	if got := tui.BadgeString("unknown_badge", true, theme); got != "" {
+		t.Errorf("BadgeString(unknown, true, theme) = %q; want empty string", got)
 	}
 }

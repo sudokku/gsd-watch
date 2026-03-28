@@ -44,7 +44,8 @@ func RenderArchiveRow(am parser.ArchivedMilestone, noEmoji bool, th tui.Theme) s
 
 // RenderArchiveSeparator renders the "- - Archived Milestones - - -..." separator line
 // at full width (no D-10 offset — the caller must not add left-padding to this line).
-func RenderArchiveSeparator(width int) string {
+// The separator color is taken from th.ArchiveSeparatorFg.
+func RenderArchiveSeparator(width int, th tui.Theme) string {
 	label := " Archived Milestones "
 	prefix := "- -"
 	body := prefix + label
@@ -57,7 +58,7 @@ func RenderArchiveSeparator(width int) string {
 	if len(result) > width {
 		result = result[:width]
 	}
-	return lipgloss.NewStyle().Render(result)
+	return lipgloss.NewStyle().Foreground(th.ArchiveSeparatorFg).Render(result)
 }
 
 // RenderArchiveZone renders the full pinned archive zone: separator + one row per milestone.
@@ -66,7 +67,7 @@ func RenderArchiveZone(archives []parser.ArchivedMilestone, width int, noEmoji b
 	if len(archives) == 0 {
 		return ""
 	}
-	lines := []string{RenderArchiveSeparator(width)}
+	lines := []string{RenderArchiveSeparator(width, th)}
 	for _, am := range archives {
 		lines = append(lines, RenderArchiveRow(am, noEmoji, th))
 	}
@@ -130,17 +131,23 @@ func (t TreeModel) View(width, height int) string {
 	for i, row := range rows {
 		switch row.Kind {
 		case RowPhase:
-			expandIndicator := "▶ "
+			rawIndicator := "▶ "
 			if t.expanded[row.Phase.DirName] {
-				expandIndicator = "▼ "
+				rawIndicator = "▼ "
 			}
+			// Apply ExpandIndicatorFg color to the expand arrow when not on cursor row.
+			// Cursor row styling (Highlight) overrides per-component colors below.
+			expandIndicator := lipgloss.NewStyle().Foreground(th.ExpandIndicatorFg).Render(rawIndicator)
 			icon := tui.StatusIcon(row.Phase.Status, t.opts.NoEmoji, th)
 			isDimmedPhase := row.Phase.Status == parser.StatusComplete
 			phaseActive := t.IsPhaseActive(rows, i)
 
 			// Calculate prefix width and available wrap width for phase name.
-			prefixStr := expandIndicator + icon + " "
-			prefixWidth := lipgloss.Width(prefixStr)
+			// rawPrefixStr is used for Highlight/Pending rendering (no pre-colored indicator).
+			// styledPrefixStr is used for the normal (non-cursor, non-dimmed) case.
+			rawPrefixStr := rawIndicator + icon + " "
+			styledPrefixStr := expandIndicator + icon + " "
+			prefixWidth := lipgloss.Width(rawIndicator) + lipgloss.Width(icon) + 1
 			// -2 mirrors D-10 left-padding (1 char) + implicit right-padding (1 char).
 			wrapWidth := width - 2 - prefixWidth
 			if wrapWidth < 1 {
@@ -164,11 +171,13 @@ func (t TreeModel) View(width, height int) string {
 				var phaseLine string
 				if j == 0 {
 					if phaseActive {
-						phaseLine = th.Highlight.Render(prefixStr) + text
+						// Use raw prefix so Highlight covers the whole prefix uniformly.
+						phaseLine = th.Highlight.Render(rawPrefixStr) + text
 					} else if isDimmedPhase {
-						phaseLine = th.Pending.Render(prefixStr) + text
+						phaseLine = th.Pending.Render(rawPrefixStr) + text
 					} else {
-						phaseLine = prefixStr + text
+						// Normal case: styled indicator + plain icon.
+						phaseLine = styledPrefixStr + text
 					}
 				} else {
 					cont := continuation
@@ -186,19 +195,20 @@ func (t TreeModel) View(width, height int) string {
 			if len(row.Phase.Badges) > 0 {
 				var badgeParts []string
 				for _, badge := range row.Phase.Badges {
-					b := tui.BadgeString(badge, t.opts.NoEmoji)
+					b := tui.BadgeString(badge, t.opts.NoEmoji, th)
 					if b != "" {
 						badgeParts = append(badgeParts, b)
 					}
 				}
 				if len(badgeParts) > 0 {
 					badgeLine := "    " + strings.Join(badgeParts, " ")
-					switch {
-					case phaseActive:
-						lines = append(lines, th.Highlight.Render(badgeLine))
-					case isDimmedPhase:
+					// Never apply Highlight to the badge line — Reverse(true) conflicts with
+					// inline ANSI colors already embedded in badge strings, producing a white
+					// background on the first badge only (ANSI reset kills Reverse after it).
+					// Dimmed phases still get Pending style; active/default render plain.
+					if isDimmedPhase {
 						lines = append(lines, th.Pending.Render(badgeLine))
-					default:
+					} else {
 						lines = append(lines, badgeLine)
 					}
 				}
@@ -213,10 +223,15 @@ func (t TreeModel) View(width, height int) string {
 			// Determine connector: last plan in phase gets └──, others get ├──
 			phase := t.data.Phases[row.PhaseIdx]
 			isLast := row.Plan.Filename == phase.Plans[len(phase.Plans)-1].Filename
-			connector := "    ├── "
+			rawConnector := "    ├── "
 			if isLast {
-				connector = "    └── "
+				rawConnector = "    └── "
 			}
+			// Apply ConnectorFg color to connectors; dimmed/cursor rows override below.
+			connectorStyled := lipgloss.NewStyle().Foreground(th.ConnectorFg).Render(rawConnector)
+
+			// Continuation uses │ for non-last rows (Bug-1 fix).
+			var rawContinuation string
 
 			icon := tui.StatusIcon(row.Plan.Status, t.opts.NoEmoji, th)
 			nowMarker := ""
@@ -226,7 +241,7 @@ func (t TreeModel) View(width, height int) string {
 
 			// Bug-2 fix: subtract 2 for D-10 left-padding (1) + implicit right-padding (1)
 			// so content never reaches the terminal's rightmost column.
-			prefixWidth := lipgloss.Width(connector) + lipgloss.Width(icon) + 1
+			prefixWidth := lipgloss.Width(rawConnector) + lipgloss.Width(icon) + 1
 			nowWidth := lipgloss.Width(nowMarker)
 			wrapWidth := width - 2 - prefixWidth - nowWidth
 			if wrapWidth < 1 {
@@ -234,11 +249,10 @@ func (t TreeModel) View(width, height int) string {
 			}
 			// Bug-1 fix: use │ (U+2502) which aligns with ├/└ on the right cell edge.
 			// Bug-2 fix: same -2 adjustment so continuation column matches wrapWidth.
-			var continuation string
 			if isLast {
-				continuation = strings.Repeat(" ", prefixWidth)
+				rawContinuation = strings.Repeat(" ", prefixWidth)
 			} else {
-				continuation = "    │" + strings.Repeat(" ", prefixWidth-5)
+				rawContinuation = "    │" + strings.Repeat(" ", prefixWidth-5)
 			}
 			titleParts := tui.WordWrap(row.Plan.Title, wrapWidth)
 
@@ -269,15 +283,16 @@ func (t TreeModel) View(width, height int) string {
 
 				var l string
 				if j == 0 {
-					c := connector
+					c := connectorStyled
 					if isDimmed {
-						c = th.Pending.Render(connector)
+						// Dimmed overrides the ConnectorFg color.
+						c = th.Pending.Render(rawConnector)
 					}
 					l = c + icon + " " + text
 				} else {
-					cont := continuation
+					cont := lipgloss.NewStyle().Foreground(th.ConnectorFg).Render(rawContinuation)
 					if isDimmed {
-						cont = th.Pending.Render(continuation)
+						cont = th.Pending.Render(rawContinuation)
 					}
 					l = cont + text
 				}
@@ -286,15 +301,16 @@ func (t TreeModel) View(width, height int) string {
 			lines = append(lines, strings.Join(itemLines, "\n"))
 
 		case RowQuickSection:
-			indicator := "▶ "
+			rawQSIndicator := "▶ "
 			if t.expanded[quickSectionKey] {
-				indicator = "▼ "
+				rawQSIndicator = "▼ "
 			}
+			qsIndicator := lipgloss.NewStyle().Foreground(th.ExpandIndicatorFg).Render(rawQSIndicator)
 			label := "Quick tasks"
 			if i == t.cursor {
-				lines = append(lines, th.Highlight.Render(indicator)+th.Highlight.Render(label))
+				lines = append(lines, th.Highlight.Render(rawQSIndicator)+th.Highlight.Render(label))
 			} else {
-				lines = append(lines, indicator+label)
+				lines = append(lines, qsIndicator+label)
 			}
 			// D-02: empty state placeholder when expanded with no quick tasks
 			if t.expanded[quickSectionKey] && len(t.data.QuickTasks) == 0 {
@@ -304,26 +320,27 @@ func (t TreeModel) View(width, height int) string {
 		case RowQuickTask:
 			qt := row.QuickTask
 			isLast := row.QuickTaskIdx == len(t.data.QuickTasks)-1
-			connector := "    ├── "
+			rawQTConnector := "    ├── "
 			if isLast {
-				connector = "    └── "
+				rawQTConnector = "    └── "
 			}
+			qtConnectorStyled := lipgloss.NewStyle().Foreground(th.ConnectorFg).Render(rawQTConnector)
 			icon := tui.StatusIcon(qt.Status, t.opts.NoEmoji, th)
 			isDimmed := qt.Status == parser.StatusComplete
 
 			// Calculate wrap width — same pattern as RowPlan
-			prefixWidth := lipgloss.Width(connector) + lipgloss.Width(icon) + 1
+			prefixWidth := lipgloss.Width(rawQTConnector) + lipgloss.Width(icon) + 1
 			wrapWidth := width - 2 - prefixWidth
 			if wrapWidth < 1 {
 				wrapWidth = 1
 			}
 			nameParts := tui.WordWrap(qt.DisplayName, wrapWidth)
 
-			var continuation string
+			var rawQTContinuation string
 			if isLast {
-				continuation = strings.Repeat(" ", prefixWidth)
+				rawQTContinuation = strings.Repeat(" ", prefixWidth)
 			} else {
-				continuation = "    │" + strings.Repeat(" ", prefixWidth-5)
+				rawQTContinuation = "    │" + strings.Repeat(" ", prefixWidth-5)
 			}
 
 			var itemLines []string
@@ -341,15 +358,15 @@ func (t TreeModel) View(width, height int) string {
 
 				var l string
 				if j == 0 {
-					c := connector
+					c := qtConnectorStyled
 					if isDimmed {
-						c = th.Pending.Render(connector)
+						c = th.Pending.Render(rawQTConnector)
 					}
 					l = c + icon + " " + text
 				} else {
-					cont := continuation
+					cont := lipgloss.NewStyle().Foreground(th.ConnectorFg).Render(rawQTContinuation)
 					if isDimmed {
-						cont = th.Pending.Render(continuation)
+						cont = th.Pending.Render(rawQTContinuation)
 					}
 					l = cont + text
 				}
@@ -437,7 +454,7 @@ func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 		n := len(tui.WordWrap(row.Phase.Name, wrapWidth))
 		if len(row.Phase.Badges) > 0 {
 			for _, b := range row.Phase.Badges {
-				if tui.BadgeString(b, noEmoji) != "" {
+				if tui.BadgeString(b, noEmoji, th) != "" {
 					n++ // badge line
 					break
 				}

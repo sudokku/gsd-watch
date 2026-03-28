@@ -750,7 +750,7 @@ func TestRenderArchiveRow_NoDate(t *testing.T) {
 
 // TestRenderArchiveSeparator verifies separator contains label and starts with "- - ".
 func TestRenderArchiveSeparator(t *testing.T) {
-	out := tree.RenderArchiveSeparator(80)
+	out := tree.RenderArchiveSeparator(80, tui.ThemeDefault())
 	if !strings.Contains(out, "Archived Milestones") {
 		t.Errorf("separator: expected 'Archived Milestones' in output, got: %q", out)
 	}

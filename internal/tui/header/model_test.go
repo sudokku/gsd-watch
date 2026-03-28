@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/radu/gsd-watch/internal/parser"
+	tui "github.com/radu/gsd-watch/internal/tui"
 	"github.com/radu/gsd-watch/internal/tui/header"
 	"github.com/radu/gsd-watch/internal/tui/mock"
 )
@@ -91,5 +92,52 @@ func TestHeaderHeight(t *testing.T) {
 	h := header.New(mock.MockProject())
 	if h.Height() != 4 {
 		t.Errorf("expected Height() to return 4, got %d", h.Height())
+	}
+}
+
+// TestHeaderSetTheme_ContainsSeparator verifies that View() renders the ═ separator line
+// and that SetTheme() can be called without panic on all three presets.
+func TestHeaderSetTheme_AllPresets(t *testing.T) {
+	presets := []struct {
+		name string
+		th   tui.Theme
+	}{
+		{"default", tui.ThemeDefault()},
+		{"minimal", tui.ThemeMinimal()},
+		{"high-contrast", tui.ThemeHighContrast()},
+	}
+	for _, tt := range presets {
+		h := header.New(mock.MockProject()).SetTheme(tt.th)
+		out := h.View(80)
+		// Separator line should always be present regardless of theme.
+		if !strings.Contains(out, "═") {
+			t.Errorf("preset %q: expected ═ separator in header output, got:\n%s", tt.name, out)
+		}
+		// Project name should always be present.
+		if !strings.Contains(out, "gsd-watch") {
+			t.Errorf("preset %q: expected project name in header output, got:\n%s", tt.name, out)
+		}
+	}
+}
+
+// TestHeader_ProgressBar_ThemeColors verifies that at 50% completion the progress bar
+// contains both filled (▓) and empty (░) blocks with each theme applied.
+func TestHeader_ProgressBar_ThemeColors(t *testing.T) {
+	data := parser.ProjectData{
+		Name:            "test-project",
+		ModelProfile:    "fast",
+		Mode:            "auto",
+		ProgressPercent: 0.5,
+	}
+	presets := []tui.Theme{tui.ThemeDefault(), tui.ThemeMinimal(), tui.ThemeHighContrast()}
+	for _, th := range presets {
+		h := header.New(data).SetTheme(th)
+		out := h.View(80)
+		if !strings.Contains(out, "▓") {
+			t.Errorf("theme progress bar at 50%%: expected '▓' in output, got:\n%s", out)
+		}
+		if !strings.Contains(out, "░") {
+			t.Errorf("theme progress bar at 50%%: expected '░' in output, got:\n%s", out)
+		}
 	}
 }

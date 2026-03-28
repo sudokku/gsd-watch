@@ -4,6 +4,7 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,8 +55,8 @@ func New(events chan tea.Msg, cfg config.Config) Model {
 	th = tui.ApplyColorOverrides(th, cfg.Colors, os.Stderr)
 	t := tree.New()
 	t = t.SetOptions(tree.Options{NoEmoji: !cfg.Emoji, Theme: th})
-	h := header.New(parser.ProjectData{})
-	f := footer.New(parser.ProjectData{}, keys)
+	h := header.New(parser.ProjectData{}).SetTheme(th)
+	f := footer.New(parser.ProjectData{}, keys).SetTheme(th)
 	vp := viewport.New(0, 0)
 	return Model{
 		tree:         t,
@@ -266,23 +267,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // helpView renders the full-pane help overlay.
-// When noEmoji is true, ASCII bracket codes replace emoji in the Phase stages section.
+// When noEmoji is true, styled ASCII bracket codes replace emoji in the Phase stages section.
 // configPath is the tilde-abbreviated config file path; themeName is the active theme name.
-func helpView(width int, noEmoji bool, configPath, themeName string) string {
+// theme controls badge color styling in noEmoji mode so the legend reflects the active theme.
+func helpView(width int, noEmoji bool, configPath, themeName string, theme tui.Theme) string {
 	if width < tui.MinWidth {
 		return "\u25c0 too narrow"
 	}
 
 	var phaseStages string
 	if noEmoji {
-		phaseStages = `Phase stages
-[disc]   discussed
-[rsrch]  researched
-[ui]     ui spec
-[plan]   planned
-[exec]   executed
-[vrfy]   verified
-[uat]    UAT`
+		phaseStages = fmt.Sprintf(`Phase stages
+%s   discussed
+%s  researched
+%s     ui spec
+%s    planned
+%s    executed
+%s    verified
+%s      UAT`,
+			tui.BadgeString("discussed", true, theme),
+			tui.BadgeString("researched", true, theme),
+			tui.BadgeString("ui_spec", true, theme),
+			tui.BadgeString("planned", true, theme),
+			tui.BadgeString("executed", true, theme),
+			tui.BadgeString("verified", true, theme),
+			tui.BadgeString("uat", true, theme),
+		)
 	} else {
 		phaseStages = `Phase stages
 💬  discussed
@@ -323,11 +333,11 @@ press q or esc to close`
 
 	inner := lipgloss.NewStyle().
 		Padding(1, 2).
-		Foreground(tui.ColorGray)
+		Foreground(theme.HelpFg)
 
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(tui.ColorGray)
+		BorderForeground(theme.HelpBorder)
 
 	content := box.Render(inner.Render(helpText))
 	return lipgloss.NewStyle().
@@ -353,7 +363,9 @@ func (m Model) View() string {
 		if themeName == "" {
 			themeName = "default"
 		}
-		return helpView(m.width, !m.cfg.Emoji, cfgPath, themeName)
+		th, _ := tui.ThemeByName(themeName)
+		th = tui.ApplyColorOverrides(th, m.cfg.Colors, io.Discard)
+		return helpView(m.width, !m.cfg.Emoji, cfgPath, themeName, th)
 	}
 	// Sync viewport content with current tree state.
 	m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
