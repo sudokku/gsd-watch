@@ -189,7 +189,7 @@ None yet.
 | 260326-qai | Fix TUI trailing column visual debris on terminal resize | 2026-03-26 | 3d00bb7 | Complete | [260326-qai-fix-tui-trailing-column-visual-debris-on](./quick/260326-qai-fix-tui-trailing-column-visual-debris-on/) |
 | 260326-svs | Fix no-project placeholder shown when archived milestones present | 2026-03-26 | fedb015 | Complete | [260326-svs-fix-no-project-placeholder-shown-when-on](./quick/260326-svs-fix-no-project-placeholder-shown-when-on/) |
 | 260328-he9 | Audit and improve theme presets to be visually distinct — differentiate phase stage labels, font weights, and colors per theme | 2026-03-28 | 2fe54ec | Verified | [260328-he9-audit-and-improve-theme-presets-to-be-vi](./quick/260328-he9-audit-and-improve-theme-presets-to-be-vi/) |
-| 260328-on8 | Fix quick tasks visibility when no active milestone exists | 2026-03-28 | e34e99c | Complete | [260328-on8-fix-quick-tasks-visibility-when-no-activ](./quick/260328-on8-fix-quick-tasks-visibility-when-no-activ/) |
+| 260328-on8 | Fix quick tasks visibility when no active milestone exists | 2026-03-28 | 9f73b33 | Verified | [260328-on8-fix-quick-tasks-visibility-when-no-activ](./quick/260328-on8-fix-quick-tasks-visibility-when-no-activ/) |
 
 ### Blockers/Concerns
 
