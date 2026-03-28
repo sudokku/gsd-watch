@@ -14,15 +14,18 @@ type HeaderModel struct {
 	modelProfile string
 	mode         string
 	completion   float64 // 0.0 to 1.0
+	theme        tui.Theme
 }
 
 // New creates a HeaderModel populated from the given ProjectData.
+// Uses the default theme; call SetTheme to apply a different preset.
 func New(data parser.ProjectData) HeaderModel {
 	return HeaderModel{
 		projectName:  data.Name,
 		modelProfile: data.ModelProfile,
 		mode:         data.Mode,
 		completion:   data.ProgressPercent,
+		theme:        tui.ThemeDefault(),
 	}
 }
 
@@ -32,6 +35,12 @@ func (h HeaderModel) SetData(data parser.ProjectData) HeaderModel {
 	h.modelProfile = data.ModelProfile
 	h.mode = data.Mode
 	h.completion = data.ProgressPercent
+	return h
+}
+
+// SetTheme returns a new HeaderModel with the given theme applied.
+func (h HeaderModel) SetTheme(th tui.Theme) HeaderModel {
+	h.theme = th
 	return h
 }
 
@@ -52,7 +61,8 @@ func (h HeaderModel) View(width int) string {
 	contentWidth := width - 2*pad
 
 	// Line 1: project name on left, profile·mode on right (1-char L/R padding).
-	nameStr := lipgloss.NewStyle().Bold(true).Render(h.projectName)
+	// Use theme.HeaderNameStyle for the project name (bold in default/high-contrast, plain in minimal).
+	nameStr := h.theme.HeaderNameStyle.Render(h.projectName)
 	profileModeStr := h.modelProfile + " · " + h.mode
 
 	// Calculate visible length of nameStr (lipgloss Bold adds ANSI escapes,
@@ -66,10 +76,10 @@ func (h HeaderModel) View(width int) string {
 	line1 := strings.Repeat(" ", pad) + nameStr + strings.Repeat(" ", padding) + profileModeStr
 
 	// Line 2: progress bar with 1-char left padding.
-	line2 := strings.Repeat(" ", pad) + progressBar(h.completion, width)
+	line2 := strings.Repeat(" ", pad) + progressBar(h.completion, width, h.theme)
 
 	// Line 3: double-horizontal separator spanning full width.
-	separatorStyle := lipgloss.NewStyle().Foreground(tui.ColorGray)
+	separatorStyle := lipgloss.NewStyle().Foreground(h.theme.SeparatorFg)
 	line3 := separatorStyle.Render(strings.Repeat("═", width))
 
 	// Prepend a blank line for top breathing room.
@@ -77,7 +87,8 @@ func (h HeaderModel) View(width int) string {
 }
 
 // progressBar renders a filled/empty block bar for the given percentage and width.
-func progressBar(pct float64, width int) string {
+// Colors are taken from theme.ProgressFilled and theme.ProgressEmpty.
+func progressBar(pct float64, width int, th tui.Theme) string {
 	barWidth := width - 2
 	if barWidth < 0 {
 		barWidth = 0
@@ -90,7 +101,7 @@ func progressBar(pct float64, width int) string {
 		filled = barWidth
 	}
 
-	filledStr := lipgloss.NewStyle().Foreground(tui.ColorGreen).Render(strings.Repeat("▓", filled))
-	emptyStr := lipgloss.NewStyle().Foreground(tui.ColorGray).Render(strings.Repeat("░", barWidth-filled))
+	filledStr := lipgloss.NewStyle().Foreground(th.ProgressFilled).Render(strings.Repeat("▓", filled))
+	emptyStr := lipgloss.NewStyle().Foreground(th.ProgressEmpty).Render(strings.Repeat("░", barWidth-filled))
 	return filledStr + emptyStr
 }

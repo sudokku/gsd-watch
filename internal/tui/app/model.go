@@ -55,8 +55,8 @@ func New(events chan tea.Msg, cfg config.Config) Model {
 	th = tui.ApplyColorOverrides(th, cfg.Colors, os.Stderr)
 	t := tree.New()
 	t = t.SetOptions(tree.Options{NoEmoji: !cfg.Emoji, Theme: th})
-	h := header.New(parser.ProjectData{})
-	f := footer.New(parser.ProjectData{}, keys)
+	h := header.New(parser.ProjectData{}).SetTheme(th)
+	f := footer.New(parser.ProjectData{}, keys).SetTheme(th)
 	vp := viewport.New(0, 0)
 	return Model{
 		tree:         t,
@@ -333,11 +333,11 @@ press q or esc to close`
 
 	inner := lipgloss.NewStyle().
 		Padding(1, 2).
-		Foreground(tui.ColorGray)
+		Foreground(theme.HelpFg)
 
 	box := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(tui.ColorGray)
+		BorderForeground(theme.HelpBorder)
 
 	content := box.Render(inner.Render(helpText))
 	return lipgloss.NewStyle().

@@ -23,13 +23,16 @@ type FooterModel struct {
 	keys          tui.KeyMap
 	width         int
 	quitPending   bool
+	theme         tui.Theme
 }
 
 // New creates a FooterModel populated from the given ProjectData and KeyMap.
+// Uses the default theme; call SetTheme to apply a different preset.
 func New(data parser.ProjectData, keys tui.KeyMap) FooterModel {
 	return FooterModel{
 		lastUpdated: data.LastUpdated,
 		keys:        keys,
+		theme:       tui.ThemeDefault(),
 	}
 }
 
@@ -76,6 +79,12 @@ func (f FooterModel) ActiveChanges() bool {
 // SetQuitPending returns a new FooterModel with the quit-confirm state set.
 func (f FooterModel) SetQuitPending(pending bool) FooterModel {
 	f.quitPending = pending
+	return f
+}
+
+// SetTheme returns a new FooterModel with the given theme applied.
+func (f FooterModel) SetTheme(th tui.Theme) FooterModel {
+	f.theme = th
 	return f
 }
 
@@ -127,14 +136,16 @@ func (f FooterModel) View(width int) string {
 	grayStyle := lipgloss.NewStyle().Foreground(tui.ColorGray)
 
 	// First line: light-horizontal separator spanning full width.
-	sepLine := lipgloss.NewStyle().Render(strings.Repeat("─", width))
+	// Use theme.SeparatorFg for theme-aware coloring.
+	sepStyle := lipgloss.NewStyle().Foreground(f.theme.SeparatorFg)
+	sepLine := sepStyle.Render(strings.Repeat("─", width))
 
 	// Build right-side indicator: spinner or checkmark + time string.
 	ts := timeSince(f.lastUpdated)
 	var rightStr string
 	if f.activeChanges {
 		frame := spinFrames[f.spinFrame%len(spinFrames)]
-		rightStr = tui.RefreshFlashStyle.Render(frame + " " + ts)
+		rightStr = f.theme.RefreshFlash.Render(frame + " " + ts)
 	} else {
 		rightStr = grayStyle.Render("✓ " + ts)
 	}
