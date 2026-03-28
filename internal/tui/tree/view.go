@@ -202,12 +202,13 @@ func (t TreeModel) View(width, height int) string {
 				}
 				if len(badgeParts) > 0 {
 					badgeLine := "    " + strings.Join(badgeParts, " ")
-					switch {
-					case phaseActive:
-						lines = append(lines, th.Highlight.Render(badgeLine))
-					case isDimmedPhase:
+					// Never apply Highlight to the badge line — Reverse(true) conflicts with
+					// inline ANSI colors already embedded in badge strings, producing a white
+					// background on the first badge only (ANSI reset kills Reverse after it).
+					// Dimmed phases still get Pending style; active/default render plain.
+					if isDimmedPhase {
 						lines = append(lines, th.Pending.Render(badgeLine))
-					default:
+					} else {
 						lines = append(lines, badgeLine)
 					}
 				}
