@@ -47,7 +47,7 @@ Full phase details: `.planning/milestones/v1.2-ROADMAP.md`
 
 ### Phase 16: Custom Color Config
 
-**Goal:** Users can override individual theme colors in config.toml under [theme.colors], with the chosen preset as the base and per-field hex overrides applied on top
+**Goal:** Users can override individual theme colors in config.toml under [theme], with the chosen preset as the base and per-field hex overrides applied on top
 **Requirements**: TBD
 **Depends on:** Phase 15
 **Plans:** 2 plans
