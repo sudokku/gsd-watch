@@ -378,6 +378,31 @@ func TestView_ArchivedOnly(t *testing.T) {
 	}
 }
 
+// TestView_ArchivedOnlyWithQuickTasks verifies that when archived milestones exist and
+// quick tasks are present, the quick tasks tree renders instead of the static hint.
+func TestView_ArchivedOnlyWithQuickTasks(t *testing.T) {
+	data := parser.ProjectData{
+		ArchivedMilestones: []parser.ArchivedMilestone{
+			{Name: "v1.0", PhaseCount: 4, CompletionDate: "2025-01-15"},
+		},
+		QuickTasks: []parser.QuickTask{
+			{Status: parser.StatusPending, DisplayName: "Buy milk"},
+		},
+	}
+	m := tree.New().SetData(data)
+	out := m.View(80, 999)
+
+	if !strings.Contains(out, "Quick tasks") {
+		t.Errorf("expected 'Quick tasks' header when quick tasks exist\nOutput:\n%s", out)
+	}
+	if !strings.Contains(out, "├──") && !strings.Contains(out, "└──") {
+		t.Errorf("expected at least one connector ('├──' or '└──') when quick tasks exist\nOutput:\n%s", out)
+	}
+	if strings.Contains(out, "/gsd:quick") {
+		t.Errorf("expected static '/gsd:quick' hint to be absent when quick tasks exist\nOutput:\n%s", out)
+	}
+}
+
 // TestView_NoPlansYet verifies that an expanded phase with no plans shows "(no plans yet)".
 func TestView_NoPlansYet(t *testing.T) {
 	data := mock.MockProject()

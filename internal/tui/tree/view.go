@@ -109,7 +109,12 @@ func (t TreeModel) View(width, height int) string {
 	if len(t.data.Phases) == 0 {
 		var msg string
 		if len(t.data.ArchivedMilestones) > 0 {
-			msg = "All milestones archived.\n\nStart a new milestone:\n/gsd:new-milestone\n\nor run a quick task:\n/gsd:quick"
+			if len(t.data.QuickTasks) > 0 {
+				// Quick tasks exist: show them below the archived message instead of static hint.
+				msg = "\n\nAll milestones archived.\n\nStart a new milestone:\n/gsd:new-milestone"
+			} else {
+				msg = "\n\nAll milestones archived.\n\nStart a new milestone:\n/gsd:new-milestone\n\nor run a quick task:\n/gsd:quick"
+			}
 		} else {
 			msg = "No GSD project found.\n\nTo get started, open\nClaude Code and run:\n/gsd:new-project"
 		}
@@ -122,6 +127,50 @@ func (t TreeModel) View(width, height int) string {
 		for _, line := range strings.Split(centered, "\n") {
 			padded = append(padded, " "+line)
 		}
+
+		// When quick tasks exist in archived-milestone empty state, render them below.
+		if len(t.data.ArchivedMilestones) > 0 && len(t.data.QuickTasks) > 0 {
+			padded = append(padded, "")
+			// Quick tasks section header.
+			qsHeader := lipgloss.NewStyle().Foreground(th.ExpandIndicatorFg).Render("▼ ") + "Quick tasks"
+			padded = append(padded, " "+qsHeader)
+			for qi, qt := range t.data.QuickTasks {
+				isLast := qi == len(t.data.QuickTasks)-1
+				rawConnector := "    ├── "
+				if isLast {
+					rawConnector = "    └── "
+				}
+				var connStyled string
+				if qt.Status == parser.StatusComplete {
+					connStyled = th.Pending.Render(rawConnector)
+				} else {
+					connStyled = lipgloss.NewStyle().Foreground(th.ConnectorFg).Render(rawConnector)
+				}
+				icon := tui.StatusIcon(qt.Status, t.opts.NoEmoji, th)
+				prefixWidth := lipgloss.Width(rawConnector) + lipgloss.Width(icon) + 1
+				wrapWidth := width - 2 - prefixWidth
+				if wrapWidth < 1 {
+					wrapWidth = 1
+				}
+				nameParts := tui.WordWrap(qt.DisplayName, wrapWidth)
+				for j, part := range nameParts {
+					var text string
+					if qt.Status == parser.StatusComplete {
+						text = th.Pending.Render(part)
+					} else {
+						text = part
+					}
+					var l string
+					if j == 0 {
+						l = connStyled + icon + " " + text
+					} else {
+						l = strings.Repeat(" ", prefixWidth) + text
+					}
+					padded = append(padded, " "+l)
+				}
+			}
+		}
+
 		return strings.Join(padded, "\n")
 	}
 
