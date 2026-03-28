@@ -46,6 +46,19 @@ type Theme struct {
 	EmptyFg      lipgloss.TerminalColor
 	HelpBorder   lipgloss.TerminalColor
 	HelpFg       lipgloss.TerminalColor
+
+	// Structural chrome colors — separator lines, progress bar, tree connectors.
+	SeparatorFg       lipgloss.TerminalColor // header ═ and footer ─ separators
+	ProgressFilled    lipgloss.TerminalColor // progress bar filled blocks ▓
+	ProgressEmpty     lipgloss.TerminalColor // progress bar empty blocks ░
+	ConnectorFg       lipgloss.TerminalColor // tree ├──, └──, │ connectors
+	ExpandIndicatorFg lipgloss.TerminalColor // ▶ / ▼ expand arrows
+	ArchiveSeparatorFg lipgloss.TerminalColor // "- - Archived Milestones - -" line
+
+	// Structural styles — applied to composite rendered elements.
+	InProgressStyle lipgloss.Style // ▶ / [>] in-progress icon
+	HeaderNameStyle lipgloss.Style // project name in header
+
 	// BadgeStyle maps badge name (e.g. "discussed", "executed") to the lipgloss style
 	// used when rendering bracketed badge codes in noEmoji mode. Each theme preset
 	// defines its own palette to make themes visually distinct.
@@ -74,6 +87,16 @@ func ThemeDefault() Theme {
 		EmptyFg:      ColorGray,
 		HelpBorder:   ColorGray,
 		HelpFg:       ColorGray,
+
+		SeparatorFg:        ColorGray,
+		ProgressFilled:     ColorGreen,
+		ProgressEmpty:      ColorGray,
+		ConnectorFg:        ColorGray,
+		ExpandIndicatorFg:  lipgloss.NoColor{},
+		ArchiveSeparatorFg: ColorGray,
+		InProgressStyle:    lipgloss.NewStyle(),
+		HeaderNameStyle:    lipgloss.NewStyle().Bold(true),
+
 		BadgeStyle: map[string]lipgloss.Style{
 			"discussed":  lipgloss.NewStyle().Foreground(lipgloss.Color("36")),  // Cyan
 			"researched": lipgloss.NewStyle().Foreground(lipgloss.Color("36")),  // Cyan
@@ -106,6 +129,16 @@ func ThemeMinimal() Theme {
 		EmptyFg:      muted,
 		HelpBorder:   muted,
 		HelpFg:       muted,
+
+		SeparatorFg:        lipgloss.Color("240"),
+		ProgressFilled:     lipgloss.Color("243"),
+		ProgressEmpty:      lipgloss.Color("238"),
+		ConnectorFg:        lipgloss.Color("240"),
+		ExpandIndicatorFg:  lipgloss.Color("243"),
+		ArchiveSeparatorFg: lipgloss.Color("238"),
+		InProgressStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("245")),
+		HeaderNameStyle:    lipgloss.NewStyle(),
+
 		BadgeStyle: map[string]lipgloss.Style{
 			"discussed":  mutedBadge,
 			"researched": mutedBadge,
@@ -131,6 +164,7 @@ func ThemeHighContrast() Theme {
 	green := lipgloss.Color("2")
 	yellow := lipgloss.Color("3")
 	red := lipgloss.Color("1")
+	white := lipgloss.Color("7")
 	brightWhite := lipgloss.Color("15")
 	return Theme{
 		Complete:     lipgloss.NewStyle().Bold(true).Foreground(green),
@@ -140,10 +174,20 @@ func ThemeHighContrast() Theme {
 		NowMarker:    lipgloss.NewStyle().Bold(true).Foreground(yellow),
 		RefreshFlash: lipgloss.NewStyle().Bold(true).Foreground(green),
 		QuitPending:  lipgloss.NewStyle().Bold(true).Foreground(yellow),
-		Highlight:    lipgloss.NewStyle().Bold(true),
+		Highlight:    lipgloss.NewStyle().Reverse(true),
 		EmptyFg:      brightWhite,
 		HelpBorder:   brightWhite,
 		HelpFg:       brightWhite,
+
+		SeparatorFg:        white,
+		ProgressFilled:     green,
+		ProgressEmpty:      lipgloss.Color("0"),
+		ConnectorFg:        white,
+		ExpandIndicatorFg:  yellow,
+		ArchiveSeparatorFg: white,
+		InProgressStyle:    lipgloss.NewStyle().Bold(true).Foreground(yellow),
+		HeaderNameStyle:    lipgloss.NewStyle().Bold(true),
+
 		BadgeStyle: map[string]lipgloss.Style{
 			"discussed":  lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14")), // Bright Cyan
 			"researched": lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14")), // Bright Cyan
@@ -181,7 +225,7 @@ func StatusIcon(status string, noEmoji bool, theme Theme) string {
 		case "complete":
 			return theme.Complete.Render("[x]")
 		case "in_progress":
-			return "[>]"
+			return theme.InProgressStyle.Render("[>]")
 		case "failed":
 			return theme.Failed.Render("[!]")
 		default:
@@ -192,7 +236,7 @@ func StatusIcon(status string, noEmoji bool, theme Theme) string {
 	case "complete":
 		return theme.Complete.Render("✓")
 	case "in_progress":
-		return "▶"
+		return theme.InProgressStyle.Render("▶")
 	case "failed":
 		return theme.Failed.Render("✗")
 	default:
