@@ -186,7 +186,7 @@ func (t TreeModel) View(width, height int) string {
 			if len(row.Phase.Badges) > 0 {
 				var badgeParts []string
 				for _, badge := range row.Phase.Badges {
-					b := tui.BadgeString(badge, t.opts.NoEmoji)
+					b := tui.BadgeString(badge, t.opts.NoEmoji, th)
 					if b != "" {
 						badgeParts = append(badgeParts, b)
 					}
@@ -437,7 +437,7 @@ func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 		n := len(tui.WordWrap(row.Phase.Name, wrapWidth))
 		if len(row.Phase.Badges) > 0 {
 			for _, b := range row.Phase.Badges {
-				if tui.BadgeString(b, noEmoji) != "" {
+				if tui.BadgeString(b, noEmoji, th) != "" {
 					n++ // badge line
 					break
 				}

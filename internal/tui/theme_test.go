@@ -5,11 +5,22 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/muesli/termenv"
 	"github.com/radu/gsd-watch/internal/config"
 	"github.com/radu/gsd-watch/internal/tui"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 func strPtr(s string) *string { return &s }
+
+// newColorRenderer returns a lipgloss Renderer with ANSI256 color profile forced on,
+// so that badge style comparisons produce ANSI sequences regardless of terminal state.
+func newColorRenderer() *lipgloss.Renderer {
+	r := lipgloss.NewRenderer(nil)
+	r.SetColorProfile(termenv.ANSI256)
+	return r
+}
 
 // TestThemeByName_Known verifies that all supported theme names return ok=true.
 func TestThemeByName_Known(t *testing.T) {
@@ -130,5 +141,127 @@ func TestApplyColorOverrides_InvalidHex(t *testing.T) {
 	// Preset colors preserved — render should match base
 	if got.Complete.Render("x") != base.Complete.Render("x") {
 		t.Errorf("Complete style should be preserved on invalid hex")
+	}
+}
+
+// TestBadgeStyle_DefaultDistinct verifies at least 3 badge categories produce different
+// Render() output in the default theme (cyan vs magenta vs green).
+func TestBadgeStyle_DefaultDistinct(t *testing.T) {
+	th := tui.ThemeDefault()
+	if th.BadgeStyle == nil {
+		t.Fatal("ThemeDefault().BadgeStyle is nil; expected a populated map")
+	}
+
+	discStyle, ok := th.BadgeStyle["discussed"]
+	if !ok {
+		t.Fatal("ThemeDefault().BadgeStyle missing 'discussed' key")
+	}
+	execStyle, ok := th.BadgeStyle["executed"]
+	if !ok {
+		t.Fatal("ThemeDefault().BadgeStyle missing 'executed' key")
+	}
+	vrfyStyle, ok := th.BadgeStyle["verified"]
+	if !ok {
+		t.Fatal("ThemeDefault().BadgeStyle missing 'verified' key")
+	}
+
+	// Use a forced-color renderer so ANSI sequences are produced regardless of terminal state.
+	r := newColorRenderer()
+	disc := r.NewStyle().Inherit(discStyle).Render("[disc]")
+	exec := r.NewStyle().Inherit(execStyle).Render("[exec]")
+	vrfy := r.NewStyle().Inherit(vrfyStyle).Render("[vrfy]")
+
+	if disc == exec {
+		t.Errorf("ThemeDefault: 'discussed' and 'executed' badge styles produce identical output %q; want distinct", disc)
+	}
+	if exec == vrfy {
+		t.Errorf("ThemeDefault: 'executed' and 'verified' badge styles produce identical output %q; want distinct", exec)
+	}
+	if disc == vrfy {
+		t.Errorf("ThemeDefault: 'discussed' and 'verified' badge styles produce identical output %q; want distinct", disc)
+	}
+}
+
+// TestBadgeStyle_HighContrastBold verifies that all high-contrast badge styles have Bold=true.
+// We test this by checking that the rendered output is different from a non-bold render.
+func TestBadgeStyle_HighContrastBold(t *testing.T) {
+	th := tui.ThemeHighContrast()
+	if th.BadgeStyle == nil {
+		t.Fatal("ThemeHighContrast().BadgeStyle is nil; expected a populated map")
+	}
+
+	badges := []string{"discussed", "researched", "ui_spec", "planned", "executed", "verified", "uat"}
+	r := newColorRenderer()
+	// A plain style (no bold) rendered "x" — any badge bold style should differ.
+	plainOut := r.NewStyle().Render("x")
+
+	for _, badge := range badges {
+		style, ok := th.BadgeStyle[badge]
+		if !ok {
+			t.Errorf("ThemeHighContrast().BadgeStyle missing key %q", badge)
+			continue
+		}
+		rendered := r.NewStyle().Inherit(style).Render("x")
+		// Bold + color should not equal plain (no color, no bold).
+		if rendered == plainOut {
+			t.Errorf("ThemeHighContrast badge %q: rendered output matches plain (no bold/color); want styled output", badge)
+		}
+	}
+}
+
+// TestBadgeStyle_ThemesDiffer verifies the same badge produces different output across all 3 themes.
+func TestBadgeStyle_ThemesDiffer(t *testing.T) {
+	thDefault := tui.ThemeDefault()
+	thMinimal := tui.ThemeMinimal()
+	thHighContrast := tui.ThemeHighContrast()
+
+	r := newColorRenderer()
+
+	badges := []string{"discussed", "executed", "verified"}
+	for _, badge := range badges {
+		sDefault, ok1 := thDefault.BadgeStyle[badge]
+		sMinimal, ok2 := thMinimal.BadgeStyle[badge]
+		sHC, ok3 := thHighContrast.BadgeStyle[badge]
+		if !ok1 || !ok2 || !ok3 {
+			t.Errorf("badge %q: one or more themes missing BadgeStyle entry (default=%v, minimal=%v, hc=%v)", badge, ok1, ok2, ok3)
+			continue
+		}
+
+		text := "[" + badge + "]"
+		dOut := r.NewStyle().Inherit(sDefault).Render(text)
+		mOut := r.NewStyle().Inherit(sMinimal).Render(text)
+		hOut := r.NewStyle().Inherit(sHC).Render(text)
+
+		if dOut == mOut {
+			t.Errorf("badge %q: default and minimal produce identical output %q", badge, dOut)
+		}
+		if dOut == hOut {
+			t.Errorf("badge %q: default and high-contrast produce identical output %q", badge, dOut)
+		}
+		if mOut == hOut {
+			t.Errorf("badge %q: minimal and high-contrast produce identical output %q", badge, mOut)
+		}
+	}
+}
+
+// TestBadgeString_EmojiNoThemeChange verifies that in emoji mode (noEmoji=false),
+// BadgeString returns the same emoji regardless of theme (no ANSI wrapping).
+func TestBadgeString_EmojiNoThemeChange(t *testing.T) {
+	thDefault := tui.ThemeDefault()
+	thMinimal := tui.ThemeMinimal()
+	thHC := tui.ThemeHighContrast()
+
+	badges := []string{"discussed", "executed", "verified"}
+	for _, badge := range badges {
+		d := tui.BadgeString(badge, false, thDefault)
+		m := tui.BadgeString(badge, false, thMinimal)
+		h := tui.BadgeString(badge, false, thHC)
+		if d != m || d != h {
+			t.Errorf("badge %q: emoji mode produced different output across themes: default=%q minimal=%q hc=%q", badge, d, m, h)
+		}
+		// Must be non-empty
+		if d == "" {
+			t.Errorf("badge %q: emoji mode returned empty string", badge)
+		}
 	}
 }
