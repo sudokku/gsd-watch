@@ -190,3 +190,25 @@ func TestFooterView_ContainsHelpHint(t *testing.T) {
 		t.Errorf("expected footer to contain '? help' hint, got:\n%s", out)
 	}
 }
+
+// TestFooterSetTheme_AllPresets verifies that SetTheme() can be called on all three
+// presets and that View() still renders the ─ separator line.
+func TestFooterSetTheme_AllPresets(t *testing.T) {
+	presets := []struct {
+		name string
+		th   tui.Theme
+	}{
+		{"default", tui.ThemeDefault()},
+		{"minimal", tui.ThemeMinimal()},
+		{"high-contrast", tui.ThemeHighContrast()},
+	}
+	for _, tt := range presets {
+		f := footer.New(mock.MockProject(), tui.DefaultKeyMap()).SetTheme(tt.th)
+		f = f.SetWidth(80)
+		out := f.View(80)
+		// Separator line should always be present regardless of theme.
+		if !strings.Contains(out, "─") {
+			t.Errorf("preset %q: expected ─ separator in footer output, got:\n%s", tt.name, out)
+		}
+	}
+}

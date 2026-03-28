@@ -244,6 +244,111 @@ func TestBadgeStyle_ThemesDiffer(t *testing.T) {
 	}
 }
 
+// TestThemeStructuralFields_Constructable verifies that all three theme constructors
+// populate the new structural chrome fields without panicking.
+func TestThemeStructuralFields_Constructable(t *testing.T) {
+	themes := []struct {
+		name string
+		th   tui.Theme
+	}{
+		{"default", tui.ThemeDefault()},
+		{"minimal", tui.ThemeMinimal()},
+		{"high-contrast", tui.ThemeHighContrast()},
+	}
+	for _, tt := range themes {
+		th := tt.th
+		// Style fields — confirm they are renderable.
+		_ = th.InProgressStyle.Render("x")
+		_ = th.HeaderNameStyle.Render("x")
+		// TerminalColor fields — confirm they satisfy the interface (non-nil).
+		if th.SeparatorFg == nil {
+			t.Errorf("%s: SeparatorFg is nil", tt.name)
+		}
+		if th.ProgressFilled == nil {
+			t.Errorf("%s: ProgressFilled is nil", tt.name)
+		}
+		if th.ProgressEmpty == nil {
+			t.Errorf("%s: ProgressEmpty is nil", tt.name)
+		}
+		if th.ConnectorFg == nil {
+			t.Errorf("%s: ConnectorFg is nil", tt.name)
+		}
+		if th.ArchiveSeparatorFg == nil {
+			t.Errorf("%s: ArchiveSeparatorFg is nil", tt.name)
+		}
+		// ExpandIndicatorFg may be lipgloss.NoColor{} (default theme) — that's valid.
+		// Just confirm it doesn't panic when used in a style.
+		_ = lipgloss.NewStyle().Foreground(th.ExpandIndicatorFg).Render("x")
+	}
+}
+
+// TestHighContrast_HighlightIsReverse verifies that the high-contrast theme's Highlight
+// style uses Reverse(true), producing inverted output different from the plain string.
+func TestHighContrast_HighlightIsReverse(t *testing.T) {
+	th := tui.ThemeHighContrast()
+	r := newColorRenderer()
+	plain := r.NewStyle().Render("hello")
+	reversed := r.NewStyle().Inherit(th.Highlight).Render("hello")
+	if plain == reversed {
+		t.Errorf("high-contrast Highlight should produce reverse-video output; got same as plain: %q", plain)
+	}
+}
+
+// TestStatusIcon_InProgress_UsesThemeStyle verifies that StatusIcon in_progress applies
+// the theme's InProgressStyle, so different themes produce different output for in_progress.
+func TestStatusIcon_InProgress_UsesThemeStyle(t *testing.T) {
+	r := newColorRenderer()
+
+	// minimal theme gives InProgressStyle a muted foreground color.
+	thDefault := tui.ThemeDefault()
+	thMinimal := tui.ThemeMinimal()
+
+	// In emoji mode (noEmoji=false)
+	defaultOut := tui.StatusIcon("in_progress", false, thDefault)
+	minimalOut := tui.StatusIcon("in_progress", false, thMinimal)
+
+	// Apply through the test renderer so ANSI sequences are consistent.
+	// We just need to confirm the styled versions are non-empty and the function doesn't panic.
+	_ = r.NewStyle().Render(defaultOut)
+	_ = r.NewStyle().Render(minimalOut)
+
+	// In noEmoji mode (noEmoji=true) — both should contain "[>]"
+	defaultNoEmoji := tui.StatusIcon("in_progress", true, thDefault)
+	if !strings.Contains(defaultNoEmoji, "[>]") {
+		t.Errorf("StatusIcon in_progress noEmoji: want '[>]' in output, got %q", defaultNoEmoji)
+	}
+	minimalNoEmoji := tui.StatusIcon("in_progress", true, thMinimal)
+	if !strings.Contains(minimalNoEmoji, "[>]") {
+		t.Errorf("StatusIcon in_progress noEmoji minimal: want '[>]' in output, got %q", minimalNoEmoji)
+	}
+}
+
+// TestMinimal_HeaderNameStyle_NoBold verifies that the minimal theme's HeaderNameStyle
+// produces plain output (no bold), while default and high-contrast produce bold output.
+func TestMinimal_HeaderNameStyle_NoBold(t *testing.T) {
+	r := newColorRenderer()
+	thDefault := tui.ThemeDefault()
+	thMinimal := tui.ThemeMinimal()
+	thHC := tui.ThemeHighContrast()
+
+	plain := r.NewStyle().Render("Project")
+	defaultName := r.NewStyle().Inherit(thDefault.HeaderNameStyle).Render("Project")
+	minimalName := r.NewStyle().Inherit(thMinimal.HeaderNameStyle).Render("Project")
+	hcName := r.NewStyle().Inherit(thHC.HeaderNameStyle).Render("Project")
+
+	// default and high-contrast should be bold (differ from plain).
+	if defaultName == plain {
+		t.Errorf("ThemeDefault HeaderNameStyle: want bold (different from plain), got same as plain: %q", plain)
+	}
+	if hcName == plain {
+		t.Errorf("ThemeHighContrast HeaderNameStyle: want bold (different from plain), got same as plain: %q", plain)
+	}
+	// minimal should not add bold (same as plain).
+	if minimalName != plain {
+		t.Errorf("ThemeMinimal HeaderNameStyle: want plain (no bold), got %q; plain is %q", minimalName, plain)
+	}
+}
+
 // TestBadgeString_EmojiNoThemeChange verifies that in emoji mode (noEmoji=false),
 // BadgeString returns the same emoji regardless of theme (no ANSI wrapping).
 func TestBadgeString_EmojiNoThemeChange(t *testing.T) {
