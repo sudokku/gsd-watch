@@ -1,18 +1,29 @@
 ---
 quick_task: 260328-he9
-plan: 01
-status: awaiting-verification
+plan: 02
+status: complete
 completed_date: "2026-03-28"
-duration_minutes: 6
+duration_minutes: 22
 subsystem: tui/themes
-tags: [theme, badge, styling, visual-differentiation]
+tags: [theme, badge, styling, visual-differentiation, structural-chrome, connectors, progress-bar, separator]
 dependency_graph:
   requires: []
-  provides: [THEME-VISUAL-DIFFERENTIATION]
-  affects: [internal/tui/styles.go, internal/tui/tree/view.go, internal/tui/app/model.go]
+  provides: [THEME-VISUAL-DIFFERENTIATION, THEME-STRUCTURAL-CHROME]
+  affects:
+    - internal/tui/styles.go
+    - internal/tui/tree/view.go
+    - internal/tui/app/model.go
+    - internal/tui/header/model.go
+    - internal/tui/footer/model.go
 tech_stack:
   added: []
-  patterns: [BadgeStyle map field on Theme, per-theme badge palette, theme-parameterized BadgeString]
+  patterns:
+    - BadgeStyle map field on Theme (plan 01)
+    - per-theme badge palette (plan 01)
+    - theme-parameterized BadgeString (plan 01)
+    - SeparatorFg/ProgressFilled/ProgressEmpty/ConnectorFg/ExpandIndicatorFg/ArchiveSeparatorFg on Theme (plan 02)
+    - InProgressStyle/HeaderNameStyle on Theme (plan 02)
+    - SetTheme() on HeaderModel and FooterModel (plan 02)
 key_files:
   created: []
   modified:
@@ -20,117 +31,148 @@ key_files:
     - internal/tui/styles_test.go
     - internal/tui/theme_test.go
     - internal/tui/tree/view.go
+    - internal/tui/tree/model_test.go
     - internal/tui/app/model.go
+    - internal/tui/header/model.go
+    - internal/tui/footer/model.go
 decisions:
   - "BadgeStyle is map[string]lipgloss.Style on Theme; keys are badge names matching BadgeString switch cases"
-  - "BadgeString gains Theme param; emoji mode is unchanged (no styling); noEmoji mode applies theme.BadgeStyle[badge] if present"
-  - "Zero Theme{} (nil BadgeStyle map) falls back to plain text — backward safe for any callers using zero-value Theme"
+  - "BadgeString gains Theme param; emoji mode is unchanged; noEmoji mode applies theme.BadgeStyle[badge] if present"
+  - "Zero Theme{} (nil BadgeStyle map) falls back to plain text — backward safe"
   - "helpView gains Theme param; badge legend in noEmoji mode uses BadgeString so overlay colors match active theme"
-  - "View() resolves theme via ThemeByName + ApplyColorOverrides with io.Discard before calling helpView"
+  - "high-contrast Highlight uses Reverse(true) — bg/fg reversal is the single biggest visual differentiator"
+  - "HeaderModel and FooterModel gain SetTheme(); New() defaults to ThemeDefault() for backward safety"
+  - "ExpandIndicatorFg on default theme is lipgloss.NoColor{} — terminal default, zero-diff from before"
+  - "RenderArchiveSeparator gains theme param to apply ArchiveSeparatorFg"
 metrics:
-  duration: 6 min
+  duration: 22 min
   completed_date: "2026-03-28"
-  tasks_completed: 2
-  files_modified: 5
+  tasks_completed: 5
+  files_modified: 8
 ---
 
 # Quick Task 260328-he9: Audit and Improve Theme Presets to Be Visually Distinct — Summary
 
-**One-liner:** Per-theme badge color palettes (256-color default, muted minimal, bold+bright high-contrast) via BadgeStyle map on Theme; BadgeString gains Theme param applied at all call sites.
+**One-liner:** Nine rendering sites that bypassed the Theme struct now thread structural chrome colors (separators, progress bar, connectors, expand arrows, archive separator, in-progress icon, header name) through all three theme presets, widening the visual delta between default, minimal, and high-contrast.
 
 ## What Was Built
 
-Three theme presets now produce meaningfully distinct visual output for phase stage badges:
+### Plan 01 — Badge styling (prior session)
 
-**ThemeDefault** — 256-color ANSI palette with distinct colors per badge category:
-- Discussed/Researched: Cyan (36)
-- UI Spec: Blue (33)
-- Planned: Blue/Indigo (69)
-- Executed: Magenta (133)
-- Verified: Green (34)
-- UAT: Yellow (178)
+Three theme presets produce distinct visual output for phase stage badges in noEmoji mode. See plan 01 details in the commits section.
 
-**ThemeMinimal** — Uniform muted tone (color 243) for all badges; Active style uses color 248 (slightly brighter) so active phases still stand out. Content-first aesthetic preserved.
+### Plan 02 — Structural chrome fields (this session)
 
-**ThemeHighContrast** — Bold + bright 16-color ANSI only:
-- Discussed/Researched: Bright Cyan (14)
-- UI Spec/Planned: Bright Blue (12)
-- Executed: Bright Magenta (13)
-- Verified: Bright Green (10)
-- UAT: Bright Yellow (11)
-- Active style gets Bold+Underline; Pending uses Bright White (15)
+Eight new fields were added to the `Theme` struct and wired into all render sites that previously hardcoded colors:
+
+**ThemeDefault** — preserves existing visual feel, makes it explicit:
+- SeparatorFg: ColorGray (═ and ─ lines stay gray)
+- ProgressFilled: ColorGreen, ProgressEmpty: ColorGray (unchanged)
+- ConnectorFg: ColorGray (├──/└──/│ stay gray)
+- ExpandIndicatorFg: lipgloss.NoColor{} (terminal default — no change)
+- ArchiveSeparatorFg: ColorGray
+- InProgressStyle: plain style (no change)
+- HeaderNameStyle: bold (no change)
+
+**ThemeMinimal** — chrome recedes, structure disappears, only content remains:
+- SeparatorFg: color 240 — very dark, barely visible separators
+- ProgressFilled: color 243, ProgressEmpty: color 238 — nearly flat bar
+- ConnectorFg: color 240 — tree lines dim to near-invisible
+- ExpandIndicatorFg: color 243 — arrows dimmed
+- ArchiveSeparatorFg: color 238 — archive section recedes further
+- InProgressStyle: muted foreground (color 245) — not green
+- HeaderNameStyle: no bold — reduces visual weight of project name
+
+**ThemeHighContrast** — punchy, max brightness, reverse-video cursor:
+- Highlight: Reverse(true) — bg/fg reversal for cursor row (biggest single differentiator)
+- SeparatorFg: color 7 (white) — maximum visibility separators
+- ProgressFilled: color 2 (green), ProgressEmpty: color 0 (black) — high-contrast bar
+- ConnectorFg: color 7 (white) — white connectors pop on dark terminals
+- ExpandIndicatorFg: color 3 (yellow) — arrows pop in yellow
+- ArchiveSeparatorFg: color 7 (white)
+- InProgressStyle: Bold + yellow foreground (color 3)
+- HeaderNameStyle: bold (same as default, keeps strong project name)
 
 ## Changes Made
 
 ### `internal/tui/styles.go`
-- Added `BadgeStyle map[string]lipgloss.Style` field to `Theme` struct
-- `ThemeDefault()`: populated BadgeStyle with distinct 256-color palette
-- `ThemeMinimal()`: populated BadgeStyle with uniform muted tone; Active uses color 248 (was 245)
-- `ThemeHighContrast()`: populated BadgeStyle with bold+bright 16-color palette; Active gets Underline; Pending uses Bright White (15)
-- `BadgeString()` signature changed from `(badge, noEmoji)` to `(badge, noEmoji, theme)` — applies `theme.BadgeStyle[badge]` in noEmoji mode; emoji mode unchanged
+- Added 8 new fields to `Theme` struct: `SeparatorFg`, `ProgressFilled`, `ProgressEmpty`, `ConnectorFg`, `ExpandIndicatorFg`, `ArchiveSeparatorFg`, `InProgressStyle`, `HeaderNameStyle`
+- All three theme constructors (`ThemeDefault`, `ThemeMinimal`, `ThemeHighContrast`) populated with per-theme values
+- `ThemeHighContrast`: `Highlight` changed to `lipgloss.NewStyle().Reverse(true)`
+- `StatusIcon`: in_progress branches now use `theme.InProgressStyle.Render()` instead of bare string
 
-### `internal/tui/tree/view.go`
-- Updated both `BadgeString` call sites to pass `th` (already in scope from `themeFor(t.opts)`)
+### `internal/tui/header/model.go`
+- Added `theme tui.Theme` field to `HeaderModel`
+- Added `SetTheme(th tui.Theme) HeaderModel` method
+- `New()` defaults to `ThemeDefault()`
+- `View()`: project name uses `theme.HeaderNameStyle`, separator uses `theme.SeparatorFg`
+- `progressBar()` gains `th tui.Theme` param; uses `theme.ProgressFilled` and `theme.ProgressEmpty`
+
+### `internal/tui/footer/model.go`
+- Added `theme tui.Theme` field to `FooterModel`
+- Added `SetTheme(th tui.Theme) FooterModel` method
+- `New()` defaults to `ThemeDefault()`
+- `View()`: footer ─ separator uses `theme.SeparatorFg`; spinner uses `theme.RefreshFlash`
 
 ### `internal/tui/app/model.go`
-- `helpView()` gains `theme tui.Theme` parameter
-- Badge legend in noEmoji mode uses `tui.BadgeString` calls instead of hardcoded strings
-- `View()` resolves theme before calling `helpView`; uses `io.Discard` to suppress color-override warnings in render path
-- Added `io` import
+- `New()`: calls `header.New(...).SetTheme(th)` and `footer.New(...).SetTheme(th)` to propagate resolved theme
+- `helpView()`: inner/box styles use `theme.HelpFg` and `theme.HelpBorder` (previously hardcoded `tui.ColorGray`)
 
-### `internal/tui/styles_test.go`
-- All `BadgeString` calls updated to pass `tui.ThemeDefault()` or `tui.Theme{}`
-- `TestBadgeString_NoEmoji` now uses `tui.Theme{}` (nil BadgeStyle) for exact plain-text matching
+### `internal/tui/tree/view.go`
+- `RowPhase`: expand indicator (`▶`/`▼`) rendered with `theme.ExpandIndicatorFg`; cursor row uses raw indicator for clean Highlight wrapping
+- `RowPlan`: connector (`├──`/`└──`) and continuation (`│`) rendered with `theme.ConnectorFg`; dimmed rows override with Pending color
+- `RowQuickSection`: expand indicator rendered with `theme.ExpandIndicatorFg`
+- `RowQuickTask`: connector and continuation rendered with `theme.ConnectorFg`
+- `RenderArchiveSeparator(width, th)`: gains theme param; applies `theme.ArchiveSeparatorFg`
+- `RenderArchiveZone`: passes theme through to `RenderArchiveSeparator`
 
-### `internal/tui/theme_test.go`
-- Added `TestBadgeStyle_DefaultDistinct`: verifies disc/exec/vrfy produce different ANSI output in default theme
-- Added `TestBadgeStyle_HighContrastBold`: verifies all HC badge styles produce non-plain output (bold+color)
-- Added `TestBadgeStyle_ThemesDiffer`: verifies same badge produces different output across all 3 themes
-- Added `TestBadgeString_EmojiNoThemeChange`: verifies emoji mode is theme-invariant
+### Test files updated
+- `internal/tui/theme_test.go`: 4 new tests for structural fields
+- `internal/tui/header/model_test.go`: 2 new tests for `SetTheme` + all presets
+- `internal/tui/footer/model_test.go`: 1 new test for `SetTheme` + all presets
+- `internal/tui/tree/model_test.go`: updated `RenderArchiveSeparator` call to new signature
+
+## Commits
+
+| # | Hash | Description |
+|---|------|-------------|
+| 1 | 692ac33 | feat(quick-260328-he9-01): add BadgeStyle to Theme; update BadgeString signature |
+| 2 | 6f9daed | feat(quick-260328-he9-01): wire theme badge styling into help overlay |
+| 3 | d7e8903 | docs(quick-260328-he9-01): add SUMMARY.md |
+| 4 | e1e63dc | feat(quick-260328-he9-02): add structural chrome fields to Theme struct; update all theme constructors |
+| 5 | 6f7d5e4 | feat(quick-260328-he9-02): wire all theme fields into render sites |
+| 6 | cbde3fa | test(quick-260328-he9-02): add tests for new Theme structural chrome fields |
 
 ## Test Results
 
 ```
-ok  github.com/radu/gsd-watch/internal/tui          (all badge/theme tests pass)
-ok  github.com/radu/gsd-watch/internal/tui/app      (no regressions)
-ok  github.com/radu/gsd-watch/internal/tui/tree     (no regressions)
-go vet ./...                                         (clean)
+ok  github.com/radu/gsd-watch/internal/tui          4.116s
+ok  github.com/radu/gsd-watch/internal/tui/app      (cached)
+ok  github.com/radu/gsd-watch/internal/tui/footer   0.665s
+ok  github.com/radu/gsd-watch/internal/tui/header   1.526s
+ok  github.com/radu/gsd-watch/internal/tui/tree     (cached)
 ```
-
-## Commits
-
-| Task | Commit | Description |
-|------|--------|-------------|
-| 1 (TDD) | 692ac33 | feat: add BadgeStyle to Theme; update BadgeString signature |
-| 2 | 6f9daed | feat: wire theme badge styling into help overlay |
 
 ## Deviations from Plan
 
-### Auto-applied
+### Plan 01 (prior session)
 
 **1. [Rule 1 - Bug] Renamed `dim` var in ThemeMinimal to use correct color 248**
-- **Found during:** Task 1 implementation
-- **Issue:** Original `dim` was color 245 for Active. Plan spec said Active should use 248 for slightly-brighter differentiation from Complete (243).
-- **Fix:** Changed `dim` to lipgloss.Color("248") directly; renamed variable to avoid confusion with `muted` (243)
-- **Files modified:** internal/tui/styles.go
+- Changed Active from color 245 to 248 per plan spec
 
 **2. [Rule 3 - Blocking] Fixed lipgloss.WithColorProfile API mismatch**
-- **Found during:** Task 1 TDD (RED phase compile errors)
-- **Issue:** lipgloss v1.1.0 does not export `WithColorProfile` or color profile constants directly — the plan's test snippet used a newer API. Correct API is `r.SetColorProfile(termenv.ANSI256)`.
-- **Fix:** Updated test helper to use `lipgloss.NewRenderer(nil)` + `r.SetColorProfile(termenv.ANSI256)` from `github.com/muesli/termenv`
-- **Files modified:** internal/tui/theme_test.go
+- Used `r.SetColorProfile(termenv.ANSI256)` instead of non-existent `lipgloss.WithColorProfile`
+
+### Plan 02 (this session)
+
+**1. [Rule 1 - Bug] Width calculation for expand indicator after color styling**
+- Styled indicator (`lipgloss.NewStyle().Foreground(...).Render("▶ ")`) changes string bytes but not display width
+- Split into `rawIndicator` (for width math + cursor Highlight wrapping) and `expandIndicator` (for styled normal rendering) — width calculation stays correct
+
+**2. [Rule 2 - Missing critical] RenderArchiveSeparator call site in tree test updated**
+- Signature changed (gains theme param), existing test broke at compile time
+- Updated call to `RenderArchiveSeparator(80, tui.ThemeDefault())` — included in Task B commit
 
 ## Known Stubs
 
-None — all badge styles are fully wired and applied at render time.
-
-## Status
-
-Awaiting human verification (checkpoint:human-verify). Build instructions:
-
-```bash
-cd /Users/radu/Developer/gsd-watch && go build -o gsd-watch ./cmd/gsd-watch
-./gsd-watch                      # default theme — distinct colored badges
-./gsd-watch --theme minimal      # muted/gray badges
-./gsd-watch --theme high-contrast # bold+bright badges
-```
+None — all structural chrome colors are fully wired end-to-end through themes.
