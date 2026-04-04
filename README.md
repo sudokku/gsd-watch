@@ -2,7 +2,7 @@
 
 > Live GSD project status sidebar for Claude Code — in your terminal, always visible.
 
-![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Built with Go](https://img.shields.io/badge/built%20with-Go-00ADD8)
 
@@ -14,15 +14,23 @@
   <sub>Demo is sped up and has some minutes cut for convenience. Recorded on a real <a href="https://github.com/sudokku/micro-ffmpeg">micro-ffmpeg</a> project session.</sub>
 </p>
 
-A read-only tmux sidebar that renders your [GSD](https://github.com/gsd-build/get-shit-done) project tree live — phases, plans, status icons, and lifecycle badges — updating within a second of any file change. Sits alongside Claude Code so you always know where you are without switching context.
+A read-only tmux/cmux sidebar that renders your [GSD](https://github.com/gsd-build/get-shit-done) project tree live — phases, plans, status icons, and lifecycle badges — updating within a second of any file change. Sits alongside Claude Code so you always know where you are without switching context.
 
 ---
 
 ## Requirements
 
-- **macOS** (darwin/arm64 or darwin/amd64)
-- **tmux** — `brew install tmux`
-- **Claude Code** running inside a tmux session
+| OS / Arch | tmux | cmux |
+|-----------|------|------|
+| macOS arm64 | ✓ | ✓ |
+| macOS amd64 | ✓ | ✓ |
+| Linux arm64 | ✓ | ✗ |
+| Linux amd64 | ✓ | ✗ |
+
+> cmux is macOS-only; Linux users use tmux.
+
+- **tmux** or **cmux** — one must be running
+- **Claude Code** running inside a tmux or cmux session
 - **GSD v1** project with a `.planning/` directory
 
 ---
