@@ -60,9 +60,9 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
 
 ### v1.4 cmux + Linux (Phases 17-21)
 
-- [ ] **Phase 17: Linux Build Targets** — Extend Makefile with linux-arm64, linux-amd64, build-linux, build-all, and platform-aware install
+- [x] **Phase 17: Linux Build Targets** — Extend Makefile with linux-arm64, linux-amd64, build-linux, build-all, and platform-aware install (completed 2026-04-04)
 - [x] **Phase 18: Go Binary Multiplexer Detection** — Update main.go to accept $CMUX_WORKSPACE_ID, update error message, switch OSC 2 to OSC 0 (completed 2026-04-04)
-- [ ] **Phase 19: Slash Command cmux Detection** — Update slash command to detect $CMUX_WORKSPACE_ID vs $TMUX and branch multiplexer check
+- [x] **Phase 19: Slash Command cmux Detection** — Update slash command to detect $CMUX_WORKSPACE_ID vs $TMUX and branch multiplexer check (completed 2026-04-04)
 - [ ] **Phase 20: Slash Command cmux Pane Spawning** — Add cmux pane creation via Unix socket API (nc -U, JSON-RPC)
 - [ ] **Phase 21: Documentation** — Update README platform matrix, Linux install, make targets, and PROJECT.md Out of Scope
 
@@ -77,7 +77,7 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
   2. `make build-all` produces all four binaries (darwin-arm64, darwin-amd64, linux-arm64, linux-amd64) in a single invocation
   3. Running `make install` on a Linux arm64 machine copies the arm64 binary; on a Linux amd64 machine copies the amd64 binary
   4. Linux binaries are static (CGO_ENABLED=0) and carry no codesign step
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 17-01-PLAN.md — Rewrite Makefile with Linux build targets and OS-agnostic install
 
@@ -101,7 +101,9 @@ Plans:
   1. Running `/gsd-watch` inside cmux (CMUX_WORKSPACE_ID set) proceeds past the multiplexer check with no error
   2. Running `/gsd-watch` inside tmux proceeds past the multiplexer check identically to v1.3 (no regression)
   3. Running `/gsd-watch` outside both tmux and cmux shows an error message that names both tmux and cmux
-**Plans**: TBD
+**Plans:** 1/1 plans complete
+Plans:
+- [x] 19-01-PLAN.md — Rewrite Step 2 with cmux-first three-branch multiplexer check
 
 ### Phase 20: Slash Command cmux Pane Spawning
 **Goal**: The `/gsd-watch` slash command opens a right-side pane in cmux and starts gsd-watch automatically, with no change to the tmux path
@@ -111,7 +113,7 @@ Plans:
   1. Running `/gsd-watch` inside cmux creates a right-side split pane via `nc -U $CMUX_SOCKET_PATH` with the `surface.split` JSON-RPC call
   2. The new cmux pane automatically runs `gsd-watch` in the correct project directory via a `surface.send_text` JSON-RPC call
   3. Running `/gsd-watch` inside tmux produces the same split pane behavior as v1.3 — tmux code path is untouched
-**Plans**: TBD
+**Plans:** TBD
 
 ### Phase 21: Documentation
 **Goal**: README and PROJECT.md accurately describe the expanded platform support so Linux users and cmux users can self-serve
@@ -121,11 +123,7 @@ Plans:
   1. README contains a platform/multiplexer support matrix showing macOS+Linux and tmux+cmux combinations
   2. README Installation section includes Linux binary download and install instructions
   3. README Building section documents `make build-linux` and `make build-all` targets with descriptions
-**Plans**: TBD
-
-- [x] Phase 17: Linux Build Targets (1/1 plans) — completed 2026-04-04
-- [x] Phase 18: Go Binary Multiplexer Detection (1/1 plans) — completed 2026-04-04
-- [x] Phase 19: Slash Command cmux Detection (1/1 plans) — completed 2026-04-04
+**Plans:** TBD
 
 ## Progress
 
