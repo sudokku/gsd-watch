@@ -1,31 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Settings
-status: v1.3 milestone complete
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-03-27T23:10:52.777Z"
-last_activity: 2026-03-27
+milestone: v1.4
+milestone_name: cmux + Linux
+status: Roadmap defined
+stopped_at: —
+last_updated: "2026-04-04T00:00:00.000Z"
+last_activity: 2026-04-04
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 7
-  completed_plans: 7
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-26)
+See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 16 — custom-color-config
+**Current focus:** v1.4 roadmap defined — ready to plan Phase 17
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
+Phase: Not started
+Plan: —
+Status: Roadmap defined, awaiting phase planning
+Last activity: 2026-04-04 — v1.4 roadmap created (5 phases: 17-21)
 
 ## Performance Metrics
 
@@ -166,14 +168,15 @@ Recent decisions affecting current work:
 - [Phase 15-01]: helpView(width, noEmoji, configPath, themeName) — two string params for config path and theme name; caller resolves before calling, keeps function pure
 - [Phase 15-01]: Config path tilde-abbreviated inline in View() via filepath.Join + strings.Replace; theme empty sentinel normalized to 'default' before passing to helpView
 
-### v1.3 Decisions (accumulated during this milestone)
+### v1.4 Decisions (accumulated during this milestone)
 
-None yet — first phase not started.
+None yet — roadmap defined, phases not yet started.
 
 ### Roadmap Evolution
 
 - Phase 6 added: Onboarding, documentation, and UX improvements
 - Phase 16 added: Custom Color Config — per-field hex overrides in config.toml under [theme.colors], v1.3 milestone extended to phases 13-16
+- Phases 17-21 added: v1.4 cmux + Linux milestone — Linux builds, cmux binary detection, slash command cmux spawning, documentation
 
 ### Pending Todos
 
@@ -199,7 +202,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-28 - Completed quick task 260328-on8: Fix quick tasks visibility when no active milestone
-Last session: 2026-03-28
-Stopped at: Quick task 260328-on8 complete
+Last activity: 2026-04-04 - v1.4 roadmap created (Phases 17-21)
+Last session: 2026-04-04
+Stopped at: Roadmap defined — ready to plan Phase 17 or 18
 Resume file: None

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/radu/gsd-watch/internal/config"
@@ -22,7 +23,7 @@ func main() {
 	themeFlag := flag.String("theme", "", "Color theme name")
 	flag.Parse()
 	if *showHelp {
-		fmt.Println(`gsd-watch — live GSD project status sidebar for tmux
+		fmt.Println(`gsd-watch — live GSD project status sidebar for tmux and cmux
 
 Start via /gsd-watch slash command in Claude Code.
 
@@ -46,11 +47,15 @@ https://github.com/radu/gsd-watch`)
 		parser.DebugOut = os.Stderr
 	}
 
-	// Outside-tmux detection: require tmux session.
-	if os.Getenv("TMUX") == "" {
-		fmt.Fprintln(os.Stderr, `gsd-watch requires tmux.
-Install: brew install tmux
-Then start a session: tmux new-session`)
+	// Multiplexer detection: require tmux or cmux.
+	inTmux := os.Getenv("TMUX") != ""
+	inCmux := os.Getenv("CMUX_WORKSPACE_ID") != ""
+	if !inTmux && !inCmux {
+		installHint := "brew install tmux"
+		if runtime.GOOS == "linux" {
+			installHint = "sudo apt install tmux"
+		}
+		fmt.Fprintf(os.Stderr, "gsd-watch requires tmux or cmux.\ntmux:  %s\n       then: tmux new-session\ncmux:  open cmux — gsd-watch will work inside it automatically\n", installHint)
 		os.Exit(1)
 	}
 
@@ -97,8 +102,8 @@ Then start a session: tmux new-session`)
 	// Deferred reset clears the window-level title on exit so the stale
 	// title does not block a future /gsd-watch invocation.
 	cwd, _ := os.Getwd()
-	fmt.Printf("\033]2;gsd-watch:%s\007", filepath.Base(cwd))
-	defer fmt.Printf("\033]2;\007")
+	fmt.Printf("\033]0;gsd-watch:%s\007", filepath.Base(cwd))
+	defer fmt.Printf("\033]0;\007")
 
 	events := make(chan tea.Msg, 10)
 	p := tea.NewProgram(
