@@ -79,14 +79,18 @@ A developer running GSD can always see exactly where they are in their project �
 - ✓ BUILD-04: Missing-binary guard prints actionable error and exits 2 — v1.4 (Phase 17)
 - ✓ SPAWN-01: `/gsd-watch` passes multiplexer guard when `$CMUX_WORKSPACE_ID` is set — v1.4 (Phase 19)
 - ✓ SPAWN-02: `/gsd-watch` outside both tmux and cmux shows error naming both multiplexers — v1.4 (Phase 19)
+- ✓ SPAWN-03: `/gsd-watch` inside cmux creates a right-side split pane — v1.4 (Phase 20)
+- ✓ SPAWN-04: New cmux pane automatically runs gsd-watch in the correct project directory — v1.4 (Phase 20)
+- ✓ SPAWN-05: tmux code path (Steps 3-4) byte-identical to v1.3 — v1.4 (Phase 20)
 
 ## Current State
 
-**In progress:** v1.4 cmux + Linux — Phases 17-19 complete (2026-04-04)
+**In progress:** v1.4 cmux + Linux — Phases 17-20 complete (2026-04-04)
 - Go binary detects cmux (`$CMUX_WORKSPACE_ID`) alongside tmux (`$TMUX`)
 - OS-aware error message with brew/apt install hints when neither multiplexer present
 - Pane title switched from OSC 2 → OSC 0 for cross-multiplexer compatibility
-- `/gsd-watch` slash command has three-branch multiplexer check: cmux → stub, tmux → existing flow, neither → OS-aware error
+- `/gsd-watch` slash command: cmux → real pane spawning via `cmux new-split right` + `cmux send`, tmux → existing flow, neither → OS-aware error
+- Slash command consolidated into single bash script (one tool call, faster execution)
 
 **Shipped:** v1.3 Settings (2026-03-27) — 4 phases, 7 plans, 7,082 Go LOC
 - `~/.config/gsd-watch/config.toml` configures emoji, preset theme, and per-color hex overrides
@@ -176,4 +180,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-04 — Phase 19 complete: slash command cmux detection, three-branch multiplexer check*
+*Last updated: 2026-04-04 — Phase 20 complete: cmux pane spawning live, slash command consolidated to single bash script*
