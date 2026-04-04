@@ -62,6 +62,10 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
 
 *Next milestone to be defined via `/gsd:new-milestone`*
 
+- [x] Phase 17: Linux Build Targets (1/1 plans) — completed 2026-04-04
+- [x] Phase 18: Go Binary Multiplexer Detection (1/1 plans) — completed 2026-04-04
+- [x] Phase 19: Slash Command cmux Detection (1/1 plans) — completed 2026-04-04
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -82,3 +86,6 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
 | 14. Theme System | v1.3 | 2/2 | Complete | 2026-03-27 |
 | 15. Help Overlay Config Hint | v1.3 | 1/1 | Complete | 2026-03-27 |
 | 16. Custom Color Config | v1.3 | 2/2 | Complete | 2026-03-27 |
+| 17. Linux Build Targets | v1.4 | 1/1 | Complete | 2026-04-04 |
+| 18. Go Binary Multiplexer Detection | v1.4 | 1/1 | Complete | 2026-04-04 |
+| 19. Slash Command cmux Detection | v1.4 | 1/1 | Complete | 2026-04-04 |

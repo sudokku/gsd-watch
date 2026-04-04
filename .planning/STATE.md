@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Settings
-status: v1.3 milestone complete
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-03-27T23:10:52.777Z"
-last_activity: 2026-03-27
+milestone: v1.4
+milestone_name: TBD
+status: in-progress
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-04-04T15:35:00Z"
+last_activity: 2026-04-04
 progress:
   total_phases: 4
   completed_phases: 4
@@ -24,8 +24,8 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
+Phase: 19
+Plan: 01 complete
 
 ## Performance Metrics
 
@@ -170,6 +170,12 @@ Recent decisions affecting current work:
 
 None yet — first phase not started.
 
+### v1.4 Decisions (accumulated during this milestone)
+
+- [Phase 19-01]: Check CMUX_WORKSPACE_ID before TMUX in slash command — mirrors Phase 18 Go binary check order (D-01)
+- [Phase 19-01]: cmux branch in slash command prints instructional stub and stops — Phase 20 replaces with real cmux pane spawning
+- [Phase 19-01]: OS-aware error via `uname -s` in Bash names both tmux and cmux with install hints
+
 ### Roadmap Evolution
 
 - Phase 6 added: Onboarding, documentation, and UX improvements
@@ -199,7 +205,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-28 - Completed quick task 260328-on8: Fix quick tasks visibility when no active milestone
-Last session: 2026-03-28
-Stopped at: Quick task 260328-on8 complete
+Last activity: 2026-04-04 - Completed 19-01-PLAN.md: Slash command cmux detection
+Last session: 2026-04-04
+Stopped at: Completed 19-01-PLAN.md
 Resume file: None
