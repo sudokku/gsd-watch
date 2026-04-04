@@ -28,9 +28,9 @@
 
 ### Documentation
 
-- [ ] **DOCS-01**: README Requirements section shows a platform/multiplexer support matrix (macOS+Linux / tmux+cmux)
-- [ ] **DOCS-02**: README Installation section includes Linux binary download instructions
-- [ ] **DOCS-03**: README Building section documents `build-linux` and `build-all` make targets
+- [x] **DOCS-01**: README Requirements section shows a platform/multiplexer support matrix (macOS+Linux / tmux+cmux)
+- [x] **DOCS-02**: README Installation section includes Linux binary download instructions
+- [x] **DOCS-03**: README Building section documents `build-linux` and `build-all` make targets
 
 ## v2 Requirements
 
@@ -64,9 +64,9 @@
 | SPAWN-03 | Phase 20 | Pending |
 | SPAWN-04 | Phase 20 | Pending |
 | SPAWN-05 | Phase 20 | Pending |
-| DOCS-01 | Phase 21 | Pending |
-| DOCS-02 | Phase 21 | Pending |
-| DOCS-03 | Phase 21 | Pending |
+| DOCS-01 | Phase 21 | Complete |
+| DOCS-02 | Phase 21 | Complete |
+| DOCS-03 | Phase 21 | Complete |
 
 **Coverage:**
 - v1.4 requirements: 15 total
