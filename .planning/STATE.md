@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: cmux + Linux
-status: completed
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-04-04T15:37:44.548Z"
+status: executing
+stopped_at: Phase 20 context gathered
+last_updated: "2026-04-04T16:48:09.439Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -20,13 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 19 — slash-command-cmux-detection
+**Current focus:** Phase 20 — slash-command-cmux-pane-spawning
 
 ## Current Position
 
-Phase: 20
+Phase: 21
 Plan: Not started
-Status: Phase 19 complete
+Status: Executing Phase 20
 Last activity: 2026-04-04
 
 ## Performance Metrics
@@ -213,6 +213,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-04-04 - Completed 19-01-PLAN.md: Slash command cmux detection
-Last session: 2026-04-04T15:35:00Z
-Stopped at: Completed 19-01-PLAN.md
-Resume file: None
+Last session: 2026-04-04T15:58:36.324Z
+Stopped at: Phase 20 context gathered
+Resume file: .planning/phases/20-slash-command-cmux-pane-spawning/20-CONTEXT.md

@@ -63,7 +63,7 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
 - [x] **Phase 17: Linux Build Targets** — Extend Makefile with linux-arm64, linux-amd64, build-linux, build-all, and platform-aware install (completed 2026-04-04)
 - [x] **Phase 18: Go Binary Multiplexer Detection** — Update main.go to accept $CMUX_WORKSPACE_ID, update error message, switch OSC 2 to OSC 0 (completed 2026-04-04)
 - [x] **Phase 19: Slash Command cmux Detection** — Update slash command to detect $CMUX_WORKSPACE_ID vs $TMUX and branch multiplexer check (completed 2026-04-04)
-- [ ] **Phase 20: Slash Command cmux Pane Spawning** — Add cmux pane creation via Unix socket API (nc -U, JSON-RPC)
+- [x] **Phase 20: Slash Command cmux Pane Spawning** — Add cmux pane creation via cmux CLI (new-split, send) (completed 2026-04-04)
 - [ ] **Phase 21: Documentation** — Update README platform matrix, Linux install, make targets, and PROJECT.md Out of Scope
 
 ## Phase Details
@@ -110,10 +110,12 @@ Plans:
 **Depends on**: Phase 19
 **Requirements**: SPAWN-03, SPAWN-04, SPAWN-05
 **Success Criteria** (what must be TRUE):
-  1. Running `/gsd-watch` inside cmux creates a right-side split pane via `nc -U $CMUX_SOCKET_PATH` with the `surface.split` JSON-RPC call
-  2. The new cmux pane automatically runs `gsd-watch` in the correct project directory via a `surface.send_text` JSON-RPC call
+  1. Running `/gsd-watch` inside cmux creates a right-side split pane via `cmux new-split right` CLI command
+  2. The new cmux pane automatically runs `gsd-watch` in the correct project directory via `cmux send --surface` CLI command
   3. Running `/gsd-watch` inside tmux produces the same split pane behavior as v1.3 — tmux code path is untouched
-**Plans:** TBD
+**Plans:** 1/1 plans complete
+Plans:
+- [ ] 20-01-PLAN.md — Replace cmux stub with real pane spawning via cmux CLI
 
 ### Phase 21: Documentation
 **Goal**: README and PROJECT.md accurately describe the expanded platform support so Linux users and cmux users can self-serve
@@ -148,5 +150,5 @@ Plans:
 | 17. Linux Build Targets | v1.4 | 1/1 | Complete | 2026-04-04 |
 | 18. Go Binary Multiplexer Detection | v1.4 | 1/1 | Complete | 2026-04-04 |
 | 19. Slash Command cmux Detection | v1.4 | 1/1 | Complete    | 2026-04-04 |
-| 20. Slash Command cmux Pane Spawning | v1.4 | 0/? | Not started | - |
+| 20. Slash Command cmux Pane Spawning | v1.4 | 0/1 | Complete    | 2026-04-04 |
 | 21. Documentation | v1.4 | 0/? | Not started | - |
