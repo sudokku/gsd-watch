@@ -1,31 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Settings
-status: v1.3 milestone complete
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-03-27T23:10:52.777Z"
-last_activity: 2026-03-27
+milestone: v1.4
+milestone_name: cmux + Linux
+status: verifying
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-04-04T17:32:13.549Z"
+last_activity: 2026-04-04
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 7
-  completed_plans: 7
+  total_phases: 5
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 5
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-26)
+See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 16 — custom-color-config
+**Current focus:** Phase 21 — documentation
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
+Phase: 21 (documentation) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-04-04
 
 ## Performance Metrics
 
@@ -78,6 +80,8 @@ Plan: Not started
 | Phase 13-config-infrastructure P01 | 2 | 1 tasks | 8 files |
 | Phase 13-config-infrastructure P02 | 5 | 2 tasks | 3 files |
 | Phase 15-help-overlay-config-hint P01 | 8 | 2 tasks | 2 files |
+| Phase 18-go-binary-multiplexer-detection P01 | 5 | 1 tasks | 1 files |
+| Phase 21-documentation P01 | 8 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -165,15 +169,25 @@ Recent decisions affecting current work:
 - [Phase 13-02]: \!cfg.Emoji inversion at call sites (New() and View()) — Config.Emoji=true means show emoji, tree.Options.NoEmoji=true means suppress; inversion at boundary
 - [Phase 15-01]: helpView(width, noEmoji, configPath, themeName) — two string params for config path and theme name; caller resolves before calling, keeps function pure
 - [Phase 15-01]: Config path tilde-abbreviated inline in View() via filepath.Join + strings.Replace; theme empty sentinel normalized to 'default' before passing to helpView
+- [Phase 18-go-binary-multiplexer-detection]: inTmux/inCmux bool guard: clean readability, CMUX_WORKSPACE_ID env var detection, easy to extend
+- [Phase 18-go-binary-multiplexer-detection]: OSC 0 replaces OSC 2 for pane title: cross-multiplexer compatibility (cmux honors OSC 0)
+- [Phase 18-go-binary-multiplexer-detection]: runtime.GOOS at runtime (not build tag): single binary with Linux/macOS branch for error message
 
-### v1.3 Decisions (accumulated during this milestone)
+### v1.4 Decisions (accumulated during this milestone)
 
-None yet — first phase not started.
+None yet — roadmap defined, phases not yet started.
+
+### v1.4 Decisions (accumulated during this milestone)
+
+- [Phase 19-01]: Check CMUX_WORKSPACE_ID before TMUX in slash command — mirrors Phase 18 Go binary check order (D-01)
+- [Phase 19-01]: cmux branch in slash command prints instructional stub and stops — Phase 20 replaces with real cmux pane spawning
+- [Phase 19-01]: OS-aware error via `uname -s` in Bash names both tmux and cmux with install hints
 
 ### Roadmap Evolution
 
 - Phase 6 added: Onboarding, documentation, and UX improvements
 - Phase 16 added: Custom Color Config — per-field hex overrides in config.toml under [theme.colors], v1.3 milestone extended to phases 13-16
+- Phases 17-21 added: v1.4 cmux + Linux milestone — Linux builds, cmux binary detection, slash command cmux spawning, documentation
 
 ### Pending Todos
 
@@ -199,7 +213,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-03-28 - Completed quick task 260328-on8: Fix quick tasks visibility when no active milestone
-Last session: 2026-03-28
-Stopped at: Quick task 260328-on8 complete
+Last activity: 2026-04-04 - Completed 19-01-PLAN.md: Slash command cmux detection
+Last session: 2026-04-04T17:32:13.546Z
+Stopped at: Completed 21-01-PLAN.md
 Resume file: None
