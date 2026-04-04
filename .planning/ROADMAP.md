@@ -123,6 +123,10 @@ Plans:
   3. README Building section documents `make build-linux` and `make build-all` targets with descriptions
 **Plans**: TBD
 
+- [x] Phase 17: Linux Build Targets (1/1 plans) — completed 2026-04-04
+- [x] Phase 18: Go Binary Multiplexer Detection (1/1 plans) — completed 2026-04-04
+- [x] Phase 19: Slash Command cmux Detection (1/1 plans) — completed 2026-04-04
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -143,8 +147,8 @@ Plans:
 | 14. Theme System | v1.3 | 2/2 | Complete | 2026-03-27 |
 | 15. Help Overlay Config Hint | v1.3 | 1/1 | Complete | 2026-03-27 |
 | 16. Custom Color Config | v1.3 | 2/2 | Complete | 2026-03-27 |
-| 17. Linux Build Targets | v1.4 | 0/1 | Planning | - |
-| 18. Go Binary Multiplexer Detection | v1.4 | 1/1 | Complete   | 2026-04-04 |
-| 19. Slash Command cmux Detection | v1.4 | 0/? | Not started | - |
+| 17. Linux Build Targets | v1.4 | 1/1 | Complete | 2026-04-04 |
+| 18. Go Binary Multiplexer Detection | v1.4 | 1/1 | Complete | 2026-04-04 |
+| 19. Slash Command cmux Detection | v1.4 | 1/1 | Complete | 2026-04-04 |
 | 20. Slash Command cmux Pane Spawning | v1.4 | 0/? | Not started | - |
 | 21. Documentation | v1.4 | 0/? | Not started | - |

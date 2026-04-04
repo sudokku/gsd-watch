@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: cmux + Linux
-status: executing
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-04-04T15:10:33.541Z"
-last_activity: 2026-04-04 -- Phase 17 execution started
+status: in-progress
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-04-04T15:35:00Z"
+last_activity: 2026-04-04 - Completed Phase 19
 progress:
   total_phases: 5
   completed_phases: 1
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 
 ## Current Position
 
-Phase: 17 (linux-build-targets) — EXECUTING
+Phase: 19 (slash-command-cmux-detection) — COMPLETE
 Plan: 1 of 1
-Status: Executing Phase 17
-Last activity: 2026-04-04 -- Phase 17 execution started
+Status: Phase 19 complete
+Last activity: 2026-04-04 - Completed 19-01-PLAN.md
 
 ## Performance Metrics
 
@@ -176,6 +176,12 @@ Recent decisions affecting current work:
 
 None yet — roadmap defined, phases not yet started.
 
+### v1.4 Decisions (accumulated during this milestone)
+
+- [Phase 19-01]: Check CMUX_WORKSPACE_ID before TMUX in slash command — mirrors Phase 18 Go binary check order (D-01)
+- [Phase 19-01]: cmux branch in slash command prints instructional stub and stops — Phase 20 replaces with real cmux pane spawning
+- [Phase 19-01]: OS-aware error via `uname -s` in Bash names both tmux and cmux with install hints
+
 ### Roadmap Evolution
 
 - Phase 6 added: Onboarding, documentation, and UX improvements
@@ -206,7 +212,7 @@ None yet.
 
 ## Session Continuity
 
-Last activity: 2026-04-04 - v1.4 roadmap created (Phases 17-21)
-Last session: 2026-04-04T14:58:19.889Z
-Stopped at: Completed 18-01-PLAN.md
+Last activity: 2026-04-04 - Completed 19-01-PLAN.md: Slash command cmux detection
+Last session: 2026-04-04T15:35:00Z
+Stopped at: Completed 19-01-PLAN.md
 Resume file: None
