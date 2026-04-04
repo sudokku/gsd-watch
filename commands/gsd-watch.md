@@ -21,9 +21,14 @@ Then stop. Do not continue to step 2.
 
 Run: `echo $CMUX_WORKSPACE_ID` to check for cmux. Then run: `echo $TMUX` to check for tmux.
 
-If `$CMUX_WORKSPACE_ID` is non-empty (inside cmux), print exactly:
+If `$CMUX_WORKSPACE_ID` is non-empty (inside cmux), run:
 
-`cmux detected. Run \`gsd-watch\` in a cmux pane manually — automatic pane spawning is not yet supported.`
+```bash
+NEW_SURFACE=$(cmux new-split right | awk '{print $2}')
+cmux send --surface "$NEW_SURFACE" "cd \"$PWD\" && $GSD_BIN\n"
+```
+
+Then print: `gsd-watch sidebar opened.`
 
 Then stop. Do not continue to step 3.
 
