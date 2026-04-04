@@ -49,6 +49,18 @@ curl -L https://github.com/sudokku/gsd-watch/releases/latest/download/gsd-watch-
   -o ~/.local/bin/gsd-watch && chmod +x ~/.local/bin/gsd-watch
 ```
 
+**Linux:**
+
+```bash
+# Linux arm64
+curl -L https://github.com/sudokku/gsd-watch/releases/latest/download/gsd-watch-linux-arm64 \
+  -o ~/.local/bin/gsd-watch && chmod +x ~/.local/bin/gsd-watch
+
+# Linux amd64
+curl -L https://github.com/sudokku/gsd-watch/releases/latest/download/gsd-watch-linux-amd64 \
+  -o ~/.local/bin/gsd-watch && chmod +x ~/.local/bin/gsd-watch
+```
+
 Make sure `~/.local/bin` is on your `$PATH`. Add this to your shell profile if needed:
 
 ```bash
@@ -68,7 +80,7 @@ curl -L https://raw.githubusercontent.com/sudokku/gsd-watch/main/commands/gsd-wa
 ```bash
 git clone https://github.com/sudokku/gsd-watch.git
 cd gsd-watch
-make all   # builds + installs to ~/.local/bin/gsd-watch
+make all   # builds macOS binaries + installs to ~/.local/bin/gsd-watch
 ```
 
 Then install the `/gsd-watch` slash command into Claude Code:
@@ -129,14 +141,16 @@ gsd-watch watches `.planning/` with fsnotify (recursive, debounced at 300ms) and
 ## Building
 
 ```bash
-make build    # build/gsd-watch-arm64 + build/gsd-watch-amd64
-make install  # copy arch-appropriate binary to ~/.local/bin
-make clean    # remove build/
+make build-darwin  # build/gsd-watch-darwin-arm64 + build/gsd-watch-darwin-amd64
+make build-linux   # build/gsd-watch-linux-arm64 + build/gsd-watch-linux-amd64
+make build-all     # all four binaries (darwin + linux)
+make install       # copy arch-appropriate binary to ~/.local/bin
+make clean         # remove build/
 ```
 
-Static binary, no CGO, no runtime dependencies except tmux. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
+Static binary, no CGO, no runtime dependencies except tmux or cmux. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
-> **macOS Sequoia note:** binaries must be signed or macOS will kill them at launch. `make build` handles this automatically via `codesign --sign -` (ad-hoc signature). Binaries downloaded from GitHub releases are pre-signed.
+> **macOS Sequoia note:** Darwin binaries must be signed or macOS will kill them at launch. `make build-darwin` handles this automatically via `codesign`. Linux binaries require no signing. Binaries downloaded from GitHub releases are pre-signed.
 
 ---
 
