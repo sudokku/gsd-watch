@@ -153,4 +153,4 @@ Plans:
 | 18. Go Binary Multiplexer Detection | v1.4 | 1/1 | Complete | 2026-04-04 |
 | 19. Slash Command cmux Detection | v1.4 | 1/1 | Complete    | 2026-04-04 |
 | 20. Slash Command cmux Pane Spawning | v1.4 | 0/1 | Complete    | 2026-04-04 |
-| 21. Documentation | v1.4 | 1/1 | Complete   | 2026-04-04 |
+| 21. Documentation | v1.4 | 1/1 | Complete    | 2026-04-04 |

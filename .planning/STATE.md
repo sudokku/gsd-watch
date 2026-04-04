@@ -4,7 +4,7 @@ milestone: v1.4
 milestone_name: cmux + Linux
 status: verifying
 stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-04-04T17:32:13.549Z"
+last_updated: "2026-04-04T17:38:16.828Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 5
@@ -24,8 +24,8 @@ See: .planning/PROJECT.md (updated 2026-04-04)
 
 ## Current Position
 
-Phase: 21 (documentation) — EXECUTING
-Plan: 1 of 1
+Phase: 21
+Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-04-04
 
