@@ -61,7 +61,7 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
 ### v1.4 cmux + Linux (Phases 17-21)
 
 - [ ] **Phase 17: Linux Build Targets** — Extend Makefile with linux-arm64, linux-amd64, build-linux, build-all, and platform-aware install
-- [ ] **Phase 18: Go Binary Multiplexer Detection** — Update main.go to accept $CMUX_WORKSPACE_ID, update error message, switch OSC 2 to OSC 0
+- [x] **Phase 18: Go Binary Multiplexer Detection** — Update main.go to accept $CMUX_WORKSPACE_ID, update error message, switch OSC 2 to OSC 0 (completed 2026-04-04)
 - [ ] **Phase 19: Slash Command cmux Detection** — Update slash command to detect $CMUX_WORKSPACE_ID vs $TMUX and branch multiplexer check
 - [ ] **Phase 20: Slash Command cmux Pane Spawning** — Add cmux pane creation via Unix socket API (nc -U, JSON-RPC)
 - [ ] **Phase 21: Documentation** — Update README platform matrix, Linux install, make targets, and PROJECT.md Out of Scope
@@ -87,7 +87,9 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
   1. Running the binary inside a cmux workspace (CMUX_WORKSPACE_ID set) shows the TUI — not an error
   2. Running the binary outside both tmux and cmux shows an error message that names both tmux and cmux
   3. Pane title is set via OSC 0 (`\033]0;title\007`), confirmed to work in both tmux and cmux terminals
-**Plans**: TBD
+**Plans:** 1/1 plans complete
+Plans:
+- [x] 18-01-PLAN.md — Add cmux detection guard, OS-aware error message, OSC 0 pane title, help text update
 
 ### Phase 19: Slash Command cmux Detection
 **Goal**: The `/gsd-watch` slash command passes the multiplexer guard inside cmux and surfaces a clear error outside any multiplexer
@@ -140,7 +142,7 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
 | 15. Help Overlay Config Hint | v1.3 | 1/1 | Complete | 2026-03-27 |
 | 16. Custom Color Config | v1.3 | 2/2 | Complete | 2026-03-27 |
 | 17. Linux Build Targets | v1.4 | 0/? | Not started | - |
-| 18. Go Binary Multiplexer Detection | v1.4 | 0/? | Not started | - |
+| 18. Go Binary Multiplexer Detection | v1.4 | 1/1 | Complete   | 2026-04-04 |
 | 19. Slash Command cmux Detection | v1.4 | 0/? | Not started | - |
 | 20. Slash Command cmux Pane Spawning | v1.4 | 0/? | Not started | - |
 | 21. Documentation | v1.4 | 0/? | Not started | - |

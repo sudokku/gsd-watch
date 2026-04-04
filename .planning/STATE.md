@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: cmux + Linux
-status: Roadmap defined
-stopped_at: —
-last_updated: "2026-04-04T00:00:00.000Z"
+status: verifying
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-04-04T14:58:19.892Z"
 last_activity: 2026-04-04
 progress:
   total_phases: 5
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** v1.4 roadmap defined — ready to plan Phase 17
+**Current focus:** Phase 18 — go-binary-multiplexer-detection
 
 ## Current Position
 
-Phase: Not started
-Plan: —
-Status: Roadmap defined, awaiting phase planning
-Last activity: 2026-04-04 — v1.4 roadmap created (5 phases: 17-21)
+Phase: 18 (go-binary-multiplexer-detection) — EXECUTING
+Plan: 1 of 1
+Status: Phase complete — ready for verification
+Last activity: 2026-04-04
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ Last activity: 2026-04-04 — v1.4 roadmap created (5 phases: 17-21)
 | Phase 13-config-infrastructure P01 | 2 | 1 tasks | 8 files |
 | Phase 13-config-infrastructure P02 | 5 | 2 tasks | 3 files |
 | Phase 15-help-overlay-config-hint P01 | 8 | 2 tasks | 2 files |
+| Phase 18-go-binary-multiplexer-detection P01 | 5 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -167,6 +168,9 @@ Recent decisions affecting current work:
 - [Phase 13-02]: \!cfg.Emoji inversion at call sites (New() and View()) — Config.Emoji=true means show emoji, tree.Options.NoEmoji=true means suppress; inversion at boundary
 - [Phase 15-01]: helpView(width, noEmoji, configPath, themeName) — two string params for config path and theme name; caller resolves before calling, keeps function pure
 - [Phase 15-01]: Config path tilde-abbreviated inline in View() via filepath.Join + strings.Replace; theme empty sentinel normalized to 'default' before passing to helpView
+- [Phase 18-go-binary-multiplexer-detection]: inTmux/inCmux bool guard: clean readability, CMUX_WORKSPACE_ID env var detection, easy to extend
+- [Phase 18-go-binary-multiplexer-detection]: OSC 0 replaces OSC 2 for pane title: cross-multiplexer compatibility (cmux honors OSC 0)
+- [Phase 18-go-binary-multiplexer-detection]: runtime.GOOS at runtime (not build tag): single binary with Linux/macOS branch for error message
 
 ### v1.4 Decisions (accumulated during this milestone)
 
@@ -203,6 +207,6 @@ None yet.
 ## Session Continuity
 
 Last activity: 2026-04-04 - v1.4 roadmap created (Phases 17-21)
-Last session: 2026-04-04
-Stopped at: Roadmap defined — ready to plan Phase 17 or 18
+Last session: 2026-04-04T14:58:19.889Z
+Stopped at: Completed 18-01-PLAN.md
 Resume file: None
