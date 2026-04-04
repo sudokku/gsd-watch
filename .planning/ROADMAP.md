@@ -77,7 +77,9 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
   2. `make build-all` produces all four binaries (darwin-arm64, darwin-amd64, linux-arm64, linux-amd64) in a single invocation
   3. Running `make install` on a Linux arm64 machine copies the arm64 binary; on a Linux amd64 machine copies the amd64 binary
   4. Linux binaries are static (CGO_ENABLED=0) and carry no codesign step
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 17-01-PLAN.md — Rewrite Makefile with Linux build targets and OS-agnostic install
 
 ### Phase 18: Go Binary Multiplexer Detection
 **Goal**: The compiled binary starts normally inside cmux and shows a helpful error outside any supported multiplexer
@@ -141,7 +143,7 @@ Plans:
 | 14. Theme System | v1.3 | 2/2 | Complete | 2026-03-27 |
 | 15. Help Overlay Config Hint | v1.3 | 1/1 | Complete | 2026-03-27 |
 | 16. Custom Color Config | v1.3 | 2/2 | Complete | 2026-03-27 |
-| 17. Linux Build Targets | v1.4 | 0/? | Not started | - |
+| 17. Linux Build Targets | v1.4 | 0/1 | Planning | - |
 | 18. Go Binary Multiplexer Detection | v1.4 | 1/1 | Complete   | 2026-04-04 |
 | 19. Slash Command cmux Detection | v1.4 | 0/? | Not started | - |
 | 20. Slash Command cmux Pane Spawning | v1.4 | 0/? | Not started | - |

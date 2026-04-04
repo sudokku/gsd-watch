@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: cmux + Linux
-status: verifying
+status: executing
 stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-04-04T14:58:19.892Z"
-last_activity: 2026-04-04
+last_updated: "2026-04-04T15:10:33.541Z"
+last_activity: 2026-04-04 -- Phase 17 execution started
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 1
+  total_plans: 2
   completed_plans: 1
 ---
 
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-04)
 
 **Core value:** A developer running GSD can always see exactly where they are in their project — without context-switching out of Claude Code — and the view updates automatically within one second of any GSD action completing.
-**Current focus:** Phase 18 — go-binary-multiplexer-detection
+**Current focus:** Phase 17 — linux-build-targets
 
 ## Current Position
 
-Phase: 18 (go-binary-multiplexer-detection) — EXECUTING
+Phase: 17 (linux-build-targets) — EXECUTING
 Plan: 1 of 1
-Status: Phase complete — ready for verification
-Last activity: 2026-04-04
+Status: Executing Phase 17
+Last activity: 2026-04-04 -- Phase 17 execution started
 
 ## Performance Metrics
 
