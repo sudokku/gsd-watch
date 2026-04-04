@@ -82,15 +82,20 @@ A developer running GSD can always see exactly where they are in their project �
 - ✓ SPAWN-03: `/gsd-watch` inside cmux creates a right-side split pane — v1.4 (Phase 20)
 - ✓ SPAWN-04: New cmux pane automatically runs gsd-watch in the correct project directory — v1.4 (Phase 20)
 - ✓ SPAWN-05: tmux code path (Steps 3-4) byte-identical to v1.3 — v1.4 (Phase 20)
+- ✓ DOCS-01: README Requirements section shows a platform/multiplexer support matrix (macOS+Linux / tmux+cmux) — v1.4 (Phase 21)
+- ✓ DOCS-02: README Installation section includes Linux binary download instructions — v1.4 (Phase 21)
+- ✓ DOCS-03: README Building section documents `build-linux` and `build-all` make targets — v1.4 (Phase 21)
 
 ## Current State
 
-**In progress:** v1.4 cmux + Linux — Phases 17-20 complete (2026-04-04)
+**Complete:** v1.4 cmux + Linux — all 5 phases done (2026-04-04)
 - Go binary detects cmux (`$CMUX_WORKSPACE_ID`) alongside tmux (`$TMUX`)
 - OS-aware error message with brew/apt install hints when neither multiplexer present
 - Pane title switched from OSC 2 → OSC 0 for cross-multiplexer compatibility
 - `/gsd-watch` slash command: cmux → real pane spawning via `cmux new-split right` + `cmux send`, tmux → existing flow, neither → OS-aware error
 - Slash command consolidated into single bash script (one tool call, faster execution)
+- README updated with platform matrix (macOS+Linux × tmux+cmux), Linux install instructions, and build target docs
+- Awaiting v1.4.0 release tag to publish Linux binaries
 
 **Shipped:** v1.3 Settings (2026-03-27) — 4 phases, 7 plans, 7,082 Go LOC
 - `~/.config/gsd-watch/config.toml` configures emoji, preset theme, and per-color hex overrides
@@ -180,4 +185,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-04 — Phase 20 complete: cmux pane spawning live, slash command consolidated to single bash script*
+*Last updated: 2026-04-04 — Phase 21 complete: README updated with Linux + cmux documentation. v1.4 milestone fully done — awaiting v1.4.0 release tag*
