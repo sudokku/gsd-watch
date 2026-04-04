@@ -64,7 +64,7 @@ Full phase details: `.planning/milestones/v1.3-ROADMAP.md`
 - [x] **Phase 18: Go Binary Multiplexer Detection** — Update main.go to accept $CMUX_WORKSPACE_ID, update error message, switch OSC 2 to OSC 0 (completed 2026-04-04)
 - [x] **Phase 19: Slash Command cmux Detection** — Update slash command to detect $CMUX_WORKSPACE_ID vs $TMUX and branch multiplexer check (completed 2026-04-04)
 - [x] **Phase 20: Slash Command cmux Pane Spawning** — Add cmux pane creation via cmux CLI (new-split, send) (completed 2026-04-04)
-- [ ] **Phase 21: Documentation** — Update README platform matrix, Linux install, make targets, and PROJECT.md Out of Scope
+- [x] **Phase 21: Documentation** — Update README platform matrix, Linux install, make targets, and PROJECT.md Out of Scope (completed 2026-04-04)
 
 ## Phase Details
 
@@ -125,7 +125,9 @@ Plans:
   1. README contains a platform/multiplexer support matrix showing macOS+Linux and tmux+cmux combinations
   2. README Installation section includes Linux binary download and install instructions
   3. README Building section documents `make build-linux` and `make build-all` targets with descriptions
-**Plans:** TBD
+**Plans:** 1/1 plans complete
+Plans:
+- [x] 21-01-PLAN.md — Update README with platform matrix, Linux install, and new build targets
 
 ## Progress
 
@@ -151,4 +153,4 @@ Plans:
 | 18. Go Binary Multiplexer Detection | v1.4 | 1/1 | Complete | 2026-04-04 |
 | 19. Slash Command cmux Detection | v1.4 | 1/1 | Complete    | 2026-04-04 |
 | 20. Slash Command cmux Pane Spawning | v1.4 | 0/1 | Complete    | 2026-04-04 |
-| 21. Documentation | v1.4 | 0/? | Not started | - |
+| 21. Documentation | v1.4 | 1/1 | Complete   | 2026-04-04 |
