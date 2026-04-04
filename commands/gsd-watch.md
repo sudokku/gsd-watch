@@ -17,13 +17,40 @@ If the command exits with a non-zero exit code (binary not found), print exactly
 
 Then stop. Do not continue to step 2.
 
-**Step 2 — Check if running inside tmux:**
+**Step 2 — Check for a supported multiplexer:**
 
-Run: `echo $TMUX`
+Run: `echo $CMUX_WORKSPACE_ID` to check for cmux. Then run: `echo $TMUX` to check for tmux.
 
-If the output is empty (not inside a tmux session), print exactly:
+If `$CMUX_WORKSPACE_ID` is non-empty (inside cmux), run:
 
-`gsd-watch requires tmux. Start a session first: 'tmux new-session', then run /gsd-watch again.`
+```bash
+NEW_SURFACE=$(cmux new-split right | awk '{print $2}')
+cmux send --surface "$NEW_SURFACE" "cd \"$PWD\" && $GSD_BIN\n"
+```
+
+Then print: `gsd-watch sidebar opened.`
+
+Then stop. Do not continue to step 3.
+
+If `$TMUX` is non-empty (inside tmux), proceed to step 3. No output.
+
+If both `$CMUX_WORKSPACE_ID` and `$TMUX` are empty (not inside any multiplexer), run `uname -s` to detect OS, then print exactly:
+
+On macOS (uname output is `Darwin`):
+```
+gsd-watch requires tmux or cmux.
+tmux:  brew install tmux
+       then: tmux new-session
+cmux:  open cmux — gsd-watch will work inside it automatically
+```
+
+On Linux (uname output is `Linux`):
+```
+gsd-watch requires tmux or cmux.
+tmux:  sudo apt install tmux
+       then: tmux new-session
+cmux:  open cmux — gsd-watch will work inside it automatically
+```
 
 Then stop. Do not continue to step 3.
 
