@@ -7,7 +7,12 @@ BINARY_LINUX_AMD64 := build/gsd-watch-linux-amd64
 INSTALL_DIR        := $(HOME)/.local/bin
 LDFLAGS            := -ldflags="-s -w"
 CMD_SRC            := ./cmd/gsd-watch/
-CODESIGN_ID        := Apple Development
+CODESIGN_ID        ?= Apple Development
+
+# Resolve CODESIGN_ID to a unique SHA-1 hash so duplicate keychain entries
+# (a common cause of "ambiguous" codesign errors) don't break the build.
+# Override by exporting CODESIGN_ID=<sha-or-substring> before invoking make.
+CODESIGN_RESOLVED   = $(shell security find-identity -v -p codesigning 2>/dev/null | grep "$(CODESIGN_ID)" | head -1 | awk '{print $$2}')
 
 build-darwin: $(BINARY_ARM64) $(BINARY_AMD64)
 
@@ -17,11 +22,11 @@ build-all: build-darwin build-linux
 
 $(BINARY_ARM64):
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $@ $(CMD_SRC)
-	codesign --force --sign "$(CODESIGN_ID)" --options runtime --timestamp $@
+	codesign --force --sign "$(CODESIGN_RESOLVED)" --options runtime --timestamp $@
 
 $(BINARY_AMD64):
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $@ $(CMD_SRC)
-	codesign --force --sign "$(CODESIGN_ID)" --options runtime --timestamp $@
+	codesign --force --sign "$(CODESIGN_RESOLVED)" --options runtime --timestamp $@
 
 $(BINARY_LINUX_ARM64):
 	mkdir -p build/
