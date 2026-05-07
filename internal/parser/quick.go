@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bufio"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -50,6 +51,10 @@ func parseQuickTasks(quickDir string) []QuickTask {
 			status = StatusPending
 		}
 
+		if rich := readRichDescription(taskDir, date+"-"+id); rich != "" {
+			displayName = rich
+		}
+
 		debugf("quick_task_dir", "%s status=%q display=%q", entry.Name(), status, displayName)
 
 		tasks = append(tasks, QuickTask{
@@ -65,4 +70,132 @@ func parseQuickTasks(quickDir string) []QuickTask {
 	})
 
 	return tasks
+}
+
+// readRichDescription tries PLAN.md <objective>, SUMMARY.md **One-liner:**, and
+// SUMMARY.md H1 in order. Returns the first non-empty result, or "" when no
+// rich source is available.
+func readRichDescription(taskDir, base string) string {
+	if s := scanForObjective(filepath.Join(taskDir, base+"-PLAN.md")); s != "" {
+		return s
+	}
+	summaryPath := filepath.Join(taskDir, base+"-SUMMARY.md")
+	if s := scanForOneLiner(summaryPath); s != "" {
+		return s
+	}
+	if s := scanForSummaryHeading(summaryPath, base); s != "" {
+		return s
+	}
+	return ""
+}
+
+// scanForObjective opens path, finds the line equal to "<objective>", then
+// returns the sanitized first non-empty content line. Returns "" on any error.
+func scanForObjective(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+
+	inObjective := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimSpace(line)
+		if !inObjective {
+			if trimmed == "<objective>" {
+				inObjective = true
+			}
+			continue
+		}
+		if trimmed == "</objective>" {
+			return ""
+		}
+		if trimmed == "" {
+			continue
+		}
+		return sanitizeDescription(trimmed)
+	}
+	return ""
+}
+
+// scanForOneLiner opens path and returns the sanitized text following a
+// `**One-liner:**` marker on a line. Returns "" on any error or no match.
+func scanForOneLiner(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+
+	const marker = "**One-liner:**"
+	for scanner.Scan() {
+		trimmed := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(trimmed, marker) {
+			return sanitizeDescription(strings.TrimPrefix(trimmed, marker))
+		}
+	}
+	return ""
+}
+
+// scanForSummaryHeading opens path and returns the title captured from a
+// SUMMARY-style H1 such as "# Quick Task <base>: Title — Summary".
+// Returns "" on any error or non-match.
+func scanForSummaryHeading(path, base string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	re, err := regexp.Compile(`^# Quick (?:Task )?` + regexp.QuoteMeta(base) + `:?\s*(.+?)\s*(?:—\s*)?Summary\s*$`)
+	if err != nil {
+		return ""
+	}
+
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(strings.TrimSpace(line), "# ") {
+			continue
+		}
+		m := re.FindStringSubmatch(strings.TrimSpace(line))
+		if m == nil {
+			return ""
+		}
+		title := strings.TrimSpace(m[1])
+		if title == "" {
+			return ""
+		}
+		return sanitizeDescription(title)
+	}
+	return ""
+}
+
+// sanitizeDescription normalizes an extracted description line for display.
+func sanitizeDescription(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.TrimSuffix(s, "</objective>")
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, "- ")
+	s = strings.TrimPrefix(s, "* ")
+	// collapse internal whitespace runs
+	s = strings.Join(strings.Fields(s), " ")
+	// first sentence only when a sentence break exists
+	if i := strings.Index(s, ". "); i > 0 {
+		s = s[:i+1]
+	}
+	const maxDisplayLen = 200
+	if len([]rune(s)) > maxDisplayLen {
+		r := []rune(s)
+		s = string(r[:maxDisplayLen]) + "…"
+	}
+	return s
 }
