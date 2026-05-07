@@ -104,6 +104,105 @@ func TestParseQuickTasks_DisplayName(t *testing.T) {
 	}
 }
 
+func TestParseQuickTasks_DisplayName_FromPlanObjective(t *testing.T) {
+	dir := t.TempDir()
+	taskDir := filepath.Join(dir, "260323-re2-fix-thing")
+	if err := os.MkdirAll(taskDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	plan := "<objective>\nFix the thing fully.\n</objective>\n"
+	if err := os.WriteFile(filepath.Join(taskDir, "260323-re2-PLAN.md"), []byte(plan), 0644); err != nil {
+		t.Fatal(err)
+	}
+	tasks := parseQuickTasks(dir)
+	if len(tasks) != 1 {
+		t.Fatalf("want 1 task, got %d", len(tasks))
+	}
+	if tasks[0].DisplayName != "Fix the thing fully." {
+		t.Errorf("DisplayName: want %q, got %q", "Fix the thing fully.", tasks[0].DisplayName)
+	}
+}
+
+func TestParseQuickTasks_DisplayName_MultilineObjective(t *testing.T) {
+	dir := t.TempDir()
+	taskDir := filepath.Join(dir, "260323-re2-fix-thing")
+	if err := os.MkdirAll(taskDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	plan := "<objective>\nFix the bug. Other paragraph follows.\n\nMore stuff.\n</objective>\n"
+	if err := os.WriteFile(filepath.Join(taskDir, "260323-re2-PLAN.md"), []byte(plan), 0644); err != nil {
+		t.Fatal(err)
+	}
+	tasks := parseQuickTasks(dir)
+	if len(tasks) != 1 {
+		t.Fatalf("want 1 task, got %d", len(tasks))
+	}
+	if tasks[0].DisplayName != "Fix the bug." {
+		t.Errorf("DisplayName: want %q, got %q", "Fix the bug.", tasks[0].DisplayName)
+	}
+}
+
+func TestParseQuickTasks_DisplayName_FromSummaryOneLiner(t *testing.T) {
+	dir := t.TempDir()
+	taskDir := filepath.Join(dir, "260415-zz9-old-slug")
+	if err := os.MkdirAll(taskDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	summary := "# Quick Task 260415-zz9 Summary\n\n**One-liner:** Replaced X with Y.\n"
+	if err := os.WriteFile(filepath.Join(taskDir, "260415-zz9-SUMMARY.md"), []byte(summary), 0644); err != nil {
+		t.Fatal(err)
+	}
+	tasks := parseQuickTasks(dir)
+	if len(tasks) != 1 {
+		t.Fatalf("want 1 task, got %d", len(tasks))
+	}
+	if tasks[0].DisplayName != "Replaced X with Y." {
+		t.Errorf("DisplayName: want %q, got %q", "Replaced X with Y.", tasks[0].DisplayName)
+	}
+}
+
+func TestParseQuickTasks_DisplayName_FromSummaryHeading(t *testing.T) {
+	dir := t.TempDir()
+	taskDir := filepath.Join(dir, "260415-zz9-old-slug")
+	if err := os.MkdirAll(taskDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	summary := "# Quick Task 260415-zz9: Replace the thing — Summary\n\nBody text.\n"
+	if err := os.WriteFile(filepath.Join(taskDir, "260415-zz9-SUMMARY.md"), []byte(summary), 0644); err != nil {
+		t.Fatal(err)
+	}
+	tasks := parseQuickTasks(dir)
+	if len(tasks) != 1 {
+		t.Fatalf("want 1 task, got %d", len(tasks))
+	}
+	if tasks[0].DisplayName != "Replace the thing" {
+		t.Errorf("DisplayName: want %q, got %q", "Replace the thing", tasks[0].DisplayName)
+	}
+}
+
+func TestParseQuickTasks_DisplayName_PlanBeatsSummary(t *testing.T) {
+	dir := t.TempDir()
+	taskDir := filepath.Join(dir, "260415-zz9-old-slug")
+	if err := os.MkdirAll(taskDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	plan := "<objective>\nPlan wins.\n</objective>\n"
+	if err := os.WriteFile(filepath.Join(taskDir, "260415-zz9-PLAN.md"), []byte(plan), 0644); err != nil {
+		t.Fatal(err)
+	}
+	summary := "# Quick Task 260415-zz9 Summary\n\n**One-liner:** Summary loses.\n"
+	if err := os.WriteFile(filepath.Join(taskDir, "260415-zz9-SUMMARY.md"), []byte(summary), 0644); err != nil {
+		t.Fatal(err)
+	}
+	tasks := parseQuickTasks(dir)
+	if len(tasks) != 1 {
+		t.Fatalf("want 1 task, got %d", len(tasks))
+	}
+	if tasks[0].DisplayName != "Plan wins." {
+		t.Errorf("DisplayName: want %q, got %q", "Plan wins.", tasks[0].DisplayName)
+	}
+}
+
 func TestParseQuickTasks_SkipsNonDirs(t *testing.T) {
 	dir := t.TempDir()
 	// Create a flat file that should be ignored
