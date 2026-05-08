@@ -4,8 +4,8 @@ milestone: v1.4
 milestone_name: cmux + Linux
 status: verifying
 stopped_at: Completed 21-01-PLAN.md
-last_updated: "2026-04-04T17:38:16.828Z"
-last_activity: 2026-04-04
+last_updated: "2026-05-07T18:00:00.000Z"
+last_activity: 2026-05-07 - Completed quick task 260508-3om: fix sidebar quick task description trimming
 progress:
   total_phases: 5
   completed_phases: 5
@@ -204,6 +204,7 @@ None yet.
 | 260326-svs | Fix no-project placeholder shown when archived milestones present | 2026-03-26 | fedb015 | Complete | [260326-svs-fix-no-project-placeholder-shown-when-on](./quick/260326-svs-fix-no-project-placeholder-shown-when-on/) |
 | 260328-he9 | Audit and improve theme presets to be visually distinct — differentiate phase stage labels, font weights, and colors per theme | 2026-03-28 | 2fe54ec | Verified | [260328-he9-audit-and-improve-theme-presets-to-be-vi](./quick/260328-he9-audit-and-improve-theme-presets-to-be-vi/) |
 | 260328-on8 | Fix quick tasks visibility when no active milestone exists | 2026-03-28 | 9f73b33 | Verified | [260328-on8-fix-quick-tasks-visibility-when-no-activ](./quick/260328-on8-fix-quick-tasks-visibility-when-no-activ/) |
+| 260508-3om | Fix sidebar quick task description trimming — read full description from PLAN.md `<objective>` / SUMMARY.md fallbacks instead of truncated dir slug | 2026-05-07 | c0543ec | Complete | [260508-3om-fix-sidebar-quick-task-description-trimm](./quick/260508-3om-fix-sidebar-quick-task-description-trimm/) |
 
 ### Blockers/Concerns
 

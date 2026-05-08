@@ -485,6 +485,31 @@ func (t TreeModel) RenderedCursorLine(width int) int {
 	return line
 }
 
+// RenderedCursorLineSpan returns the inclusive [firstLine, lastLine] range
+// of rendered line indices occupied by the cursor row within the full tree
+// output. firstLine matches RenderedCursorLine; lastLine accounts for row
+// wrapping (e.g. a wrapped quick-task DisplayName). Used by the app model
+// to ensure the entire cursor row is brought into view, not just its top.
+// Returns (0, 0) when VisibleRows is empty or the cursor is out of range.
+func (t TreeModel) RenderedCursorLineSpan(width int) (firstLine, lastLine int) {
+	rows := t.VisibleRows()
+	if len(rows) == 0 || t.cursor < 0 || t.cursor >= len(rows) {
+		return 0, 0
+	}
+	line := 0
+	for i, row := range rows {
+		if i == t.cursor {
+			h := t.renderedRowLines(row, width, t.opts.NoEmoji)
+			if h < 1 {
+				h = 1
+			}
+			return line, line + h - 1
+		}
+		line += t.renderedRowLines(row, width, t.opts.NoEmoji)
+	}
+	return line, line
+}
+
 // renderedRowLines returns the number of output lines a single row occupies.
 func (t TreeModel) renderedRowLines(row Row, width int, noEmoji bool) int {
 	th := themeFor(t.opts)

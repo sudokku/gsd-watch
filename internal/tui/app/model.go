@@ -175,11 +175,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tree, cmd = m.tree.Update(msg)
 		// Sync viewport content and scroll to keep cursor visible.
 		m.viewport.SetContent(m.tree.View(m.width, m.viewport.Height))
-		cursorLine := m.tree.RenderedCursorLine(m.width)
-		if cursorLine < m.viewport.YOffset {
-			m.viewport.SetYOffset(cursorLine)
-		} else if cursorLine >= m.viewport.YOffset+m.viewport.Height {
-			m.viewport.SetYOffset(cursorLine - m.viewport.Height + 1)
+		firstLine, lastLine := m.tree.RenderedCursorLineSpan(m.width)
+		if firstLine < m.viewport.YOffset {
+			m.viewport.SetYOffset(firstLine)
+		} else if lastLine >= m.viewport.YOffset+m.viewport.Height {
+			m.viewport.SetYOffset(lastLine - m.viewport.Height + 1)
 		}
 		return m, cmd
 
